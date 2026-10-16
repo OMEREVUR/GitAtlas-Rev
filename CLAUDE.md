@@ -8,7 +8,7 @@
 
 ## Sürüm durumu
 - **v1 (MVP) tamam** (Ekim 2026, kullanıcı F5 ile denedi): yan panel + düzenleyici sekmesi (komut "RewiewRev: Haritayı düzenleyicide aç"; ikisi aynı provider'dan beslenir), treemap (klasöre inme ile), zaman filtresi 7g/30g/tümü, dosya kartı, son commit'ler akışı, Explorer rozeti, globalStorage cache, ignore ayarı, durum ekranları, durum çubuğu.
-- **v2 tamam** (Ekim 2026): webview'da "Harita | Graph" sekmeleri; commit graph (şerit yerleşimi eklentide `layoutGraph`, `--topo-order`, 500'lük sayfalar, kaydırınca daha eskisi), graph filtreleri (branch, yazar, arama: mesaj/dosya/hash, graph'ın kendi tarih aralığı, "Sade liste"), seçim ayrıntısı + mini harita; yan çubukta yerel TreeView "Branch'ler" (lokal/remote, ahead/behind, bayat = 30 gün); seçilen commit/branch'in dosyaları haritada yanar, haritanın üstünde seçim çubuğu.
+- **v2 tamam** (Ekim 2026, kullanıcı F5 ile denedi): webview'da "Harita | Graph" sekmeleri; commit graph (şerit yerleşimi eklentide `layoutGraph`, `--topo-order`, 500'lük sayfalar, kaydırınca daha eskisi), graph filtreleri (branch, yazar, arama: mesaj/dosya/hash, graph'ın kendi tarih aralığı, "Sade liste"), seçim ayrıntısı + mini harita; yan çubukta yerel TreeView "Branch'ler" (lokal/remote, ahead/behind, bayat = 30 gün); seçilen commit/branch'in dosyaları haritada yanar, haritanın üstünde seçim çubuğu.
 - Sıradaki: v3 (GitHub katmanı). Raporun yol haritasındaki kapıya dikkat: v3'e geçmeden gerçek kullanıcı geri bildirimi. v3: GitHub katmanı (PR çakışma uyarısı). v4: zaman makinesi + katkı paneli.
 - Kapsam dışı iş yapılmaz. Tipler ileriye uygun tutulur (ör. commit'lerde `parents`).
 
