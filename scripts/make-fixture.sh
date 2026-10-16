@@ -16,6 +16,20 @@
 #   Ignore denemesi ............... node_modules/leftpad/index.js, package-lock.json (2'şer commit)
 #   Silinen dosya ................. docs/old-notes.md (oluşturulup sonra silinir; lineCounts'ta yok)
 #   İzlenen dosya sayısı .......... 15 (binary dahil; lineCounts'ta 14)
+#   (Yukarıdakiler HEAD = lokal main içindir; v2 eklemeleri main'i değiştirmez.)
+#
+# v2 BEKLENEN DEĞERLER (graph + branch paneli)
+#   HEAD .......................... main (upstream origin/main): ahead 2, behind 0
+#   Lokal branch'ler (4) .......... main, feature/graph, fix/parser, spike/canvas
+#     feature/graph ............... 3 commit (4g, 2.5g, 18sa önce); main'e göre ahead 3, behind 5
+#     fix/parser .................. 2 commit (20g, 18g önce); main'e göre ahead 2, behind 17
+#     spike/canvas (bayat) ........ 2 commit (62g, 50g önce); main'e göre ahead 2, behind 25
+#   Remote branch'ler (2) ......... origin/main (= main~2; main'e göre behind 2),
+#                                   origin/experiment/canvas (yalnızca remote; 47g, 44g önce;
+#                                   lokal karşılığı yok → main'e göre ahead 2, behind 22)
+#   Etiket ........................ v0.1.0 (annotated) → "feat: repoModel d" (28 gün önce)
+#   Graph'taki toplam commit ...... 43 (main 34 + 3 + 2 + 2 + 2); merge commit 1
+#   origin bare reposu ............ <repo>/.git/fixture-origin.git
 set -euo pipefail
 
 NOW=$(date +%s)
@@ -95,6 +109,7 @@ commit B $((72 * D)) "feat: logo"
 
 line test/model.test.ts "test('model', () => {});"
 commit C $((70 * D)) "test: model"
+FORK_SPIKE=$(git rev-parse HEAD)
 
 line src/model/model.ts "export const a = 'a';"
 commit A $((68 * D)) "feat: model a"
@@ -104,6 +119,7 @@ commit B $((65 * D)) "feat: stil"
 
 line src/model/model.ts "export const b = 'b';"
 commit C $((60 * D)) "feat: model b"
+FORK_EXPERIMENT=$(git rev-parse HEAD)
 
 git mv src/model/model.ts src/model/repoModel.ts
 commit A $((55 * D)) "refactor: model.ts -> repoModel.ts"
@@ -120,6 +136,7 @@ commit A $((42 * D)) "docs: rehber güncellendi, eski notlar silindi"
 
 line src/git/log.ts "export const log = [];"
 commit B $((40 * D)) "feat: log"
+FORK_FIX=$(git rev-parse HEAD)
 
 line package-lock.json '{ "lockfileVersion": 3, "packages": {} }'
 line node_modules/leftpad/index.js "// v2"
@@ -128,6 +145,7 @@ commit C $((35 * D)) "chore: bağımlılık güncellemesi"
 # --- 30..8 gün önce --------------------------------------------------------
 line src/model/repoModel.ts "export const d = 'd';"
 commit A $((28 * D)) "feat: repoModel d"
+TAG_TARGET=$(git rev-parse HEAD)
 
 line src/webview/main.ts "console.log('ikinci');"
 commit B $((25 * D)) "feat: webview düzen"
@@ -163,6 +181,7 @@ git branch -q -d feature
 # --- son 7 gün ------------------------------------------------------------
 line src/webview/main.ts "console.log('üçüncü');"
 commit C $((6 * D)) "feat: webview üçüncü"
+FORK_GRAPH=$(git rev-parse HEAD)
 
 line src/model/repoModel.ts "export const f = 'f';"
 commit A $((5 * D)) "feat: repoModel f"
@@ -178,6 +197,55 @@ commit A $((1 * D)) "chore: extension"
 
 line test/model.test.ts "test('üçüncü', () => {});"
 commit B 12 "test: üçüncü"
+
+# --- v2: branch'ler, etiket ve origin (main geçmişi yukarıda biter, değişmez) ---
+
+# Annotated etiket (tagger tarihi = GIT_COMMITTER_DATE)
+author A
+at $((28 * D))
+git tag -a v0.1.0 -m "v0.1.0" "$TAG_TARGET"
+
+# Son 7 günde 3 commit'li, merge edilmemiş branch
+git checkout -q -b feature/graph "$FORK_GRAPH"
+line src/webview/graph.ts "export function drawGraph() {}"
+commit B $((4 * D)) "feat: graph iskeleti"
+line src/webview/graph.ts "export const lanes = [];"
+commit C $((2 * D + 12)) "feat: graph şeritleri"
+line src/webview/graph.ts "export const edges = [];"
+commit B 18 "feat: graph kenarları"
+
+# main'in ortasından ayrılan, 2 commit'li branch
+git checkout -q -b fix/parser "$FORK_FIX"
+line src/git/log.ts "export const fixed = true;"
+commit C $((20 * D)) "fix: parser boş satır"
+line src/git/log.ts "export const fixed2 = true;"
+commit C $((18 * D)) "fix: parser rename"
+
+# Bayat branch: son commit'i 50 gün önce
+git checkout -q -b spike/canvas "$FORK_SPIKE"
+line src/webview/canvas.ts "export const canvas = 1;"
+commit A $((62 * D)) "spike: canvas denemesi"
+line src/webview/canvas.ts "export const canvas2 = 2;"
+commit A $((50 * D)) "spike: canvas ikinci deneme"
+
+# Yalnızca origin'de bulunacak branch (lokalde silinir)
+git checkout -q -b experiment/canvas "$FORK_EXPERIMENT"
+line docs/canvas.md "# Canvas deneyi"
+commit B $((47 * D)) "docs: canvas deneyi"
+line docs/canvas.md "Sonuç: SVG yeterli."
+commit B $((44 * D)) "docs: canvas sonucu"
+
+git checkout -q main
+
+# Bare origin, repo'nun .git klasörü içinde (repo silinince o da silinir).
+ORIGIN="$REPO/.git/fixture-origin.git"
+git init -q --bare "$ORIGIN"
+git remote add origin "$ORIGIN"
+git push -q origin "main~2:refs/heads/main" 2>/dev/null
+git push -q origin "experiment/canvas:refs/heads/experiment/canvas" 2>/dev/null
+git branch -q -D experiment/canvas
+git fetch -q origin 2>/dev/null
+git branch -q --set-upstream-to=origin/main main
 
 if command -v cygpath >/dev/null 2>&1; then
   cygpath -m "$REPO"

@@ -4,16 +4,19 @@ import * as vscode from 'vscode';
 import { getIgnoreGlobs } from '../config';
 import type { HeatDecorationProvider } from '../decorations/heatDecorations';
 import { GitError, runGit } from '../git/gitRunner';
+import { listRefs } from '../git/refs';
 import { computeFileStats } from '../model/aggregate';
+import { loadGraph } from '../model/graphService';
 import { loadSnapshot, NoCommitsError } from '../model/repoService';
 import type { ErrorCode, ExtensionToWebview, StateAction, WebviewToExtension } from '../protocol';
-import type { RepoSnapshot, TimeRange } from '../types';
+import type { GitRef, GraphData, RepoSnapshot, TimeRange } from '../types';
 import { makeGitUri } from './gitContentProvider';
 import type { RewiewRevStatusBar } from './statusBar';
 
 const RANGES: readonly TimeRange[] = ['7d', '30d', 'all'];
 const ACTIONS: readonly StateAction[] = ['openFolder', 'initRepo', 'openScm', 'openGitPathSetting', 'downloadGit'];
 const MAX_COMMITS = 1000;
+const MAX_GRAPH_LIMIT = 20000;
 
 function isRange(v: unknown): v is TimeRange {
   return typeof v === 'string' && (RANGES as readonly string[]).includes(v);
@@ -28,6 +31,14 @@ export function isSafeRelPath(v: unknown): v is string {
   if (typeof v !== 'string' || v === '') return false;
   if (v.startsWith('/') || v.includes('\\') || /^[a-zA-Z]:/.test(v)) return false;
   return v.split('/').every((seg) => seg !== '' && seg !== '.' && seg !== '..');
+}
+
+/** Git ref adı gibi görünüyor mu? ('-' ile başlamaz; boşluk, kontrol karakteri, '..' ve git'in yasakladığı karakterler yok.) */
+export function isSafeRefName(v: unknown): v is string {
+  if (typeof v !== 'string' || v === '' || v.length > 255) return false;
+  if (v.startsWith('-') || v.startsWith('/') || v.endsWith('/') || v.endsWith('.') || v.endsWith('.lock')) return false;
+  if (v.includes('..') || v.includes('//') || v.includes('@{')) return false;
+  return !/[\s\x00-\x1f\x7f~^:?*[\\]/.test(v);
 }
 
 /** Webview'dan gelen veriyi doğrular; tanınmayan/bozuk mesajda undefined. */
@@ -49,6 +60,12 @@ export function parseWebviewMessage(raw: unknown): WebviewToExtension | undefine
         : undefined;
     case 'command':
       return isAction(m.action) ? { type: 'command', action: m.action } : undefined;
+    case 'loadGraph': {
+      const { limit, branch } = m;
+      if (typeof limit !== 'number' || !Number.isInteger(limit) || limit < 1 || limit > MAX_GRAPH_LIMIT) return undefined;
+      if (branch === undefined) return { type: 'loadGraph', limit };
+      return isSafeRefName(branch) ? { type: 'loadGraph', branch, limit } : undefined;
+    }
     default:
       return undefined;
   }
@@ -77,6 +94,10 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   private readonly rootEmitter = new vscode.EventEmitter<string>();
   readonly onDidResolveRoot: vscode.Event<string> = this.rootEmitter.event;
 
+  private readonly refsEmitter = new vscode.EventEmitter<GitRef[] | undefined>();
+  /** Her reload'da (ve refreshRefs'te) listRefs sonucu; hata/repo yoksa undefined. */
+  readonly onDidLoadRefs: vscode.Event<GitRef[] | undefined> = this.refsEmitter.event;
+
   /** Açık webview'lar (yan panel ve/veya düzenleyici sekmesi); hepsi aynı modeli alır. */
   private readonly webviews = new Map<vscode.Webview, vscode.Disposable[]>();
   private editorPanel: vscode.WebviewPanel | undefined;
@@ -87,6 +108,15 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   private range: TimeRange = '30d';
   /** Webview'a gönderilen son durum (model/loading/error); `ready` gelince yeniden gönderilir. */
   private lastState: ExtensionToWebview | undefined;
+
+  /** Son istenen graph parametreleri (reload'da aynısıyla yeniden yüklenir). */
+  private graphParams: { limit: number; branch?: string } | undefined;
+  private graph: GraphData | undefined;
+  /** Son graph durumu (graphLoading/graph/graphError); `ready` gelince yeniden gönderilir. */
+  private lastGraphState: ExtensionToWebview | undefined;
+  private graphRunning: Promise<void> | undefined;
+  private graphRerun = false;
+  private selectedBranch: string | undefined;
 
   private running: Promise<void> | undefined;
   private rerun = false;
@@ -101,6 +131,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   ) {
     this.disposables.push(
       this.rootEmitter,
+      this.refsEmitter,
       vscode.workspace.onDidChangeConfiguration((e) => {
         if (e.affectsConfiguration('rewiewrev.ignore')) this.recompute();
       }),
@@ -201,9 +232,12 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
       const fileCount = this.publishModel();
       // Snapshot bu taramadan önce üretildiyse cache'ten gelmiştir.
       if (fileCount !== undefined) this.statusBar.setReady(fileCount, snapshot.generatedAt < startedAt);
+      await this.refreshRefs();
+      if (this.graphParams && !this.disposed) void this.requestGraph(this.graphParams);
     } catch (err) {
       if (this.disposed) return;
       this.snapshot = undefined;
+      this.refsEmitter.fire(undefined);
       this.decorations.update([], this.root ?? '');
       const e = err instanceof NoWorkspaceError
         ? { code: 'noWorkspace' as const, message: 'Açık bir klasör yok.', short: 'klasör açık değil' }
@@ -224,6 +258,8 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     if (root !== this.root) {
       this.root = root;
       this.snapshot = undefined;
+      this.graph = undefined;
+      this.lastGraphState = undefined;
       this.rootEmitter.fire(root);
     }
     return root;
@@ -259,11 +295,78 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     this.publishModel();
   }
 
+  // ---- branch'ler ve graph ----
+
+  /** Ref listesini yeniden okur ve onDidLoadRefs'i ateşler (hata/repo yoksa undefined). */
+  async refreshRefs(): Promise<void> {
+    try {
+      const root = this.root ?? (await this.resolveRoot());
+      const refs = await listRefs(root);
+      if (!this.disposed) this.refsEmitter.fire(refs);
+    } catch {
+      if (!this.disposed) this.refsEmitter.fire(undefined);
+    }
+  }
+
+  /** Branch'ler panelindeki seçimi tüm webview'lara iletir. */
+  selectBranch(name: string | undefined): void {
+    this.selectedBranch = name;
+    this.broadcast({ type: 'selectBranch', name });
+  }
+
+  /** Graph'ı yükler. Devam eden yükleme varsa bitince son parametrelerle bir kez daha çalışır; eski sonuç atılır. */
+  private requestGraph(params: { limit: number; branch?: string }): Promise<void> {
+    this.graphParams = params;
+    if (this.graphRunning) {
+      this.graphRerun = true;
+      return this.graphRunning;
+    }
+    this.graphRunning = (async () => {
+      try {
+        do {
+          this.graphRerun = false;
+          await this.doLoadGraph();
+        } while (this.graphRerun && !this.disposed);
+      } finally {
+        this.graphRunning = undefined;
+      }
+    })();
+    return this.graphRunning;
+  }
+
+  private async doLoadGraph(): Promise<void> {
+    const params = this.graphParams;
+    if (!params) return;
+    this.postGraph({ type: 'graphLoading' });
+    try {
+      const root = this.root ?? (await this.resolveRoot());
+      const graph = await loadGraph(root, { limit: params.limit, branch: params.branch });
+      if (this.disposed || this.graphRerun) return; // daha yeni bir istek var; o sonucu gönderecek
+      this.graph = graph;
+      this.postGraph({ type: 'graph', graph });
+    } catch (err) {
+      if (this.disposed || this.graphRerun) return;
+      const message = err instanceof NoWorkspaceError ? 'Açık bir klasör yok.' : mapError(err).message;
+      this.postGraph({ type: 'graphError', message });
+    }
+  }
+
   // ---- mesajlar ----
 
+  private broadcast(msg: ExtensionToWebview): void {
+    for (const webview of this.webviews.keys()) void webview.postMessage(msg);
+  }
+
+  /** Harita durumu (model/loading/error): saklanır ve tüm webview'lara gönderilir. */
   private post(msg: ExtensionToWebview): void {
     this.lastState = msg;
-    for (const webview of this.webviews.keys()) void webview.postMessage(msg);
+    this.broadcast(msg);
+  }
+
+  /** Graph durumu (graphLoading/graph/graphError): saklanır ve tüm webview'lara gönderilir. */
+  private postGraph(msg: ExtensionToWebview): void {
+    this.lastGraphState = msg;
+    this.broadcast(msg);
   }
 
   private async onMessage(raw: unknown, from: vscode.Webview): Promise<void> {
@@ -273,6 +376,8 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
       switch (msg.type) {
         case 'ready':
           if (this.lastState) void from.postMessage(this.lastState);
+          if (this.lastGraphState) void from.postMessage(this.lastGraphState);
+          if (this.selectedBranch !== undefined) void from.postMessage({ type: 'selectBranch', name: this.selectedBranch });
           if (!this.started) void this.reload();
           break;
         case 'setRange':
@@ -290,6 +395,9 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
           break;
         case 'command':
           await this.runAction(msg.action);
+          break;
+        case 'loadGraph':
+          await this.requestGraph({ limit: msg.limit, branch: msg.branch });
           break;
       }
     } catch (err) {
@@ -311,7 +419,9 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
 
   private async openDiff(relPath: string, hash: string): Promise<void> {
     const root = this.root;
-    const commit = this.snapshot?.commits.find((c) => c.hash === hash || c.hash.startsWith(hash));
+    // Önce harita snapshot'ı; bulunamazsa graph (diğer branch'lerdeki commit'leri de içerir).
+    const match = (c: { hash: string }): boolean => c.hash === hash || c.hash.startsWith(hash);
+    const commit = this.snapshot?.commits.find(match) ?? this.graph?.commits.find(match);
     if (!root || !commit) {
       void vscode.window.showWarningMessage('RewiewRev: commit bulunamadı. Haritayı yenileyip tekrar deneyin.');
       return;

@@ -1,0 +1,249 @@
+/* Commit graph listesi. Yalnızca --vscode-* ve --rr-* değişkenleri. */
+
+/* el: renderGraph'ın kapsayıcısı. Yüksekliği dışarıdan verilir; liste kalan alanda kendi kaydırılır. */
+.rr-g {
+  --rr-g-gw: 96px;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.rr-g-grid {
+  display: grid;
+  align-items: center;
+  column-gap: 12px;
+  grid-template-columns: var(--rr-g-gw) minmax(0, 1fr) 92px 84px 64px;
+}
+@container (max-width: 479px) {
+  .rr-g-grid {
+    grid-template-columns: var(--rr-g-gw) minmax(0, 1fr) 76px;
+  }
+  /* Dar alanda yalnızca ilk etiket (HEAD ya da ilk ref); diğerleri aria-label'da. */
+  .rr-g-ref ~ .rr-g-ref {
+    display: none;
+  }
+  .rr-g-c-author,
+  .rr-g-c-hash {
+    display: none;
+  }
+}
+
+.rr-g-head {
+  flex: 0 0 24px;
+  height: 24px;
+  padding-right: 12px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.rr-g-head .rr-g-c-graph {
+  padding-left: 8px;
+  overflow: hidden;
+}
+
+.rr-g-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.rr-g-body {
+  position: relative;
+}
+.rr-g-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rr-g-li {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 32px;
+}
+.rr-g-row {
+  width: 100%;
+  height: 32px;
+  padding: 0 12px 0 0;
+  border: 0;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  color: var(--vscode-foreground);
+}
+.rr-g-row:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.rr-g-row.rr-g-inbranch {
+  background: var(--vscode-list-hoverBackground);
+}
+.rr-g-row.rr-g-selected {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+  outline: 1px solid var(--rr-sel-outline);
+  outline-offset: -1px;
+}
+.rr-g-row:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.rr-g-c-msg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+.rr-g-msgtext {
+  flex: 1 1 0;
+  min-width: 3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rr-g-c-author,
+.rr-g-c-date {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-g-selected .rr-g-c-author,
+.rr-g-selected .rr-g-c-date {
+  color: inherit;
+}
+.rr-g-c-hash {
+  font-family: var(--rr-mono);
+  font-size: 11px;
+  color: var(--vscode-textLink-foreground);
+}
+.rr-g-selected .rr-g-c-hash {
+  color: inherit;
+}
+
+/* Ref etiketleri */
+.rr-g-ref {
+  --rr-g-lane: var(--vscode-descriptionForeground);
+  flex: 0 1 auto;
+  min-width: 2.5em;
+  max-width: 14em;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--vscode-foreground);
+}
+.rr-g-selected .rr-g-ref {
+  color: inherit;
+}
+.rr-g-ref-head {
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border: 1px solid var(--rr-btn-border);
+}
+.rr-g-selected .rr-g-ref-head {
+  color: var(--vscode-badge-foreground);
+}
+.rr-g-ref-local {
+  border: 1px solid var(--rr-g-lane);
+  background: color-mix(in srgb, var(--rr-g-lane) 20%, transparent);
+}
+.rr-g-ref-remote {
+  border: 1px dashed var(--rr-g-lane);
+}
+.rr-g-ref-tag {
+  border: 1px solid var(--vscode-descriptionForeground);
+}
+.rr-g-ref-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rr-g-ref .codicon {
+  flex: 0 0 auto;
+}
+.rr-g-ref-tag .codicon {
+  font-size: 12px;
+}
+.rr-g-ref-more {
+  font-weight: 400;
+  color: var(--vscode-descriptionForeground);
+  border: 1px solid var(--vscode-panel-border);
+}
+
+/* Şeritler */
+.rr-g-svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.rr-g-edge {
+  fill: none;
+  stroke-width: 2px;
+  stroke-linecap: round;
+}
+.rr-g-dot {
+  stroke: var(--vscode-editor-background);
+  stroke-width: 2px;
+}
+.rr-g-merge {
+  fill: var(--vscode-editor-background);
+}
+.rr-g-ring {
+  fill: none;
+  stroke: var(--vscode-focusBorder);
+  stroke-width: 2px;
+}
+
+/* Alt bilgi / boş durum */
+.rr-g-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-g-more {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid var(--rr-btn-border);
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+.rr-g-more:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+.rr-g-more:disabled {
+  cursor: default;
+  opacity: 0.8;
+}
+.rr-g-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}

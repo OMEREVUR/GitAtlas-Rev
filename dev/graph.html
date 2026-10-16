@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RewiewRev — graph önizlemesi</title>
+  <link rel="stylesheet" href="themes.css">
+  <link rel="stylesheet" href="../node_modules/@vscode/codicons/dist/codicon.css">
+  <link rel="stylesheet" href="out/graph.entry.css">
+  <style>
+    /* Yalnızca önizleme düzeni. */
+    body { container-type: inline-size; }
+    .dev-page { height: 100%; box-sizing: border-box; display: flex; gap: 0; }
+    .dev-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 12px 16px 14px; }
+    .dev-top { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--vscode-descriptionForeground); }
+    .dev-log { margin-left: auto; font-family: var(--rr-mono); }
+    #graph { flex: 1 1 auto; min-height: 0; }
+    .dev-side { flex: 0 0 300px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; background: var(--vscode-editorWidget-background); border-left: 1px solid var(--vscode-panel-border); }
+    .dev-side h3 { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground); }
+    .dev-side-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; color: var(--vscode-descriptionForeground); }
+    #minimap { height: 140px; }
+  </style>
+</head>
+<body class="vscode-dark">
+  <div class="dev-page">
+    <section class="dev-main" aria-label="Commit graph">
+      <div class="dev-top"><span>graph önizlemesi</span><span id="log" class="dev-log" aria-live="polite"></span></div>
+      <div id="graph"></div>
+    </section>
+    <aside id="side" class="dev-side" aria-label="Seçim ayrıntısı">
+      <div class="dev-side-head"><h3>HARİTADA</h3><span id="minimap-count"></span></div>
+      <div id="minimap"></div>
+    </aside>
+  </div>
+  <script src="out/graph.entry.js"></script>
+</body>
+</html>

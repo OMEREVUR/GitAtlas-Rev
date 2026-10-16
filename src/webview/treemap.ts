@@ -13,6 +13,8 @@ export interface TreemapOptions {
   onSelect: (path: string) => void;      // dosya kutusuna tek tık / Enter
   onOpen: (path: string) => void;        // çift tık
   onNavigate: (folder: string) => void;  // klasöre in / yol çubuğu / üst klasör / Backspace
+  /** Mini harita (graph yanı): yol çubuğu, lejant ve klasör başlıkları yok; etiket yalnızca çok büyük kutularda. */
+  compact?: boolean;
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -149,6 +151,10 @@ function svgText(cls: string, x: number, y: number, content: string): SVGTextEle
 
 export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapOptions): void {
   const { root, highlight, selected } = opts;
+  const compact = opts.compact === true;
+  const header = compact ? 0 : HEADER;
+  const minFolderW = compact ? 8 : MIN_FOLDER_W;
+  const minFolderH = compact ? 8 : MIN_FOLDER_H;
   const levels = heatLevels(files);
   const byPath = new Map(files.map((f) => [f.path, f]));
   const prefix = root === '' ? '' : root + '/';
@@ -161,6 +167,7 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
 
   el.replaceChildren();
   el.classList.add('rr-tm');
+  el.classList.toggle('rr-tm-compact', compact);
 
   // Yol çubuğu
   const bar = h('nav', 'rr-tm-path');
@@ -204,14 +211,14 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
   }
   meta.append(h('span', 'rr-tm-count', `${formatNumber(inRoot.length)} dosya · kutu boyutu = satır sayısı`));
   bar.append(meta);
-  el.append(bar);
+  if (!compact) el.append(bar);
 
   // Harita alanı
   const area = h('div', 'rr-tm-area');
   el.append(area);
 
   // Lejant
-  el.append(legend(hasHighlight));
+  if (!compact) el.append(legend(hasHighlight));
 
   // Tooltip (fixed; pencereye göre konumlanır)
   const tip = h('div', 'rr-tm-tip');
@@ -252,7 +259,7 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
     .size([width, height])
     .paddingInner(1)
     .paddingOuter((n) => (n.depth === 0 ? 0 : 1))
-    .paddingTop((n) => (n.depth === 0 ? 0 : HEADER))
+    .paddingTop((n) => (n.depth === 0 ? 0 : header))
     .round(true)(tree);
 
   // Klasör özetleri (en sıcak seviye, dosya/satır sayısı, vurgulu dosya sayısı)
@@ -289,6 +296,12 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
   const overlay = document.createDocumentFragment();
 
   const drawBoxLabel = (g: SVGGElement, x: number, y: number, w: number, hgt: number, name: string, sub: string | null, hot: boolean): void => {
+    if (compact) {
+      if (w < 80 || hgt < 24) return;
+      const fittedName = fitText(name, w - 10, nameFont);
+      if (fittedName) g.append(svgText(hot ? 'rr-tm-label rr-tm-onhot rr-tm-name' : 'rr-tm-label rr-tm-name', x + 5, y + 15, fittedName));
+      return;
+    }
     if (w < 60 || hgt < 22) return;
     const cls = hot ? 'rr-tm-label rr-tm-onhot' : 'rr-tm-label';
     const fitted = fitText(name, w - 14, nameFont);
@@ -325,7 +338,7 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
 
     const info = folderInfo.get(n.data.path);
     if (n.depth > 0 && info) {
-      const collapsed = w < MIN_FOLDER_W || hgt < MIN_FOLDER_H;
+      const collapsed = w < minFolderW || hgt < minFolderH;
       const label = `${n.data.name}/ klasörü, ${formatNumber(info.files)} dosya, ${formatNumber(info.lines)} satır`;
       if (collapsed) {
         const g = node('folder', n.data.path, `${label}, içine in`);
@@ -336,6 +349,10 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
         drawBoxLabel(g, x, y, w, hgt, n.data.name + '/', `${formatNumber(info.files)} dosya`, info.level >= 4);
         frag.append(g);
         addMarks(overlay, x, y, w, hgt, false, hasHighlight && info.highlighted > 0);
+        return;
+      }
+      if (compact) {
+        for (const c of n.children ?? []) visit(c);
         return;
       }
       const g = node('folder', n.data.path, `${label}, içine in`);
@@ -463,7 +480,7 @@ function installHandlers(
   };
 
   el.onkeydown = (e) => {
-    if (e.key === 'Backspace') {
+    if (e.key === 'Backspace' && opts.compact !== true) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       e.preventDefault();
       if (opts.root !== '') opts.onNavigate(parentFolder(opts.root));

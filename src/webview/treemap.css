@@ -312,3 +312,14 @@
   border-color: var(--vscode-inputOption-activeBorder);
   color: var(--vscode-foreground);
 }
+
+/* --- compact: graph yanındaki mini harita --- */
+.rr-tm-compact {
+  gap: 0;
+}
+.rr-tm-compact .rr-tm-area {
+  min-height: 0;
+}
+.rr-tm-compact .rr-tm-name {
+  font-size: 11px;
+}
