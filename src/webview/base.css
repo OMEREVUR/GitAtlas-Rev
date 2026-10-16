@@ -1,0 +1,53 @@
+/* Ortak tokenlar ve temel stil. Renkler yalnızca --vscode-* değişkenlerinden türetilir. */
+:root {
+  --rr-c0: var(--vscode-editor-background);
+  --rr-c1: color-mix(in srgb, var(--vscode-charts-orange) 14%, var(--vscode-editor-background));
+  --rr-c2: color-mix(in srgb, var(--vscode-charts-orange) 30%, var(--vscode-editor-background));
+  --rr-c3: color-mix(in srgb, var(--vscode-charts-orange) 46%, var(--vscode-editor-background));
+  --rr-c4: color-mix(in srgb, var(--vscode-charts-orange) 78%, var(--vscode-editor-background));
+  --rr-c5: color-mix(in srgb, var(--vscode-charts-orange) 96%, var(--vscode-editor-background));
+  --rr-box-border: var(--vscode-editor-background);
+  --rr-onhot: var(--vscode-editor-background);
+  --rr-btn-border: transparent;
+  --rr-sel-outline: transparent;
+  --rr-mono: var(--vscode-editor-font-family, Consolas, monospace);
+}
+body.vscode-light {
+  --rr-onhot: var(--vscode-editor-foreground);
+}
+body.vscode-high-contrast,
+body.vscode-high-contrast-light {
+  --rr-box-border: var(--vscode-contrastBorder);
+  --rr-onhot: #000;
+  --rr-btn-border: var(--vscode-contrastBorder);
+  --rr-sel-outline: var(--vscode-focusBorder);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+body {
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  line-height: 1.4;
+  color: var(--vscode-foreground);
+  background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+}
+button {
+  font: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+.rr-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

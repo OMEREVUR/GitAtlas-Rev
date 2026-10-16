@@ -1,0 +1,91 @@
+{
+  "name": "rewiewrev",
+  "displayName": "RewiewRev",
+  "description": "Repoyu tek bakışta okutan harita: dosyalar satır sayısına göre boyutlanır, değişim sıklığına göre renklenir.",
+  "version": "0.1.0",
+  "publisher": "rewiewrev",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Visualization",
+    "SCM Providers"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "rewiewrev",
+          "title": "RewiewRev",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "rewiewrev": [
+        {
+          "type": "webview",
+          "id": "rewiewrev.panel",
+          "name": "Harita"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "rewiewrev.refresh",
+        "title": "Yenile",
+        "category": "RewiewRev",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "rewiewrev.refresh",
+          "when": "view == rewiewrev.panel",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "RewiewRev",
+      "properties": {
+        "rewiewrev.ignore": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Haritadan ve rozetlerden hariç tutulacak ek glob desenleri (ör. `src/generated/**`). Varsayılan olarak `node_modules`, `dist`, `out`, `build`, `*.lock`, `package-lock.json` ve `*.min.js` zaten hariçtir."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "build:dev": "node esbuild.mjs --dev",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "fixture": "bash scripts/make-fixture.sh",
+    "vscode:prepublish": "node esbuild.mjs --production"
+  },
+  "dependencies": {
+    "@vscode/codicons": "^0.0.46-24",
+    "d3-hierarchy": "^3.1.2"
+  },
+  "devDependencies": {
+    "@types/d3-hierarchy": "^3.1.7",
+    "@types/node": "^22.20.5",
+    "@types/vscode": "^1.90.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  }
+}

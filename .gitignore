@@ -1,0 +1,6 @@
+node_modules/
+dist/
+dev/out/
+dev/screenshots/
+*.vsix
+.vitest-cache/
