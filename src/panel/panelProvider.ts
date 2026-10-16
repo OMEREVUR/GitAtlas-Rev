@@ -1,19 +1,37 @@
 import { randomBytes } from 'node:crypto';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { CONFIG_KEYS, getDefaultRange, getGitPath, getGraphPageSize, getIgnoreGlobs } from '../config';
+import { CONFIG_KEYS, getDefaultRange, getGitPath, getGraphPageSize, getIgnoreGlobs, getPullStrategy } from '../config';
 import { countPrsByFile, type HeatDecorationProvider } from '../decorations/heatDecorations';
 import { GitError, runGit, setGitPath } from '../git/gitRunner';
 import { listRefs } from '../git/refs';
+import { getStatus, listStashes } from '../git/status';
 import type { GitHubLayer } from '../github/githubLayer';
 import { computeFileStats } from '../model/aggregate';
 import { computeContrib } from '../model/contrib';
 import { loadGraph } from '../model/graphService';
 import { loadSnapshot, NoCommitsError } from '../model/repoService';
 import { buildTimeline } from '../model/timeline';
+import { GitOpsService } from '../ops/gitOpsService';
+import { OpQueue } from '../ops/opQueue';
 import type { ErrorCode, ExtensionToWebview, StateAction, WebviewToExtension } from '../protocol';
-import type { FileStat, GitHubData, GitRef, GraphData, RepoSnapshot, TimeRange } from '../types';
-import { makeGitUri } from './gitContentProvider';
+import type {
+  FileStat,
+  GitHubData,
+  GitOpKind,
+  GitOpRequest,
+  GitRef,
+  GraphData,
+  OpResult,
+  PullStrategy,
+  RepoSnapshot,
+  StashEntry,
+  TimeRange,
+  WorkingTreeStatus,
+} from '../types';
+import { INDEX_REF, makeGitUri } from './gitContentProvider';
+import { createVscodeOpsUi } from './opsUi';
+import { WorkingTreeWatcher } from './workingTreeWatcher';
 import type { RewiewRevStatusBar } from './statusBar';
 
 const RANGES: readonly TimeRange[] = ['7d', '30d', 'all'];
@@ -56,6 +74,117 @@ export function isGitHubUrl(v: unknown): v is string {
   return u.protocol === 'https:' && u.hostname === 'github.com' && u.port === '' && u.username === '' && u.password === '';
 }
 
+const OP_KINDS: readonly GitOpKind[] = [
+  'stage', 'stageAll', 'unstage', 'unstageAll', 'discard', 'commit', 'undoLastCommit', 'fetch', 'pull', 'push',
+  'checkout', 'createBranch', 'mergeBranch', 'renameBranch', 'deleteBranch', 'stashSave', 'stashApply', 'stashDrop',
+  'markResolved', 'continueOperation', 'abortOperation',
+];
+const PULL_STRATEGIES: readonly PullStrategy[] = ['ff', 'merge', 'rebase'];
+const MAX_OP_PATHS = 10000;
+const MAX_MESSAGE = 10000;
+const MAX_STASH_INDEX = 100000;
+
+function isPathList(v: unknown): v is string[] {
+  return Array.isArray(v) && v.length > 0 && v.length <= MAX_OP_PATHS && (v as unknown[]).every(isSafeRelPath);
+}
+
+function isStashIndex(v: unknown): v is number {
+  return typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= MAX_STASH_INDEX;
+}
+
+function isOptionalBool(v: unknown): v is boolean | undefined {
+  return v === undefined || typeof v === 'boolean';
+}
+
+/** Webview'dan gelen git işlemini doğrular; bozuksa undefined. */
+export function parseGitOp(raw: unknown): GitOpRequest | undefined {
+  if (typeof raw !== 'object' || raw === null) return undefined;
+  const o = raw as Record<string, unknown>;
+  if (typeof o.kind !== 'string' || !(OP_KINDS as readonly string[]).includes(o.kind)) return undefined;
+  switch (o.kind as GitOpKind) {
+    case 'stage':
+    case 'unstage':
+    case 'discard':
+    case 'markResolved':
+      return isPathList(o.paths) ? { kind: o.kind as 'stage', paths: [...o.paths] } : undefined;
+    case 'stageAll':
+    case 'unstageAll':
+    case 'undoLastCommit':
+    case 'fetch':
+    case 'continueOperation':
+    case 'abortOperation':
+      return { kind: o.kind as 'fetch' };
+    case 'commit':
+      return typeof o.message === 'string' && o.message.length <= MAX_MESSAGE && typeof o.amend === 'boolean' && typeof o.push === 'boolean'
+        ? { kind: 'commit', message: o.message, amend: o.amend, push: o.push }
+        : undefined;
+    case 'pull':
+      if (o.strategy === undefined) return { kind: 'pull' };
+      return typeof o.strategy === 'string' && (PULL_STRATEGIES as readonly string[]).includes(o.strategy)
+        ? { kind: 'pull', strategy: o.strategy as PullStrategy }
+        : undefined;
+    case 'push':
+      if (!isOptionalBool(o.force)) return undefined;
+      return o.force === undefined ? { kind: 'push' } : { kind: 'push', force: o.force };
+    case 'checkout':
+      return isSafeRefName(o.branch) ? { kind: 'checkout', branch: o.branch } : undefined;
+    case 'mergeBranch':
+      return isSafeRefName(o.branch) ? { kind: 'mergeBranch', branch: o.branch } : undefined;
+    case 'createBranch': {
+      if (!isSafeRefName(o.name) || typeof o.checkout !== 'boolean') return undefined;
+      if (o.from === undefined) return { kind: 'createBranch', name: o.name, checkout: o.checkout };
+      return isSafeRefName(o.from) ? { kind: 'createBranch', name: o.name, from: o.from, checkout: o.checkout } : undefined;
+    }
+    case 'renameBranch':
+      return isSafeRefName(o.from) && isSafeRefName(o.to) ? { kind: 'renameBranch', from: o.from, to: o.to } : undefined;
+    case 'deleteBranch':
+      return isSafeRefName(o.name) ? { kind: 'deleteBranch', name: o.name } : undefined;
+    case 'stashSave': {
+      if (typeof o.includeUntracked !== 'boolean') return undefined;
+      if (o.message === undefined) return { kind: 'stashSave', includeUntracked: o.includeUntracked };
+      return typeof o.message === 'string' && o.message.length <= MAX_MESSAGE
+        ? { kind: 'stashSave', message: o.message, includeUntracked: o.includeUntracked }
+        : undefined;
+    }
+    case 'stashApply':
+      return isStashIndex(o.index) && typeof o.pop === 'boolean' ? { kind: 'stashApply', index: o.index, pop: o.pop } : undefined;
+    case 'stashDrop':
+      return isStashIndex(o.index) ? { kind: 'stashDrop', index: o.index } : undefined;
+  }
+}
+
+/** Başarılı olunca HEAD/ref'leri (ve dolayısıyla harita/graph/branch'leri) değiştiren işlemler. */
+export function opChangesRefs(kind: GitOpKind): boolean {
+  switch (kind) {
+    case 'commit':
+    case 'undoLastCommit':
+    case 'fetch':
+    case 'pull':
+    case 'push':
+    case 'checkout':
+    case 'createBranch':
+    case 'mergeBranch':
+    case 'renameBranch':
+    case 'deleteBranch':
+    case 'stashApply':
+    case 'continueOperation':
+    case 'abortOperation':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/** Çıktı kanalına yazılacak satırdan gizli bilgileri siler (bilinen token'lar, URL'deki kimlik bilgisi, gh*_ token'ları). */
+export function redactSecrets(line: string, secrets: readonly string[] = []): string {
+  let out = line;
+  for (const s of secrets) if (s.length >= 8) out = out.split(s).join('***');
+  return out
+    .replace(/(https?:\/\/)[^/\s@]+@/gi, '$1***@')
+    .replace(/\bgh[pousr]_[A-Za-z0-9]{20,}\b/g, '***')
+    .replace(/(authorization:\s*(?:bearer|basic|token)\s+)\S+/gi, '$1***');
+}
+
 /** Webview'dan gelen veriyi doğrular; tanınmayan/bozuk mesajda undefined. */
 export function parseWebviewMessage(raw: unknown): WebviewToExtension | undefined {
   if (typeof raw !== 'object' || raw === null) return undefined;
@@ -93,6 +222,17 @@ export function parseWebviewMessage(raw: unknown): WebviewToExtension | undefine
       return { type: 'loadTimeline' };
     case 'loadContrib':
       return isRange(m.range) ? { type: 'loadContrib', range: m.range } : undefined;
+    case 'loadStatus':
+      return { type: 'loadStatus' };
+    case 'gitOp': {
+      if (typeof m.id !== 'string' || m.id === '' || m.id.length > 64) return undefined;
+      const op = parseGitOp(m.op);
+      return op ? { type: 'gitOp', id: m.id, op } : undefined;
+    }
+    case 'openChange':
+      return isSafeRelPath(m.path) && typeof m.staged === 'boolean' ? { type: 'openChange', path: m.path, staged: m.staged } : undefined;
+    case 'showOutput':
+      return { type: 'showOutput' };
     default:
       return undefined;
   }
@@ -157,6 +297,21 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   private graphRerun = false;
   private selectedBranch: string | undefined;
 
+  /** v5: çalışma ağacı durumu (loadStatus geldikten sonra izlenir). */
+  private statusRequested = false;
+  private watcher: WorkingTreeWatcher | undefined;
+  private lastStatus: WorkingTreeStatus | undefined;
+  private lastStashes: StashEntry[] | undefined;
+  private statusRunning: Promise<void> | undefined;
+  private statusRerun = false;
+  /** Tüm yazma işlemleri tek kuyrukta (kök değişse bile). */
+  private readonly opQueue = new OpQueue();
+  private ops: { root: string; service: GitOpsService } | undefined;
+  private opCounter = 0;
+  /** Bu oturumda alınan token'lar; çıktı kanalında maskelenir. */
+  private readonly secrets = new Set<string>();
+  private readonly output = vscode.window.createOutputChannel('RewiewRev Git');
+
   private running: Promise<void> | undefined;
   private rerun = false;
   private started = false;
@@ -174,6 +329,8 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     this.disposables.push(
       this.rootEmitter,
       this.refsEmitter,
+      this.output,
+      { dispose: () => this.watcher?.dispose() },
       github.onDidChange((data) => this.onGitHubChange(data)),
       vscode.workspace.onDidChangeConfiguration((e) => {
         if (e.affectsConfiguration(CONFIG_KEYS.gitPath) || e.affectsConfiguration(CONFIG_KEYS.vscodeGitPath)) {
@@ -312,6 +469,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
       if (this.disposed) return;
       this.publishDerived();
       if (this.graphParams) void this.requestGraph(this.graphParams);
+      if (this.statusRequested) void this.refreshStatus();
     } catch (err) {
       if (this.disposed) return;
       this.snapshot = undefined;
@@ -353,6 +511,12 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     this.lastGraphState = undefined;
     this.lastTimeline = undefined;
     this.lastContrib = undefined;
+    this.lastStatus = undefined;
+    this.lastStashes = undefined;
+    this.ops = undefined;
+    this.watcher?.dispose();
+    this.watcher = undefined;
+    this.ensureWatcher();
     void this.github.setRoot(root);
     if (root !== undefined) this.rootEmitter.fire(root);
   }
@@ -403,6 +567,160 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     this.broadcast({ type: 'github', data });
     this.statusBar.setGitHub(data);
     this.updateDecorations();
+  }
+
+  // ---- v5: çalışma ağacı ve git işlemleri ----
+
+  private ensureWatcher(): void {
+    if (!this.statusRequested || !this.root || this.watcher || this.disposed) return;
+    this.watcher = new WorkingTreeWatcher(this.root, () => void this.refreshStatus());
+  }
+
+  /** getStatus + listStashes → webview'lar. Aynı anda gelen istekler birleşir. */
+  private refreshStatus(): Promise<void> {
+    if (this.statusRunning) {
+      this.statusRerun = true;
+      return this.statusRunning;
+    }
+    this.statusRunning = (async () => {
+      try {
+        do {
+          this.statusRerun = false;
+          await this.doRefreshStatus();
+        } while (this.statusRerun && !this.disposed);
+      } finally {
+        this.statusRunning = undefined;
+      }
+    })();
+    return this.statusRunning;
+  }
+
+  private async doRefreshStatus(): Promise<void> {
+    let root: string;
+    try {
+      root = this.root ?? (await this.resolveRoot());
+    } catch {
+      return; // repo yok: panel zaten hata durumunu gösteriyor
+    }
+    this.ensureWatcher();
+    try {
+      const [status, stashes] = await Promise.all([getStatus(root), listStashes(root)]);
+      if (this.disposed || root !== this.root) return;
+      this.lastStatus = status;
+      this.lastStashes = stashes;
+      this.broadcast({ type: 'status', status });
+      this.broadcast({ type: 'stashes', stashes });
+    } catch (err) {
+      this.log(`[durum] okunamadı: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  private log(line: string): void {
+    this.output.appendLine(redactSecrets(line, [...this.secrets]));
+  }
+
+  /** "RewiewRev Git" çıktı kanalını gösterir. */
+  showGitOutput(): void {
+    this.output.show(true);
+  }
+
+  /** Mevcut çalışma ağacı durumu (son okunan); komutlar için. */
+  get workingTreeStatus(): WorkingTreeStatus | undefined {
+    return this.lastStatus;
+  }
+
+  private async getToken(): Promise<string | undefined> {
+    const state = this.github.data.status.state;
+    if (state !== 'connected' && state !== 'stale') return undefined;
+    try {
+      const session = await vscode.authentication.getSession('github', ['repo'], { createIfNone: false, silent: true });
+      if (session?.accessToken) this.secrets.add(session.accessToken);
+      return session?.accessToken;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private opsFor(root: string): GitOpsService {
+    if (this.ops?.root !== root) {
+      const service = new GitOpsService(
+        {
+          root,
+          ui: createVscodeOpsUi(),
+          getToken: () => this.getToken(),
+          pullStrategy: () => getPullStrategy(),
+          log: (line) => this.log(line),
+        },
+        this.opQueue,
+      );
+      this.ops = { root, service };
+    }
+    return this.ops.service;
+  }
+
+  /**
+   * Komutlardan (palet, Branch'ler menüsü) git işlemi. Sonuç webview'lara da opResult olarak gider;
+   * hata olursa ayrıca "Çıktıyı göster" düğmeli bir hata bildirimi çıkar.
+   */
+  async runOp(op: GitOpRequest): Promise<OpResult> {
+    const result = await this.executeOp(`cmd-${Date.now().toString(36)}-${++this.opCounter}`, op);
+    if (!result.ok && !result.cancelled) {
+      void vscode.window.showErrorMessage(`RewiewRev: ${result.message}`, 'Çıktıyı göster').then((choice) => {
+        if (choice) this.showGitOutput();
+      });
+    }
+    return result;
+  }
+
+  private async executeOp(id: string, op: GitOpRequest): Promise<OpResult> {
+    let result: OpResult;
+    let root: string | undefined;
+    try {
+      root = this.root ?? (await this.resolveRoot());
+    } catch {
+      root = undefined;
+    }
+    if (!root) {
+      result = { id, kind: op.kind, ok: false, commands: [], message: 'Açık bir git reposu yok.' };
+    } else {
+      try {
+        result = await this.opsFor(root).run(id, op, (commands) =>
+          this.broadcast({ type: 'opStarted', id, kind: op.kind, commands }),
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.log(`[hata] ${op.kind}: ${message}`);
+        result = { id, kind: op.kind, ok: false, commands: [], message: `İşlem tamamlanamadı: ${message}` };
+      }
+    }
+    if (this.disposed) return result;
+    this.broadcast({ type: 'opResult', result });
+    if (result.ok && opChangesRefs(op.kind)) void this.reload();
+    if (this.statusRequested) void this.refreshStatus();
+    return result;
+  }
+
+  private async openChange(relPath: string, staged: boolean): Promise<void> {
+    const root = this.root;
+    if (!root) return;
+    const file = this.lastStatus?.files.find((f) => f.path === relPath);
+    const name = relPath.slice(relPath.lastIndexOf('/') + 1);
+    if (file?.conflicted) {
+      await this.openFile(relPath); // çakışma işaretleriyle dosyanın kendisi
+      return;
+    }
+    if (staged) {
+      const left = file?.staged === 'added' ? makeGitUri(root, '', relPath) : makeGitUri(root, 'HEAD', file?.oldPath ?? relPath);
+      const right = makeGitUri(root, file?.staged === 'deleted' ? '' : INDEX_REF, relPath);
+      await vscode.commands.executeCommand('vscode.diff', left, right, `${name} (HEAD ↔ Index)`);
+      return;
+    }
+    const left = makeGitUri(root, file?.unstaged === 'untracked' ? '' : INDEX_REF, relPath);
+    const right =
+      file?.unstaged === 'deleted'
+        ? makeGitUri(root, '', relPath)
+        : vscode.Uri.joinPath(vscode.Uri.file(root), ...relPath.split('/'));
+    await vscode.commands.executeCommand('vscode.diff', left, right, `${name} (Index ↔ Çalışma ağacı)`);
   }
 
   // ---- v4: zaman makinesi ve katkı ----
@@ -527,6 +845,8 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
           void from.postMessage({ type: 'github', data: this.github.data });
           if (this.lastTimeline) void from.postMessage(this.lastTimeline);
           if (this.lastContrib) void from.postMessage(this.lastContrib);
+          if (this.lastStatus) void from.postMessage({ type: 'status', status: this.lastStatus });
+          if (this.lastStashes) void from.postMessage({ type: 'stashes', stashes: this.lastStashes });
           if (!this.started) void this.reload();
           break;
         case 'setRange':
@@ -567,6 +887,20 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
         case 'loadContrib':
           this.contribRange = msg.range;
           if (!this.running) this.publishDerived();
+          break;
+        case 'loadStatus':
+          this.statusRequested = true;
+          this.ensureWatcher();
+          await this.refreshStatus();
+          break;
+        case 'gitOp':
+          await this.executeOp(msg.id, msg.op);
+          break;
+        case 'openChange':
+          await this.openChange(msg.path, msg.staged);
+          break;
+        case 'showOutput':
+          this.showGitOutput();
           break;
       }
     } catch (err) {

@@ -2,6 +2,11 @@ import * as vscode from 'vscode';
 import { GitError, runGit } from '../git/gitRunner';
 
 export const GIT_SCHEME = 'rewiewrev-git';
+/** makeGitUri'de index'teki içerik için özel ref. */
+export const INDEX_REF = ':index';
+
+const MISSING_RE =
+  /does not exist|exists on disk, but not in|not in the index|is in the index, but not at stage 0|invalid object name|bad revision|unknown revision/i;
 
 interface GitUriQuery {
   root: string;
@@ -36,13 +41,14 @@ export class GitContentProvider implements vscode.TextDocumentContentProvider {
   async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
     const q = parseGitUriQuery(uri.query);
     if (!q || q.ref === '') return '';
+    // INDEX_REF → `git show :<path>` (index'teki hâl).
+    const spec = q.ref === INDEX_REF ? `:${q.path}` : `${q.ref}:${q.path}`;
     try {
-      return await runGit(['show', `${q.ref}:${q.path}`], q.root);
+      return await runGit(['show', spec], q.root);
     } catch (err) {
-      // Dosya o ref'te yoksa (eklenmiş/silinmiş) boş içerik göster.
-      if (err instanceof GitError && err.code === 'failed' && /does not exist|exists on disk, but not in/i.test(err.stderr)) {
-        return '';
-      }
+      // Dosya o ref'te/index'te yoksa (eklenmiş/silinmiş/untracked), HEAD yoksa (boş repo)
+      // ya da çakışmalı dosya index'te stage 0'da değilse boş içerik göster.
+      if (err instanceof GitError && err.code === 'failed' && MISSING_RE.test(err.stderr)) return '';
       throw err;
     }
   }

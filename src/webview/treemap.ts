@@ -1,7 +1,7 @@
 // Repo treemap'i: yol çubuğu + SVG harita + lejant + tooltip. Tasarım: Main.dc.html, Drill.dc.html.
 import './treemap.css';
 import { hierarchy, treemap, treemapSquarify, type HierarchyNode, type HierarchyRectangularNode } from 'd3-hierarchy';
-import type { FileStat } from '../types';
+import type { ChangeKind, FileStat } from '../types';
 import { HEAT_LABELS, heatLevels, heatVar, type HeatLevel } from './heat';
 import { baseName, formatNumber, formatRelative } from './format';
 
@@ -21,7 +21,18 @@ export interface TreemapOptions {
   prStale?: boolean;
   /** v4 (zaman makinesi): o tarihte henüz olmayan dosyalar; dolgusuz, kesik çerçeveli, tıklanamaz. */
   missing?: Set<string>;
+  /** v5: commit edilmemiş değişiklikler; kutunun sağ üstünde harf rozeti (M/A/D/R/U). */
+  dirty?: Map<string, ChangeKind | 'conflicted'>;
 }
+
+type DirtyKind = ChangeKind | 'conflicted';
+const DIRTY_LETTER: Record<DirtyKind, string> = {
+  modified: 'M', added: 'A', deleted: 'D', renamed: 'R', copied: 'C', typechange: 'T', untracked: 'A', conflicted: 'U',
+};
+const DIRTY_TEXT: Record<DirtyKind, string> = {
+  modified: 'Değişti', added: 'Yeni', deleted: 'Silindi', renamed: 'Adı değişti', copied: 'Kopyalandı',
+  typechange: 'Türü değişti', untracked: 'Yeni (izlenmiyor)', conflicted: 'Çakışma',
+};
 
 /** codicon-git-pull-request glifi. */
 const PR_GLYPH = '\uea64';
@@ -180,6 +191,7 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
   el.classList.toggle('rr-tm-prstale', opts.prStale === true);
   const prCounts = opts.prCounts;
   const missing = opts.missing;
+  const dirty = opts.dirty;
 
   // Yol çubuğu
   const bar = h('nav', 'rr-tm-path');
@@ -230,7 +242,7 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
   el.append(area);
 
   // Lejant
-  if (!compact) el.append(legend(hasHighlight, prCounts !== undefined && prCounts.size > 0, opts.prStale === true, missing !== undefined && missing.size > 0));
+  if (!compact) el.append(legend(hasHighlight, prCounts !== undefined && prCounts.size > 0, opts.prStale === true, missing !== undefined && missing.size > 0, dirty !== undefined && dirty.size > 0));
 
   // Tooltip (fixed; pencereye göre konumlanır)
   const tip = h('div', 'rr-tm-tip');
@@ -344,21 +356,29 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
       const isSel = f.path === selected;
       const isHl = highlight.has(f.path);
       const prText = prs > 0 ? `, ${formatNumber(prs)} açık PR${prs >= 2 ? ' (çakışma riski)' : ''}` : '';
-      const g = node('file', f.path, `${baseName(f.path)}, ${formatNumber(f.lines)} satır, ${formatNumber(f.changes)} commit${prText}`);
+      const dk = dirty?.get(f.path);
+      const dirtyText = dk ? `, commit edilmemiş değişiklik: ${DIRTY_TEXT[dk]}` : '';
+      const g = node('file', f.path, `${baseName(f.path)}, ${formatNumber(f.lines)} satır, ${formatNumber(f.changes)} commit${prText}${dirtyText}`);
       g.setAttribute('aria-pressed', isSel ? 'true' : 'false');
       if (hasHighlight && !isHl) g.classList.add('rr-tm-dim');
       const box = rect(level === 0 ? 'rr-tm-box rr-tm-cold' : 'rr-tm-box', x, y, w, hgt);
       box.style.setProperty('fill', heatVar(level));
       g.append(box);
       let reserve = 0;
+      if (dk && w >= 24 && hgt >= 22) {
+        // Çakışma çerçevesi (inset 4) varsa rozet onun içine alınır.
+        const inset = prs >= 2 ? 7 : 3;
+        g.append(dirtyBadge(x + w - 14 - inset, y + inset, dk));
+        reserve = 14 + inset;
+      }
       if (prs > 0 && !compact) {
         // Rozet: yer varsa sol alt köşe, yoksa sağ üst (o zaman ad kısalır).
         const label = String(prs);
         const bw = 26 + textWidth(label, `700 11px ${fontFamily(el)}`);
         if (w >= bw + 12 && hgt >= (w >= 90 ? 64 : 46)) g.append(prBadge(x + 6, y + hgt - 24, bw, label, prs >= 2));
-        else if (w >= bw + 8 && hgt >= 24) {
-          g.append(prBadge(x + w - bw - 3, y + 3, bw, label, prs >= 2));
-          reserve = bw + 4;
+        else if (w >= bw + 8 + reserve && hgt >= 24) {
+          g.append(prBadge(x + w - bw - 3 - reserve, y + 3, bw, label, prs >= 2));
+          reserve += bw + 4;
         }
       }
       drawBoxLabel(g, x, y, w, hgt, baseName(f.path), `${formatNumber(f.lines)} satır · ${formatNumber(f.changes)} commit`, level >= 4, reserve);
@@ -442,6 +462,15 @@ function fontFamily(el: HTMLElement): string {
   return getComputedStyle(el).fontFamily || 'sans-serif';
 }
 
+function dirtyBadge(x: number, y: number, kind: DirtyKind): SVGGElement {
+  const g = s('g', `rr-tm-dirty rr-tm-dirty-${kind}`);
+  g.setAttribute('aria-hidden', 'true');
+  const r = rect('rr-tm-dirty-bg', x, y, 14, 14);
+  r.setAttribute('rx', '2');
+  g.append(r, svgText('rr-tm-dirty-text', x + 7, y + 11, DIRTY_LETTER[kind]));
+  return g;
+}
+
 function prBadge(x: number, y: number, bw: number, label: string, conflict: boolean): SVGGElement {
   const g = s('g', conflict ? 'rr-tm-prbadge rr-tm-prbadge-conflict' : 'rr-tm-prbadge');
   g.setAttribute('aria-hidden', 'true');
@@ -452,7 +481,7 @@ function prBadge(x: number, y: number, bw: number, label: string, conflict: bool
   return g;
 }
 
-function legend(hasHighlight: boolean, hasPr = false, prStale = false, hasMissing = false): HTMLElement {
+function legend(hasHighlight: boolean, hasPr = false, prStale = false, hasMissing = false, hasDirty = false): HTMLElement {
   const lg = h('div', 'rr-tm-legend');
   lg.setAttribute('aria-label', 'Lejant');
   lg.setAttribute('role', 'group');
@@ -503,6 +532,14 @@ function legend(hasHighlight: boolean, hasPr = false, prStale = false, hasMissin
     msSw.setAttribute('aria-hidden', 'true');
     ms.append(msSw, document.createTextNode('O tarihte henüz yok'));
     lg.append(ms);
+  }
+
+  if (hasDirty) {
+    const dt = h('span', 'rr-tm-legend-item');
+    const dtSw = h('span', 'rr-tm-swatch-dirty', 'M');
+    dtSw.setAttribute('aria-hidden', 'true');
+    dt.append(dtSw, document.createTextNode('Commit edilmemiş değişiklik'));
+    lg.append(dt);
   }
   return lg;
 }
@@ -562,7 +599,7 @@ function installHandlers(
   const show = (n: SVGGElement, x: number, y: number): void => {
     if (shown !== n) {
       shown = n;
-      fillTip(tip, n, byPath, folderInfo, levels, opts.prCounts);
+      fillTip(tip, n, byPath, folderInfo, levels, opts.prCounts, opts.dirty);
     }
     tip.hidden = false;
     place(tip, x, y);
@@ -604,6 +641,7 @@ function fillTip(
   folderInfo: Map<string, FolderInfo>,
   levels: Map<string, HeatLevel>,
   prCounts?: Map<string, number>,
+  dirty?: Map<string, DirtyKind>,
 ): void {
   const path = n.dataset.path ?? '';
   tip.replaceChildren();
@@ -642,6 +680,14 @@ function fillTip(
       const prRow = h('div', prs >= 2 ? 'rr-tm-tip-row rr-tm-tip-pr rr-tm-tip-conflict' : 'rr-tm-tip-row rr-tm-tip-pr');
       prRow.append(icon('codicon-git-pull-request'), document.createTextNode(` ${formatNumber(prs)} açık PR${prs >= 2 ? ' · çakışma riski' : ''}`));
       tip.append(prRow);
+    }
+    const dk = dirty?.get(f.path);
+    if (dk) {
+      const dRow = h('div', 'rr-tm-tip-row rr-tm-tip-pr');
+      const letter = h('span', `rr-tm-swatch-dirty rr-tm-dirty-${dk}`, DIRTY_LETTER[dk]);
+      letter.setAttribute('aria-hidden', 'true');
+      dRow.append(letter, document.createTextNode(` Commit edilmemiş değişiklik: ${DIRTY_TEXT[dk]}`));
+      tip.append(dRow);
     }
     tip.append(h('div', 'rr-tm-tip-hint', 'Tıkla: dosya kartı · Çift tıkla: dosyayı aç'));
     return;

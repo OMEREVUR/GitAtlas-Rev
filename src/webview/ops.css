@@ -1,0 +1,456 @@
+/* v5: commit kutusu, eşitleme çubuğu, işlem bildirimi, stash listesi. Renkler yalnızca --vscode-* ve --rr-*.
+   Düğmeler panel.css'teki .rr-p-btn sınıflarını kullanır. */
+
+.rr-op-muted {
+  color: var(--vscode-descriptionForeground);
+}
+.rr-op-hash,
+.rr-op-code {
+  font-family: var(--rr-mono);
+  font-size: 11px;
+}
+.rr-op-hash {
+  color: var(--vscode-textLink-foreground);
+}
+
+/* ---------- ortak alanlar ---------- */
+.rr-op-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 26px;
+  padding: 3px 6px;
+  border-radius: 2px;
+  font: inherit;
+  font-size: 13px;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground, var(--vscode-foreground));
+  border: 1px solid var(--vscode-input-border, transparent);
+}
+.rr-op-input::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+}
+.rr-op-input:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+.rr-op-textarea {
+  height: auto;
+  min-height: 52px;
+  resize: vertical;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.rr-op-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.rr-op-check input {
+  margin: 0;
+  accent-color: var(--vscode-checkbox-background, var(--vscode-button-background));
+}
+.rr-op-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rr-op-actions .rr-p-btn:not(.rr-p-btn-small) {
+  flex: 1 1 auto;
+}
+.rr-p-btn:disabled,
+.rr-op-sync-btn:disabled,
+.rr-op-chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.rr-op-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  background: var(--vscode-inputValidation-warningBackground, var(--vscode-textCodeBlock-background));
+  border: 1px solid var(--vscode-inputValidation-warningBorder, var(--vscode-editorWarning-foreground, var(--vscode-charts-yellow)));
+}
+.rr-op-warn .codicon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--vscode-editorWarning-foreground, var(--vscode-charts-yellow));
+}
+.rr-op-warn[hidden] {
+  display: none;
+}
+
+/* ---------- commit kutusu ---------- */
+.rr-op-commit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.rr-op-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.rr-op-chip {
+  height: 22px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--vscode-foreground);
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+}
+.rr-op-chip:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.rr-op-chip[aria-pressed='true'] {
+  background: var(--vscode-inputOption-activeBackground);
+  border-color: var(--vscode-inputOption-activeBorder, var(--vscode-focusBorder));
+  color: var(--vscode-inputOption-activeForeground, var(--vscode-foreground));
+}
+.rr-op-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.rr-op-field-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.rr-op-label {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-op-counter {
+  font-family: var(--rr-mono);
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-op-counter.is-warn {
+  color: var(--vscode-editorWarning-foreground, var(--vscode-charts-yellow));
+}
+.rr-op-counter.is-strong {
+  color: var(--vscode-errorForeground);
+  font-weight: 700;
+}
+.rr-op-amend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rr-op-amend[hidden] {
+  display: none;
+}
+.rr-op-hint {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-op-hint[hidden] {
+  display: none;
+}
+.rr-op-cmd {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font-size: 11px;
+}
+.rr-op-cmd-line {
+  font-family: var(--rr-mono);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rr-op-last {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--vscode-panel-border);
+  font-size: 12px;
+}
+.rr-op-last[hidden] {
+  display: none;
+}
+.rr-op-last-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.rr-op-last-line .rr-op-muted {
+  font-size: 11px;
+}
+.rr-op-last-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- eşitleme çubuğu ---------- */
+.rr-op-sync {
+  container-type: inline-size;
+  min-width: 0;
+}
+.rr-op-sync-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-height: 28px;
+  font-size: 12px;
+}
+.rr-op-sync-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.rr-op-sync-branch {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rr-op-sync-counts {
+  font-family: var(--rr-mono);
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+}
+.rr-op-sync-counts.is-tag {
+  font-family: inherit;
+  padding: 0 6px;
+  border-radius: 9px;
+  border: 1px solid var(--vscode-panel-border);
+}
+.rr-op-sync-buttons {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.rr-op-sync-btn {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--vscode-foreground);
+  border: 1px solid var(--vscode-input-border, var(--rr-btn-border));
+}
+.rr-op-sync-btn:hover:not(:disabled) {
+  background: var(--vscode-list-hoverBackground);
+}
+.rr-op-sync-btn.is-accent {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border-color: var(--rr-btn-border);
+}
+.rr-op-sync-btn.is-accent:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+}
+@container (max-width: 420px) {
+  .rr-op-sync-label {
+    display: none;
+  }
+  .rr-op-sync-btn {
+    width: 28px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+
+/* ---------- işlem bildirimi ---------- */
+.rr-op-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-panel-border);
+  transition: opacity 0.3s ease-out;
+}
+.rr-op-notice[hidden] {
+  display: none;
+}
+.rr-op-notice.is-fading {
+  opacity: 0;
+}
+.rr-op-notice[data-tone='error'] {
+  background: var(--vscode-inputValidation-errorBackground, var(--vscode-editorWidget-background));
+  border-color: var(--vscode-inputValidation-errorBorder, var(--vscode-errorForeground));
+}
+.rr-op-notice-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.rr-op-notice-icon {
+  flex: 0 0 16px;
+  margin-top: 1px;
+}
+.rr-op-notice[data-tone='ok'] .rr-op-notice-icon {
+  color: var(--vscode-testing-iconPassed, var(--vscode-charts-green));
+}
+.rr-op-notice[data-tone='error'] .rr-op-notice-icon {
+  color: var(--vscode-errorForeground);
+}
+.rr-op-notice[data-tone='cancelled'] .rr-op-notice-icon {
+  color: var(--vscode-descriptionForeground);
+}
+.rr-op-notice-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rr-op-details summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--vscode-textLink-foreground);
+}
+.rr-op-detail {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  max-height: calc(12 * 1.4em);
+  overflow: auto;
+  border-radius: 3px;
+  font-family: var(--rr-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--vscode-textCodeBlock-background);
+}
+.rr-op-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rr-op-progress {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  background: var(--vscode-textCodeBlock-background);
+}
+.rr-op-progress-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 35%;
+  background: var(--vscode-progressBar-background);
+  animation: rr-op-slide 1.2s ease-in-out infinite;
+}
+@keyframes rr-op-slide {
+  from { left: -35%; }
+  to { left: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rr-op-progress-fill {
+    animation: none;
+  }
+  .rr-op-notice {
+    transition: none;
+  }
+}
+
+/* ---------- stash listesi ---------- */
+.rr-op-stashes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.rr-op-section-head {
+  display: flex;
+  align-items: center;
+}
+.rr-op-section-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+}
+.rr-op-section-toggle[aria-expanded='false'] .rr-op-chevron {
+  transform: rotate(-90deg);
+}
+.rr-op-stash-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rr-op-stash-body[hidden],
+.rr-op-stash-form[hidden],
+.rr-p-btn[hidden] {
+  display: none;
+}
+.rr-op-stash-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 4px;
+  background: var(--vscode-textCodeBlock-background);
+}
+.rr-op-stash-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rr-op-stash {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  font-size: 12px;
+}
+.rr-op-stash-text {
+  flex: 1 1 160px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rr-op-stash-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.rr-op-stash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.rr-op-stash-empty {
+  font-size: 12px;
+  padding: 4px 0;
+}

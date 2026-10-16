@@ -388,3 +388,50 @@
 .rr-tm-swatch-missing {
   border: 1px dashed var(--vscode-panel-border);
 }
+
+/* --- v5: commit edilmemiş değişiklik rozeti --- */
+.rr-tm {
+  --rr-tm-dirty: var(--vscode-gitDecoration-modifiedResourceForeground, var(--vscode-charts-yellow));
+}
+.rr-tm-dirty {
+  pointer-events: none;
+}
+.rr-tm-dirty-added,
+.rr-tm-dirty-untracked,
+.rr-tm-dirty-copied {
+  --rr-tm-dirty: var(--vscode-gitDecoration-addedResourceForeground, var(--vscode-charts-green));
+}
+.rr-tm-dirty-deleted {
+  --rr-tm-dirty: var(--vscode-gitDecoration-deletedResourceForeground, var(--vscode-charts-red));
+}
+.rr-tm-dirty-renamed {
+  --rr-tm-dirty: var(--vscode-gitDecoration-renamedResourceForeground, var(--vscode-charts-blue));
+}
+.rr-tm-dirty-conflicted {
+  --rr-tm-dirty: var(--vscode-gitDecoration-conflictingResourceForeground, var(--vscode-charts-red));
+}
+.rr-tm-dirty-bg {
+  fill: var(--vscode-editor-background);
+  stroke: var(--rr-tm-dirty);
+  stroke-width: 1px;
+}
+.rr-tm-dirty-text {
+  fill: var(--rr-tm-dirty);
+  font-size: 10px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+.rr-tm-swatch-dirty {
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--rr-tm-dirty);
+  border: 1px solid var(--rr-tm-dirty);
+  background: var(--vscode-editor-background);
+}

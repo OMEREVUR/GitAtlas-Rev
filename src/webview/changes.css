@@ -1,0 +1,348 @@
+/* "Değişiklikler" dosya listesi. Yalnızca --vscode-* ve --rr-* değişkenleri. */
+
+/* el: renderChanges'in kapsayıcısı. Yüksekliği dışarıdan verilir; liste kendi kaydırılır. */
+.rr-ch {
+  --rr-ch-modified: var(--vscode-gitDecoration-modifiedResourceForeground, var(--vscode-charts-yellow));
+  --rr-ch-added: var(--vscode-gitDecoration-addedResourceForeground, var(--vscode-charts-green));
+  --rr-ch-deleted: var(--vscode-gitDecoration-deletedResourceForeground, var(--vscode-charts-red));
+  --rr-ch-renamed: var(--vscode-gitDecoration-renamedResourceForeground, var(--vscode-charts-blue));
+  --rr-ch-untracked: var(--vscode-gitDecoration-untrackedResourceForeground, var(--vscode-charts-green));
+  --rr-ch-conflict: var(--vscode-gitDecoration-conflictingResourceForeground, var(--vscode-charts-red));
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  font-size: 13px;
+}
+
+/* --- araç satırı --- */
+.rr-ch-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.rr-ch-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  margin-right: auto;
+  border: 1px solid var(--vscode-input-border, var(--rr-btn-border));
+  border-radius: 4px;
+  background: var(--vscode-input-background);
+}
+.rr-ch-seg-btn {
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-ch-seg-btn[aria-pressed='true'] {
+  background: var(--vscode-inputOption-activeBackground);
+  border-color: var(--vscode-inputOption-activeBorder);
+  color: var(--vscode-foreground);
+}
+.rr-ch-tool,
+.rr-ch-btn {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid var(--rr-btn-border);
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+.rr-ch-tool:hover:not(:disabled),
+.rr-ch-btn:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+.rr-ch-btn-primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+.rr-ch-btn-primary:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+}
+.rr-ch-tool:disabled,
+.rr-ch-btn:disabled,
+.rr-ch-icon:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.rr-ch-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+/* --- devam eden işlem bandı --- */
+.rr-ch-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--vscode-inputValidation-warningBorder, var(--vscode-charts-yellow));
+  background: var(--vscode-inputValidation-warningBackground, var(--vscode-editorWidget-background));
+  font-size: 12px;
+}
+.rr-ch-band-text {
+  flex: 1 1 220px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.rr-ch-band-text .codicon {
+  margin-top: 1px;
+  color: var(--vscode-charts-yellow);
+}
+.rr-ch-band-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* --- bölümler --- */
+.rr-ch-section {
+  margin-top: 4px;
+}
+.rr-ch-head {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+}
+.rr-ch-head > .codicon {
+  width: 16px;
+  text-align: center;
+  color: var(--rr-ch-conflict);
+}
+.rr-ch-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--vscode-foreground);
+}
+.rr-ch-count {
+  min-width: 18px;
+  height: 16px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 11px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+.rr-ch-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* --- satır --- */
+.rr-ch-row {
+  --rr-ch-depth: 0;
+  position: relative;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: calc(8px + var(--rr-ch-depth) * 12px);
+  padding-right: 4px;
+}
+.rr-ch-row:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.rr-ch-row.rr-ch-selected {
+  background: var(--vscode-list-inactiveSelectionBackground, var(--vscode-list-hoverBackground));
+  outline: 1px solid var(--rr-sel-outline);
+  outline-offset: -1px;
+}
+.rr-ch-row:focus-within {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+.rr-ch-check {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin: 0 2px 0 0;
+  accent-color: var(--vscode-focusBorder);
+  cursor: pointer;
+}
+.rr-ch-check:disabled {
+  cursor: default;
+}
+.rr-ch-checkspace {
+  flex: 0 0 16px;
+}
+.rr-ch-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.rr-ch-main:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+.rr-ch-main > .codicon {
+  flex: 0 0 auto;
+  font-size: 14px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-ch-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rr-ch-deleted {
+  text-decoration: line-through;
+}
+.rr-ch-dir {
+  flex: 0 10 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-ch-row:focus-within .rr-ch-dir,
+.rr-ch-row:focus-within .rr-ch-main > .codicon {
+  color: inherit;
+  opacity: 0.8;
+}
+.rr-ch-spacer {
+  flex: 1 1 auto;
+}
+.rr-ch-stat {
+  flex: 0 0 auto;
+  display: inline-flex;
+  gap: 4px;
+  font-family: var(--rr-mono);
+  font-size: 11px;
+}
+.rr-ch-add {
+  color: var(--rr-ch-added);
+}
+.rr-ch-del {
+  color: var(--rr-ch-deleted);
+}
+.rr-ch-letter {
+  flex: 0 0 14px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.rr-ch-k-modified,
+.rr-ch-k-typechange {
+  color: var(--rr-ch-modified);
+}
+.rr-ch-k-added,
+.rr-ch-k-copied {
+  color: var(--rr-ch-added);
+}
+.rr-ch-k-deleted {
+  color: var(--rr-ch-deleted);
+}
+.rr-ch-k-renamed {
+  color: var(--rr-ch-renamed);
+}
+.rr-ch-k-untracked {
+  color: var(--rr-ch-untracked);
+}
+.rr-ch-k-conflicted {
+  color: var(--rr-ch-conflict);
+}
+.rr-ch-row:focus-within .rr-ch-letter,
+.rr-ch-row:focus-within .rr-ch-stat span {
+  color: inherit;
+}
+
+/* Satır düğmeleri: hover/odakta görünür (her zaman DOM'da; klavyeyle Tab ile erişilir). */
+.rr-ch-actions {
+  flex: 0 0 auto;
+  display: none;
+  align-items: center;
+  gap: 2px;
+}
+.rr-ch-row:hover .rr-ch-actions,
+.rr-ch-row:focus-within .rr-ch-actions,
+.rr-ch-section-conflicts .rr-ch-actions {
+  display: inline-flex;
+}
+.rr-ch-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.rr-ch-icon:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+.rr-ch-resolve {
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+}
+
+/* --- boş durum --- */
+.rr-ch-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 32px 16px;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  text-align: center;
+}
+
+/* Dar alan: araç düğmelerinde yalnızca ikon, istatistik gizli. */
+@container (max-width: 360px) {
+  .rr-ch-stat {
+    display: none;
+  }
+}

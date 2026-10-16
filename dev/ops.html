@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RewiewRev — değişiklikler: commit, eşitleme, stash</title>
+  <link rel="stylesheet" href="themes.css">
+  <link rel="stylesheet" href="../node_modules/@vscode/codicons/dist/codicon.css">
+  <link rel="stylesheet" href="out/ops.entry.css">
+  <style>
+    /* Yalnızca önizleme düzeni. */
+    body { display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; container-type: inline-size; }
+    #sync { flex: 0 0 auto; padding: 6px 12px; border-bottom: 1px solid var(--vscode-panel-border); }
+    .dev-main { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-wrap: wrap; gap: 16px; padding: 12px; align-items: flex-start; align-content: flex-start; }
+    .dev-col { flex: 1 1 300px; min-width: 0; max-width: 420px; display: flex; flex-direction: column; gap: 12px; }
+    #log { flex: 0 0 110px; overflow: auto; padding: 6px 12px; border-top: 1px solid var(--vscode-panel-border); font-family: var(--vscode-editor-font-family); font-size: 11px; color: var(--vscode-descriptionForeground); }
+  </style>
+</head>
+<body class="vscode-dark">
+  <div id="sync"></div>
+  <div class="dev-main">
+    <section class="dev-col" aria-label="Commit">
+      <div id="notice" hidden></div>
+      <div id="commit"></div>
+    </section>
+    <section class="dev-col" aria-label="Saklananlar">
+      <div id="stash"></div>
+    </section>
+  </div>
+  <div id="log"></div>
+  <script src="out/ops.entry.js"></script>
+</body>
+</html>

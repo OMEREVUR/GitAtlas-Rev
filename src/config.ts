@@ -13,6 +13,7 @@ export const DEFAULT_IGNORE: readonly string[] = [
 ];
 
 export type BadgeMode = 'hot' | 'all' | 'off';
+export type PullStrategySetting = 'ask' | 'merge' | 'rebase';
 
 export const DEFAULT_RANGE: TimeRange = '30d';
 export const DEFAULT_GRAPH_PAGE_SIZE = 500;
@@ -27,6 +28,7 @@ export const CONFIG_KEYS = {
   badges: 'rewiewrev.explorer.badges',
   gitPath: 'rewiewrev.git.path',
   vscodeGitPath: 'git.path',
+  pullStrategy: 'rewiewrev.git.pullStrategy',
 } as const;
 
 // ---- saf doğrulayıcılar ----
@@ -53,6 +55,10 @@ export function sanitizeGraphPageSize(value: unknown): number {
 
 export function sanitizeBadgeMode(value: unknown): BadgeMode {
   return value === 'hot' || value === 'all' || value === 'off' ? value : 'hot';
+}
+
+export function sanitizePullStrategy(value: unknown): PullStrategySetting {
+  return value === 'merge' || value === 'rebase' ? value : 'ask';
 }
 
 function nonEmpty(v: unknown): string | undefined {
@@ -101,4 +107,8 @@ export function getBadgeMode(): BadgeMode {
 
 export function getGitPath(): string | undefined {
   return pickGitPath(cfg().get<unknown>('git.path'), vscode.workspace.getConfiguration('git').get<unknown>('path'));
+}
+
+export function getPullStrategy(): PullStrategySetting {
+  return sanitizePullStrategy(cfg().get<unknown>('git.pullStrategy'));
 }

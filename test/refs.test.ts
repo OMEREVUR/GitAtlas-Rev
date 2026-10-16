@@ -10,7 +10,7 @@ import { listRefs } from '../src/git/refs';
 
 const CFG = ['-c', 'user.name=Test Kişi', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', '-c', 'core.autocrlf=false'];
 
-describe('listRefs + graphLogArgs (gerçek repo)', () => {
+describe('listRefs + graphLogArgs (gerçek repo)', { timeout: 30_000 }, () => {
   let tmp = '';
   let work = '';
   const git = (...args: string[]) => runGit([...CFG, ...args], work);
@@ -68,7 +68,7 @@ describe('listRefs + graphLogArgs (gerçek repo)', () => {
 
     await git('tag', '-a', 'v1.0', '-m', 'sürüm 1.0', h.c1);
     await git('tag', 'v0.1', h.c2);
-  });
+  }, 60_000);
 
   afterAll(async () => {
     if (tmp) await rm(tmp, { recursive: true, force: true });

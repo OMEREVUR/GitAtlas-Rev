@@ -3,11 +3,12 @@
 //      ?width=360 (sayfa genişliğini sınırla; headless Chrome pencereyi ~500px altına indirmiyor)
 //      ?hover=<yol> (o kutuda tooltip'i göster; ekran görüntüsü için)
 //      ?n=5000 (performans: sentetik n dosya; render süresi sağ üstte)
+//      ?dirty=1 (commit edilmemiş değişiklik rozetleri)
 //      ?pr=1 (açık PR sayıları; logParser.ts'te 3 PR)  ?stale=1 (eski GitHub verisi: gri)  ?missing=1 (zaman makinesi: henüz olmayan dosyalar)
 import '../src/webview/base.css';
 import { renderTreemap } from '../src/webview/treemap';
 import { renderRangeFilter } from '../src/webview/rangeFilter';
-import type { FileStat, TimeRange } from '../src/types';
+import type { ChangeKind, FileStat, TimeRange } from '../src/types';
 
 const DAY = 86_400_000;
 const NOW = Date.now();
@@ -152,6 +153,7 @@ function render(): void {
     highlight: state.highlight,
     prCounts: params.get('pr') === '1' ? new Map([['src/git/logParser.ts', 3], ['src/webview/treemap.ts', 2], ['src/model/fileStats.ts', 1], ['src/panel/provider.ts', 1], ['README.md', 2], ['src/git/numstat.ts', 1]]) : undefined,
     prStale: params.get('stale') === '1',
+    dirty: params.get('dirty') === '1' ? new Map<string, ChangeKind | 'conflicted'>([['src/git/logParser.ts', 'modified'], ['src/webview/treemap.ts', 'modified'], ['src/webview/main.ts', 'conflicted'], ['src/model/cache.ts', 'added'], ['src/panel/provider.ts', 'renamed'], ['README.md', 'deleted'], ['src/git/numstat.ts', 'modified']]) : undefined,
     missing: params.get('missing') === '1' ? new Set(['src/webview/treemap.ts', 'src/webview/rangeFilter.ts', 'src/webview/treemap.css', 'src/model/cache.ts', 'test/cache.test.ts', 'dev/treemap.entry.ts', 'dev/treemap.html', 'src/github/v3/client.ts']) : undefined,
     selected: state.selected,
     onSelect: (p) => {
