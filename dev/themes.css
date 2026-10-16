@@ -1,0 +1,41 @@
+/* YALNIZCA dev önizlemeleri için: VS Code'un webview'a verdiği --vscode-* değişkenlerinin taklidi.
+   Eklentiye girmez. <body class="vscode-dark"> ya da <body class="vscode-light"> ile seçilir.
+   Değerler rewiewrev-design/Main.dc.html içindeki önizleme temalarından alınmıştır. */
+body.vscode-dark {
+  --vscode-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif;
+  --vscode-font-size: 13px;
+  --vscode-editor-font-family: Consolas, 'Courier New', monospace;
+  --vscode-editor-background: #1F1F1F; --vscode-editor-foreground: #CCCCCC;
+  --vscode-foreground: #CCCCCC; --vscode-descriptionForeground: #9D9D9D;
+  --vscode-sideBar-background: #181818; --vscode-panel-border: #2B2B2B; --vscode-focusBorder: #0078D4;
+  --vscode-contrastBorder: transparent;
+  --vscode-button-background: #0078D4; --vscode-button-foreground: #FFFFFF; --vscode-button-hoverBackground: #026EC1;
+  --vscode-button-secondaryBackground: #313131; --vscode-button-secondaryForeground: #CCCCCC; --vscode-button-secondaryHoverBackground: #3C3C3C;
+  --vscode-input-background: #313131; --vscode-input-border: #3C3C3C; --vscode-input-placeholderForeground: #989898;
+  --vscode-inputOption-activeBackground: #2489DB82; --vscode-inputOption-activeBorder: #2488DB;
+  --vscode-list-hoverBackground: #2A2D2E; --vscode-list-activeSelectionBackground: #04395E; --vscode-list-activeSelectionForeground: #FFFFFF;
+  --vscode-charts-orange: #D18616; --vscode-charts-purple: #B180D7; --vscode-charts-red: #F14C4C; --vscode-charts-green: #89D185; --vscode-charts-blue: #3794FF; --vscode-charts-yellow: #CCA700;
+  --vscode-textLink-foreground: #4DAAFC; --vscode-editorWidget-background: #202020; --vscode-textCodeBlock-background: #2B2B2B;
+  --vscode-editorHoverWidget-background: #202020; --vscode-editorHoverWidget-border: #454545; --vscode-widget-shadow: #0000005C;
+  --vscode-progressBar-background: #0078D4; --vscode-errorForeground: #F85149;
+  --vscode-scrollbarSlider-background: #79797966;
+}
+body.vscode-light {
+  --vscode-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif;
+  --vscode-font-size: 13px;
+  --vscode-editor-font-family: Consolas, 'Courier New', monospace;
+  --vscode-editor-background: #FFFFFF; --vscode-editor-foreground: #3B3B3B;
+  --vscode-foreground: #3B3B3B; --vscode-descriptionForeground: #616161;
+  --vscode-sideBar-background: #F8F8F8; --vscode-panel-border: #E5E5E5; --vscode-focusBorder: #005FB8;
+  --vscode-contrastBorder: transparent;
+  --vscode-button-background: #005FB8; --vscode-button-foreground: #FFFFFF; --vscode-button-hoverBackground: #0258A8;
+  --vscode-button-secondaryBackground: #E5E5E5; --vscode-button-secondaryForeground: #3B3B3B; --vscode-button-secondaryHoverBackground: #CCCCCC;
+  --vscode-input-background: #FFFFFF; --vscode-input-border: #CECECE; --vscode-input-placeholderForeground: #767676;
+  --vscode-inputOption-activeBackground: #BED6ED; --vscode-inputOption-activeBorder: #005FB8;
+  --vscode-list-hoverBackground: #F2F2F2; --vscode-list-activeSelectionBackground: #E4E6F1; --vscode-list-activeSelectionForeground: #000000;
+  --vscode-charts-orange: #D18616; --vscode-charts-purple: #652D90; --vscode-charts-red: #E51400; --vscode-charts-green: #388A34; --vscode-charts-blue: #1A85FF; --vscode-charts-yellow: #BF8803;
+  --vscode-textLink-foreground: #005FB8; --vscode-editorWidget-background: #F8F8F8; --vscode-textCodeBlock-background: #EFEFEF;
+  --vscode-editorHoverWidget-background: #F8F8F8; --vscode-editorHoverWidget-border: #C8C8C8; --vscode-widget-shadow: #00000029;
+  --vscode-progressBar-background: #005FB8; --vscode-errorForeground: #E51400;
+  --vscode-scrollbarSlider-background: #64646466;
+}
