@@ -128,3 +128,144 @@ export interface GraphData {
   /** Daha eski commit'ler var mı? */
   hasMore: boolean;
 }
+
+// ---- v3: GitHub katmanı ----
+
+export type CiState = 'success' | 'failure' | 'pending' | 'none';
+
+export interface PullRequest {
+  number: number;
+  title: string;
+  url: string;
+  author: string;
+  headRef: string;
+  baseRef: string;
+  isDraft: boolean;
+  /** ms */
+  updatedAt: number;
+  /** PR'ın değiştirdiği dosyalar (repo köküne göre, "/" ayraçlı). */
+  files: string[];
+  /** PR'ın son commit'inin check/status özeti. */
+  ci: CiState;
+}
+
+export interface BranchCi {
+  /** Remote'taki branch adı ('main', 'feature/x'). */
+  branch: string;
+  ci: CiState;
+}
+
+export interface RateLimitInfo {
+  remaining: number;
+  limit: number;
+  /** ms */
+  resetAt: number;
+}
+
+export type GitHubStatus =
+  /** Ayar kapalı ya da kullanıcı henüz bağlanmadı ("Şimdi değil" dahil). */
+  | { state: 'off'; dismissed: boolean }
+  /** origin yok. */
+  | { state: 'noRemote' }
+  /** origin GitHub değil (GitLab vb.); katman sessizce kapalı. */
+  | { state: 'notGitHub'; remoteUrl: string }
+  | { state: 'connecting' }
+  | {
+      state: 'connected';
+      /** 'owner/repo' */
+      repo: string;
+      fetchedAt: number;
+      /** Geçerli yenileme aralığı, dakika (limit azalınca büyür). */
+      intervalMin: number;
+      /** Ayardaki aralık, dakika. */
+      baseIntervalMin: number;
+      rateLimit?: RateLimitInfo;
+    }
+  /** Veri var ama güncel değil: oturum düştü, ağ yok ya da limit bitti. */
+  | { state: 'stale'; repo: string; fetchedAt: number; reason: 'sessionExpired' | 'offline' | 'rateLimited'; rateLimit?: RateLimitInfo }
+  | { state: 'error'; message: string };
+
+export interface GitHubData {
+  status: GitHubStatus;
+  pullRequests: PullRequest[];
+  branchCi: BranchCi[];
+}
+
+// ---- v4: zaman makinesi ----
+
+export interface TimelineEvent {
+  /** ms */
+  date: number;
+  hash: string;
+  message: string;
+  author: string;
+  /** TimelineData.paths indeksleri (yeniden adlandırma takipli, bugünkü adlar). */
+  files: number[];
+}
+
+export interface TimelineMark {
+  /** ms */
+  date: number;
+  label: string;
+  kind: 'first' | 'tag' | 'merge';
+}
+
+export interface TimelineData {
+  /** İlk ve son commit tarihi, ms. */
+  start: number;
+  end: number;
+  /** Haritadaki dosyalar (ignore uygulanmış, bugünkü adlar). */
+  paths: string[];
+  /** paths ile aynı sıra: dosyanın geçmişteki ilk commit'inin tarihi (ms). */
+  firstSeen: number[];
+  /** En eskiden en yeniye. */
+  events: TimelineEvent[];
+  /** Dönüm noktaları (ilk commit, etiketler, gerekirse merge'ler), en eskiden yeniye. */
+  marks: TimelineMark[];
+}
+
+// ---- v4: katkı paneli ----
+
+export interface AuthorStat {
+  /** Kimlik anahtarı: .mailmap uygulanmış e-posta (küçük harf). */
+  key: string;
+  name: string;
+  email: string;
+  commits: number;
+  added: number;
+  deleted: number;
+  /** En çok satır değiştirdiği modül. */
+  topModule?: string;
+}
+
+export interface ModuleOwnership {
+  /** 'src/git' gibi klasör yolu; kök dosyalar için ''. */
+  module: string;
+  /** Aralıkta değişen satır (eklenen + silinen) toplamı. */
+  total: number;
+  /** Yazar payları, çoktan aza. */
+  shares: { author: string; lines: number }[];
+}
+
+export interface FileExpert {
+  path: string;
+  /** AuthorStat.key */
+  author: string;
+  /** 0..1, bu yazarın dosyadaki değişen satır payı (aralıktan bağımsız, tüm geçmiş). */
+  share: number;
+}
+
+export interface ContribData {
+  range: TimeRange;
+  /** Aralığın başı ve sonu, ms. */
+  since: number;
+  until: number;
+  authors: AuthorStat[];
+  modules: ModuleOwnership[];
+  /** Haftalık ritim: her haftanın pazartesi 00:00'ı (yerel), eskiden yeniye. */
+  weeks: number[];
+  /** Yazar anahtarı → [hafta][gün (0=Pzt..6=Paz)] commit sayısı. '' anahtarı = herkes. */
+  rhythm: Record<string, number[][]>;
+  /** En sıcak dosyalar için "en iyi kim bilir". */
+  experts: FileExpert[];
+}

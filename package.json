@@ -59,6 +59,18 @@
         "title": "Branch'leri yenile",
         "category": "RewiewRev",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "rewiewrev.github.connect",
+        "title": "GitHub ile bağlan",
+        "category": "RewiewRev",
+        "icon": "$(github)"
+      },
+      {
+        "command": "rewiewrev.github.refresh",
+        "title": "GitHub verisini yenile",
+        "category": "RewiewRev",
+        "icon": "$(sync)"
       }
     ],
     "menus": {
@@ -90,6 +102,65 @@
           },
           "default": [],
           "markdownDescription": "Haritadan ve rozetlerden hariç tutulacak ek glob desenleri (ör. `src/generated/**`). Varsayılan olarak `node_modules`, `dist`, `out`, `build`, `*.lock`, `package-lock.json` ve `*.min.js` zaten hariçtir."
+        },
+        "rewiewrev.defaultRange": {
+          "type": "string",
+          "enum": [
+            "7d",
+            "30d",
+            "all"
+          ],
+          "enumItemLabels": [
+            "7 gün",
+            "30 gün",
+            "Tümü"
+          ],
+          "default": "30d",
+          "markdownDescription": "Panel açıldığında seçili olan zaman aralığı."
+        },
+        "rewiewrev.graph.initialCommits": {
+          "type": "number",
+          "default": 500,
+          "minimum": 100,
+          "maximum": 5000,
+          "markdownDescription": "Graph'ta ilk yüklenecek commit sayısı. Daha eskileri kaydırdıkça yüklenir."
+        },
+        "rewiewrev.explorer.badges": {
+          "type": "string",
+          "enum": [
+            "hot",
+            "all",
+            "off"
+          ],
+          "enumItemLabels": [
+            "Sıcaklar",
+            "Hepsi",
+            "Kapalı"
+          ],
+          "enumDescriptions": [
+            "Yalnızca en sık değişen dosyalarda ●● / ● rozeti.",
+            "Değişen her dosyada 1–5 ısı seviyesi.",
+            "Rozet yok."
+          ],
+          "default": "hot",
+          "markdownDescription": "Gezgin'deki dosya adlarının yanında hangi rozetlerin görüneceği. GitHub bağlıyken aynı dosyaya 2+ açık PR dokunuyorsa PR sayısı ısının önüne geçer."
+        },
+        "rewiewrev.github.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "GitHub katmanı (açık PR'lar, çakışma uyarısı, CI). Token gerekmez; VS Code'daki GitHub oturumu kullanılır."
+        },
+        "rewiewrev.github.refreshInterval": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 60,
+          "markdownDescription": "GitHub verisinin yenilenme aralığı, dakika. Sadece panel açıkken yenilenir; istek limiti azalınca otomatik uzar."
+        },
+        "rewiewrev.git.path": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Git yolu. Boş bırakılırsa VS Code'un `git.path` ayarı, o da boşsa PATH'teki `git` kullanılır."
         }
       }
     }

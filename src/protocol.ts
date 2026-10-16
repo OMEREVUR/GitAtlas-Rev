@@ -1,5 +1,5 @@
 // SÖZLEŞME — webview ↔ eklenti mesajları. Değişiklik yalnızca bilinçli bir kararla yapılır.
-import type { CommitSummary, FileStat, GraphData, TimeRange } from './types';
+import type { CommitSummary, ContribData, FileStat, GitHubData, GraphData, TimeRange, TimelineData } from './types';
 
 /** Panelde gösterilen hata durumları (tasarım: States.dc.html). */
 export type ErrorCode = 'noWorkspace' | 'noRepo' | 'noCommits' | 'noGit' | 'unknown';
@@ -19,6 +19,8 @@ export type ExtensionToWebview =
       files: FileStat[];
       /** Aralıktan bağımsız, en yeniden en eskiye, en fazla 1000 commit. */
       commits: CommitSummary[];
+      /** rewiewrev.graph.initialCommits ayarı (graph sayfa boyutu). */
+      graphPageSize?: number;
     }
   | { type: 'error'; code: ErrorCode; message: string }
   // v2
@@ -26,7 +28,12 @@ export type ExtensionToWebview =
   | { type: 'graph'; graph: GraphData }
   | { type: 'graphError'; message: string }
   /** Branch'ler panelinde seçim (undefined = seçim kalktı). */
-  | { type: 'selectBranch'; name: string | undefined };
+  | { type: 'selectBranch'; name: string | undefined }
+  // v3
+  | { type: 'github'; data: GitHubData }
+  // v4
+  | { type: 'timeline'; timeline: TimelineData }
+  | { type: 'contrib'; contrib: ContribData };
 
 export type WebviewToExtension =
   | { type: 'ready' }
@@ -37,4 +44,14 @@ export type WebviewToExtension =
   | { type: 'command'; action: StateAction }
   // v2
   /** Graph'ı (yeniden) yükle. branch undefined = tüm branch'ler. limit: en fazla commit (500, 1000, …). */
-  | { type: 'loadGraph'; branch?: string; limit: number };
+  | { type: 'loadGraph'; branch?: string; limit: number }
+  // v3
+  | { type: 'githubConnect' }
+  /** "Şimdi değil": bu çalışma alanında bağlanma çağrısını gizle. */
+  | { type: 'githubDismiss' }
+  | { type: 'githubRefresh' }
+  /** Yalnızca https://github.com/… adresleri açılır. */
+  | { type: 'openUrl'; url: string }
+  // v4
+  | { type: 'loadTimeline' }
+  | { type: 'loadContrib'; range: TimeRange };
