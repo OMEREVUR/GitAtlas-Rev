@@ -12,6 +12,7 @@ import { loadGraph } from '../src/model/graphService';
 import { computeContrib } from '../src/model/contrib';
 import { branchCommits } from '../src/model/graphSelect';
 import { buildTimeline } from '../src/model/timeline';
+import { getStatus, listStashes } from '../src/git/status';
 import type { GitHubData, PullRequest, TimeRange } from '../src/types';
 import { loadSnapshot } from '../src/model/repoService';
 
@@ -70,7 +71,12 @@ async function main(): Promise<void> {
       pullRequests: prs,
       branchCi: [{ branch: 'main', ci: 'success' }],
     };
+    // v5: gerçek çalışma ağacı durumu ve stash listesi.
+    const status = await getStatus(snap.root);
+    const stashes = await listStashes(snap.root);
     const model = {
+      status,
+      stashes,
       timeline,
       contribs,
       github,
@@ -113,6 +119,11 @@ async function main(): Promise<void> {
     { file: `${name}-gh-stale-dark.png`, query: 'theme=dark&gh=stale', size: '1100,820' },
     { file: `${name}-gh-off-light.png`, query: 'theme=light&gh=off', size: '1100,820' },
     { file: `${name}-gh-graph-dark.png`, query: 'theme=dark&view=graph&gh=connected', size: '1200,820' },
+    { file: `${name}-changes-dark.png`, query: 'theme=dark&view=changes&gh=off', size: '1200,820' },
+    { file: `${name}-changes-light.png`, query: 'theme=light&view=changes&gh=off&tree=1', size: '1200,820' },
+    { file: `${name}-changes-narrow.png`, query: 'theme=dark&view=changes&gh=off&width=360', size: '600,1500' },
+    { file: `${name}-changes-result.png`, query: 'theme=dark&view=changes&gh=off&opdemo=1', size: '1200,820' },
+    { file: `${name}-map-dirty.png`, query: 'theme=light&gh=off', size: '1100,820' },
   ];
   if (sampleBranch) {
     const b = encodeURIComponent(`branch:${sampleBranch}`);

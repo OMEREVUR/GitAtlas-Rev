@@ -530,7 +530,10 @@ describe('GitOpsService', () => {
     const withToken = service(repo, { getToken });
     const r = await run(withToken.svc, { kind: 'push' });
     expect(getToken).toHaveBeenCalledTimes(1);
-    expect(r).toMatchObject({ ok: true, commands: ['git push'] });
+    // Yeniden denemede kullanıcının kimlik yardımcısı devre dışı; token komutta görünmez.
+    expect(r).toMatchObject({ ok: true, commands: ['git push', 'git -c credential.helper= push'] });
+    expect(r.commands.join('\n')).not.toContain('gizli-token-123');
+    expect(withToken.log).toContain('$ git -c credential.helper= push');
     expect(withToken.log).toContain('GitHub oturumuyla yeniden deneniyor…');
     expect(withToken.log.join('\n')).not.toContain('gizli-token-123');
     expect(r.detail ?? '').not.toContain('gizli-token-123');

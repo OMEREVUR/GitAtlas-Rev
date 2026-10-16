@@ -31,6 +31,8 @@
   var timeback = Number(params.get('timeback'));
   if (timeback > 0 && model && model.timeline) state = Object.assign({}, state || {}, { timeAt: model.timeline.end - timeback * 864e5 });
   var gh = params.get('gh') || 'connected';
+  if (params.get('tree') === '1') state = Object.assign({}, state || {}, { changesTree: true });
+  var opdemo = params.get('opdemo') === '1';
   function githubData() {
     var d = model.github;
     if (gh === 'off') return { status: { state: 'off', dismissed: false }, pullRequests: [], branchCi: [] };
@@ -51,6 +53,22 @@
         if (msg.type === 'ready' || msg.type === 'refresh') {
           send({ type: 'loading', progress: 0.5 });
           setTimeout(function () { sendModel(); if (model.github) send({ type: 'github', data: githubData() }); }, 50);
+        }
+        else if (msg.type === 'loadStatus') {
+          setTimeout(function () {
+            send({ type: 'status', status: model.status });
+            send({ type: 'stashes', stashes: model.stashes || [] });
+            if (opdemo) {
+              send({ type: 'opStarted', id: 'demo', kind: 'push', commands: ['git push -u origin feature/graph'] });
+              setTimeout(function () {
+                send({ type: 'opResult', result: { id: 'demo', kind: 'push', ok: false, commands: ['git push -u origin feature/graph'], message: 'Gönderilemedi: uzakta yeni commit\'ler var; önce Çek (pull) yapın.', detail: ' ! [rejected]        feature/graph -> feature/graph (fetch first)\nerror: failed to push some refs' } });
+              }, 40);
+            }
+          }, 30);
+        }
+        else if (msg.type === 'gitOp') {
+          send({ type: 'opStarted', id: msg.id, kind: msg.op.kind, commands: ['(önizleme) ' + msg.op.kind] });
+          setTimeout(function () { send({ type: 'opResult', result: { id: msg.id, kind: msg.op.kind, ok: true, commands: [], message: 'Önizleme: işlem çalıştırılmadı.' } }); }, 30);
         }
         else if (msg.type === 'loadTimeline') { setTimeout(function () { send({ type: 'timeline', timeline: model.timeline }); }, 30); }
         else if (msg.type === 'loadContrib') { setTimeout(function () { send({ type: 'contrib', contrib: model.contribs[msg.range] }); }, 30); }

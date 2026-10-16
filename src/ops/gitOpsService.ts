@@ -61,9 +61,6 @@ class OpRun {
 
   /** Komutu çalıştırır; log'a "$ git …" ve çıktıyı yazar. Ağ komutunda kimlik hatası olursa bir kez token ile dener. */
   async git(args: string[]): Promise<string> {
-    const cmd = formatCommand(args);
-    this.commands.push(cmd);
-    this.deps.log(`$ ${cmd}`);
     const opts = this.network ? { timeoutMs: NETWORK_TIMEOUT_MS } : {};
     try {
       const out = await this.exec(args, opts);
@@ -106,8 +103,13 @@ class OpRun {
     return text === '' ? undefined : text;
   }
 
+  /** Komutu kaydeder ve çalıştırır. Askpass yedeğinde kimlik yardımcısı (ör. Git Credential Manager) kapatılır. */
   private exec(args: string[], opts: { timeoutMs?: number }): Promise<string> {
-    return runGit(args, this.deps.root, this.authEnv ? { ...opts, env: this.authEnv.env } : opts);
+    const full = this.authEnv ? ['-c', 'credential.helper=', ...args] : args;
+    const cmd = formatCommand(full);
+    this.commands.push(cmd);
+    this.deps.log(`$ ${cmd}`);
+    return runGit(full, this.deps.root, this.authEnv ? { ...opts, env: this.authEnv.env } : opts);
   }
 
   private record(text: string): void {

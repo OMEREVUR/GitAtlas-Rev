@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { HeatDecorationProvider } from './decorations/heatDecorations';
 import { GitHubLayer } from './github/githubLayer';
-import { BranchView } from './panel/branchTree';
+import { BranchView, branchCommandHandlers } from './panel/branchTree';
 import { GIT_SCHEME, GitContentProvider } from './panel/gitContentProvider';
 import { RewiewRevPanelProvider } from './panel/panelProvider';
 import { RewiewRevStatusBar } from './panel/statusBar';
@@ -46,6 +46,36 @@ export function activate(context: vscode.ExtensionContext): void {
     github.onDidChange((d) => branches.setGitHub(d.pullRequests, d.branchCi)),
   );
   branches.setGitHub(github.data.pullRequests, github.data.branchCi);
+
+  // v5: git işlemleri komut paletinden ve Branch'ler ağacının sağ tık menüsünden.
+  const branchCmds = branchCommandHandlers(panel, branches);
+  context.subscriptions.push(
+    vscode.commands.registerCommand('rewiewrev.git.fetch', () => panel.runOp({ kind: 'fetch' })),
+    vscode.commands.registerCommand('rewiewrev.git.pull', () => panel.runOp({ kind: 'pull' })),
+    vscode.commands.registerCommand('rewiewrev.git.push', () => panel.runOp({ kind: 'push' })),
+    vscode.commands.registerCommand('rewiewrev.git.commit', async () => {
+      const staged = panel.workingTreeStatus?.files.filter((f) => f.staged).length ?? 0;
+      if (staged === 0) {
+        void vscode.window.showInformationMessage(
+          "RewiewRev: Commit'e eklenmiş dosya yok. RewiewRev panelindeki Değişiklikler sekmesinden dosya seçin.",
+        );
+        return;
+      }
+      const message = await vscode.window.showInputBox({
+        title: `Commit oluştur (${staged} dosya)`,
+        prompt: 'Commit mesajı (özet)',
+        placeHolder: 'feat: …',
+        validateInput: (v) => (v.trim() ? undefined : 'Bir özet yazın.'),
+      });
+      if (message?.trim()) await panel.runOp({ kind: 'commit', message: message.trim(), amend: false, push: false });
+    }),
+    vscode.commands.registerCommand('rewiewrev.showGitOutput', () => panel.showGitOutput()),
+    vscode.commands.registerCommand('rewiewrev.branch.checkout', (a: unknown) => branchCmds.checkout(a)),
+    vscode.commands.registerCommand('rewiewrev.branch.create', (a: unknown) => branchCmds.create(a)),
+    vscode.commands.registerCommand('rewiewrev.branch.merge', (a: unknown) => branchCmds.merge(a)),
+    vscode.commands.registerCommand('rewiewrev.branch.rename', (a: unknown) => branchCmds.rename(a)),
+    vscode.commands.registerCommand('rewiewrev.branch.delete', (a: unknown) => branchCmds.delete(a)),
+  );
 
   // HEAD veya ref'ler değişince (commit, checkout, pull, reset) otomatik yenile.
   let watchers: vscode.Disposable[] = [];

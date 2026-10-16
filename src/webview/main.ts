@@ -4,12 +4,35 @@ import './panel.css';
 import './graph.css';
 import './timeMachine.css';
 import './contributors.css';
+import './changes.css';
+import './ops.css';
 import './layout.css';
 import type { ExtensionToWebview, WebviewToExtension } from '../protocol';
-import type { CommitSummary, ContribData, FileStat, GitHubData, GitRef, GraphData, PullRequest, TimeRange, TimelineData } from '../types';
+import type {
+  ChangeKind,
+  CommitSummary,
+  ContribData,
+  FileStat,
+  GitHubData,
+  GitOpKind,
+  GitOpRequest,
+  GitRef,
+  GraphData,
+  OpResult,
+  PullRequest,
+  StashEntry,
+  TimeRange,
+  TimelineData,
+  WorkingTreeStatus,
+} from '../types';
 import { branchCommits, filterGraphCommits, graphAuthors } from '../model/graphSelect';
 import { timelineFrame, timelineSteps } from '../model/timeline';
+import { renderChanges } from './changes';
+import { renderCommitBox, resetCommitBox } from './commitBox';
 import { renderCommitDetail, type GraphSelection } from './commitDetail';
+import { renderOpNotice } from './opNotice';
+import { renderStashList } from './stashList';
+import { renderSyncBar } from './syncBar';
 import { renderContributors } from './contributors';
 import { conflictFiles, renderGitHubBanner } from './githubBanner';
 import { renderTimeMachine } from './timeMachine';
@@ -36,8 +59,8 @@ interface Model {
   commits: CommitSummary[];
 }
 
-type View = 'map' | 'graph' | 'time' | 'contrib';
-const VIEWS: readonly View[] = ['map', 'graph', 'time', 'contrib'];
+type View = 'map' | 'graph' | 'time' | 'contrib' | 'changes';
+const VIEWS: readonly View[] = ['map', 'graph', 'time', 'contrib', 'changes'];
 
 interface UiState {
   view: View;
@@ -56,6 +79,8 @@ interface UiState {
   timeAt?: number;
   /** GitHub katmanı (PR çerçeveleri/rozetleri) görünür mü? */
   githubLayer: boolean;
+  /** Değişiklikler listesi klasör ağacı olarak mı? */
+  changesTree: boolean;
 }
 
 let GRAPH_PAGE = 500;
@@ -82,6 +107,14 @@ let contrib: ContribData | undefined;
 let contribRequested: TimeRange | undefined;
 let playTimer: ReturnType<typeof setInterval> | undefined;
 
+// v5: çalışma ağacı ve git işlemleri
+let wt: WorkingTreeStatus | undefined;
+let stashes: StashEntry[] = [];
+let statusRequested = false;
+let running: { id: string; kind: GitOpKind; commands: string[] } | undefined;
+let lastResult: OpResult | undefined;
+let opSeq = 0;
+
 function str(v: unknown): string | undefined {
   return typeof v === 'string' ? v : undefined;
 }
@@ -105,6 +138,7 @@ function restoreUi(): UiState {
     selectedAuthor: str(o.selectedAuthor),
     timeAt: typeof o.timeAt === 'number' ? o.timeAt : undefined,
     githubLayer: o.githubLayer !== false,
+    changesTree: o.changesTree === true,
   };
 }
 
@@ -133,8 +167,9 @@ const tabButtons: Record<View, HTMLButtonElement> = {
   graph: tabButton('Graph', 'graph'),
   time: tabButton('Zaman', 'time'),
   contrib: tabButton('Katkı', 'contrib'),
+  changes: tabButton('Değişiklikler', 'changes'),
 };
-tabs.append(tabButtons.map, tabButtons.graph, tabButtons.time, tabButtons.contrib);
+tabs.append(tabButtons.map, tabButtons.graph, tabButtons.time, tabButtons.contrib, tabButtons.changes);
 const rangeHost = el('div', 'rr-range');
 const refreshBtn = document.createElement('button');
 refreshBtn.className = 'rr-iconbtn';
@@ -156,7 +191,8 @@ ghBtn.addEventListener('click', () => {
   if (githubActive()) setUi({ githubLayer: !ui.githubLayer });
   else post({ type: 'githubConnect' });
 });
-toolbar.append(tabs, rangeHost, el('div', 'rr-spacer'), ghBtn, refreshBtn);
+const syncHost = el('div', 'rr-sync');
+toolbar.append(tabs, rangeHost, el('div', 'rr-spacer'), syncHost, ghBtn, refreshBtn);
 
 function tabButton(label: string, view: View): HTMLButtonElement {
   const b = document.createElement('button');
@@ -196,10 +232,23 @@ timeHost.setAttribute('aria-label', 'Zaman makinesi');
 const contribHost = el('section', 'rr-contrib');
 contribHost.setAttribute('aria-label', 'Katkı paneli');
 
+// Değişiklikler: solda liste, sağda commit kutusu + stash
+const changesBody = el('div', 'rr-chbody');
+const changesHost = el('section', 'rr-chlist');
+changesHost.setAttribute('aria-label', 'Değişen dosyalar');
+const commitHost = el('section', 'rr-chcommit');
+commitHost.setAttribute('aria-label', 'Commit');
+const stashHost = el('section', 'rr-chstash');
+stashHost.setAttribute('aria-label', 'Saklananlar');
+const changesSide = el('div', 'rr-chside');
+changesSide.append(commitHost, stashHost);
+changesBody.append(changesHost, changesSide);
+
 const bannerHost = el('div', 'rr-banner');
+const noticeHost = el('div', 'rr-notice');
 const stateHost = el('div', 'rr-state');
 
-app.append(progressEl, toolbar, bannerHost, body, gbody, timeHost, contribHost, stateHost);
+app.append(progressEl, toolbar, bannerHost, noticeHost, body, gbody, timeHost, contribHost, changesBody, stateHost);
 
 // ---- Durum güncelleme ----
 function saveUi(): void {
@@ -218,6 +267,29 @@ function setView(view: View): void {
   if (view === 'graph') ensureGraph();
   if (view === 'time') ensureTimeline();
   if (view === 'contrib') ensureContrib();
+}
+
+function ensureStatus(): void {
+  if (statusRequested) return;
+  statusRequested = true;
+  post({ type: 'loadStatus' });
+}
+
+function runOp(op: GitOpRequest): void {
+  if (running) return;
+  const id = `op-${Date.now()}-${++opSeq}`;
+  post({ type: 'gitOp', id, op });
+}
+
+/** Commit edilmemiş dosyalar → harita rozeti. */
+function dirtyMap(): Map<string, ChangeKind | 'conflicted'> | undefined {
+  if (!wt || wt.files.length === 0) return undefined;
+  const m = new Map<string, ChangeKind | 'conflicted'>();
+  for (const f of wt.files) {
+    const kind = f.conflicted ? 'conflicted' : f.unstaged ?? f.staged;
+    if (kind) m.set(f.path, kind);
+  }
+  return m;
 }
 
 function ensureTimeline(): void {
@@ -387,6 +459,7 @@ function renderMap(): void {
     highlight: mapHighlight(),
     prCounts: prs.length > 0 ? conflictFiles(prs) : undefined,
     prStale: prStale(),
+    dirty: dirtyMap(),
     selected: ui.selectedPath,
     onSelect: (path) => setUi({ selectedPath: path }),
     onOpen: (path) => post({ type: 'openFile', path }),
@@ -492,6 +565,16 @@ function render(): void {
   gbody.hidden = fullState !== undefined || ui.view !== 'graph';
   timeHost.hidden = fullState !== undefined || ui.view !== 'time';
   contribHost.hidden = fullState !== undefined || ui.view !== 'contrib';
+  changesBody.hidden = fullState !== undefined || ui.view !== 'changes';
+  if (fullState) {
+    noticeHost.hidden = true;
+  } else {
+    noticeHost.hidden = false;
+    renderOpNotice(noticeHost, { running: running ? { kind: running.kind, commands: running.commands } : undefined, last: lastResult }, post);
+    renderSyncBar(syncHost, { status: wt, busy: running !== undefined, busyKind: running?.kind, onOp: runOp });
+  }
+  const changeCount = wt?.files.length ?? 0;
+  tabButtons.changes.textContent = changeCount > 0 ? `Değişiklikler (${changeCount})` : 'Değişiklikler';
   if (fullState) bannerHost.hidden = true;
   else renderGitHubBanner(bannerHost, github, post);
   ghBtn.hidden = !github || github.status.state === 'noRemote' || github.status.state === 'notGitHub';
@@ -533,11 +616,34 @@ function render(): void {
     renderGraphView(now);
   } else if (ui.view === 'time') {
     renderTimeView();
+  } else if (ui.view === 'changes') {
+    renderChangesView();
   } else {
     renderRangeFilter(rangeHost, model.range, (r) => post({ type: 'setRange', range: r }));
     renderContribView(now);
   }
-  rangeHost.hidden = ui.view === 'time';
+  rangeHost.hidden = ui.view === 'time' || ui.view === 'changes';
+}
+
+function renderChangesView(): void {
+  if (!wt) {
+    loadingNote(changesHost, 'Çalışma ağacı okunuyor…');
+    return;
+  }
+  const busy = running !== undefined;
+  renderChanges(changesHost, {
+    status: wt,
+    busy,
+    treeView: ui.changesTree,
+    selected: ui.selectedPath,
+    onOp: runOp,
+    onOpenChange: (path, staged) => post({ type: 'openChange', path, staged }),
+    onOpenFile: (path) => post({ type: 'openFile', path }),
+    onSelectFile: (path) => setUi({ selectedPath: path }),
+    onToggleTreeView: () => setUi({ changesTree: !ui.changesTree }),
+  });
+  renderCommitBox(commitHost, { status: wt, busy, onOp: runOp });
+  renderStashList(stashHost, stashes, { busy, onOp: runOp, canSave: wt.files.length > 0 });
 }
 
 function loadingNote(host: HTMLElement, text: string): void {
@@ -610,9 +716,26 @@ window.addEventListener('message', (e: MessageEvent<ExtensionToWebview>) => {
       if (ui.view === 'graph' || ui.selectedBranch) ensureGraph();
       if (ui.view === 'time') ensureTimeline();
       if (ui.view === 'contrib') ensureContrib();
+      ensureStatus();
       break;
     case 'github':
       github = msg.data;
+      break;
+    case 'status':
+      wt = msg.status;
+      statusRequested = true;
+      break;
+    case 'stashes':
+      stashes = msg.stashes;
+      break;
+    case 'opStarted':
+      running = { id: msg.id, kind: msg.kind, commands: msg.commands };
+      lastResult = undefined;
+      break;
+    case 'opResult':
+      if (!running || running.id === msg.result.id) running = undefined;
+      lastResult = msg.result;
+      if (msg.result.ok && msg.result.kind === 'commit') resetCommitBox(commitHost);
       break;
     case 'timeline':
       timeline = msg.timeline;

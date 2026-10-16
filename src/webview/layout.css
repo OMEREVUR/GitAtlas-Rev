@@ -291,3 +291,63 @@ body {
   flex: 1 1 auto;
   min-height: 0;
 }
+
+/* v5: Değişiklikler sekmesi, eşitleme çubuğu, işlem bildirimi. */
+.rr-sync {
+  /* İçindeki çubuk container query kullanıyor (inline-size): kendi genişliğini kendisi veremez, biz veririz. */
+  flex: 0 1 340px;
+  min-width: 132px;
+  display: flex;
+  align-items: center;
+}
+.rr-sync > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.rr-notice:empty {
+  display: none;
+}
+.rr-chbody {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  border-top: 1px solid var(--vscode-panel-border);
+}
+.rr-chlist {
+  /* Liste kendi içinde (.rr-ch-scroll) kayar; iç düzeni changes.css belirler. */
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.rr-chside {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-editorWidget-background, transparent);
+}
+.rr-chcommit,
+.rr-chstash {
+  padding: 10px 12px;
+}
+.rr-chstash {
+  border-top: 1px solid var(--vscode-panel-border);
+}
+@container (max-width: 640px) {
+  .rr-chbody {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Dar panelde önce commit kutusu, sonra liste, en altta stash. */
+  .rr-chside {
+    order: -1;
+    border-left: 0;
+    border-bottom: 1px solid var(--vscode-panel-border);
+    overflow: visible;
+  }
+  .rr-chlist {
+    height: max(360px, 60vh);
+  }
+}
