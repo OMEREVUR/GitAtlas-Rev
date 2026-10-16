@@ -25,7 +25,18 @@
   if (width > 0) document.body.style.width = width + 'px';
   var model = window.__RR_PREVIEW__;
   var range = params.get('range') || '30d';
-  var state = params.get('view') === 'graph' ? { view: 'graph' } : undefined;
+  var view = params.get('view');
+  var state = view ? { view: view } : undefined;
+  if (params.get('select')) state = Object.assign({}, state || {}, { selectedPath: params.get('select') });
+  var timeback = Number(params.get('timeback'));
+  if (timeback > 0 && model && model.timeline) state = Object.assign({}, state || {}, { timeAt: model.timeline.end - timeback * 864e5 });
+  var gh = params.get('gh') || 'connected';
+  function githubData() {
+    var d = model.github;
+    if (gh === 'off') return { status: { state: 'off', dismissed: false }, pullRequests: [], branchCi: [] };
+    if (gh === 'stale') return { status: { state: 'stale', repo: d.status.repo, fetchedAt: Date.now() - 3 * 3600e3, reason: 'sessionExpired' }, pullRequests: d.pullRequests, branchCi: d.branchCi };
+    return d;
+  }
   function send(msg) { window.postMessage(msg, '*'); }
   function sendModel() {
     send({ type: 'model', range: range, repoName: model.repoName, files: model.ranges[range], commits: model.commits });
@@ -37,7 +48,12 @@
       postMessage: function (msg) {
         console.log('[webview → eklenti]', JSON.stringify(msg));
         if (!model) { send({ type: 'error', code: 'unknown', message: 'dev/out/preview-model.js yok: npm run preview -- <repo> çalıştır.' }); return; }
-        if (msg.type === 'ready' || msg.type === 'refresh') { send({ type: 'loading', progress: 0.5 }); setTimeout(sendModel, 50); }
+        if (msg.type === 'ready' || msg.type === 'refresh') {
+          send({ type: 'loading', progress: 0.5 });
+          setTimeout(function () { sendModel(); if (model.github) send({ type: 'github', data: githubData() }); }, 50);
+        }
+        else if (msg.type === 'loadTimeline') { setTimeout(function () { send({ type: 'timeline', timeline: model.timeline }); }, 30); }
+        else if (msg.type === 'loadContrib') { setTimeout(function () { send({ type: 'contrib', contrib: model.contribs[msg.range] }); }, 30); }
         else if (msg.type === 'setRange') { range = msg.range; sendModel(); }
         else if (msg.type === 'loadGraph') {
           send({ type: 'graphLoading' });

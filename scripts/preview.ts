@@ -9,6 +9,10 @@ import { pathToFileURL } from 'node:url';
 import { DEFAULT_IGNORE } from '../src/config';
 import { computeFileStats } from '../src/model/aggregate';
 import { loadGraph } from '../src/model/graphService';
+import { computeContrib } from '../src/model/contrib';
+import { branchCommits } from '../src/model/graphSelect';
+import { buildTimeline } from '../src/model/timeline';
+import type { GitHubData, PullRequest, TimeRange } from '../src/types';
 import { loadSnapshot } from '../src/model/repoService';
 
 const CHROME_CANDIDATES = [
@@ -27,6 +31,7 @@ async function main(): Promise<void> {
   if (!existsSync('dist/webview.js')) throw new Error('Önce npm run build çalıştır.');
 
   let sampleBranch: string | undefined;
+  let hotPath: string | undefined;
   const storageDir = mkdtempSync(join(tmpdir(), 'rewiewrev-preview-'));
   try {
     const snap = await loadSnapshot(resolve(repo), storageDir, () => undefined);
@@ -39,7 +44,36 @@ async function main(): Promise<void> {
       graphs[ref.name] = await loadGraph(snap.root, { limit: 500, branch: ref.name });
     }
     sampleBranch = graphAll.refs.find((r) => r.kind === 'local' && !r.isHead)?.name ?? graphAll.currentBranch;
+    // v4: zaman makinesi ve katkı (gerçek veri).
+    const timeline = buildTimeline(snap, computeFileStats(snap, 'all', ignore, now), graphAll.refs);
+    const contribs: Record<string, unknown> = {};
+    for (const r of ['7d', '30d', 'all'] as TimeRange[]) {
+      contribs[r] = computeContrib(snap.commits, computeFileStats(snap, r, ignore, now), r, now);
+    }
+    // v3: GitHub'a gerçekten bağlanmadan, branch'lerden türetilmiş SAHTE PR'lar (önizleme içindir).
+    const hot = computeFileStats(snap, 'all', ignore, now).sort((a, b) => b.changes - a.changes)[0]?.path;
+    const cis: PullRequest['ci'][] = ['success', 'failure', 'pending'];
+    const prs: PullRequest[] = graphAll.refs
+      .filter((r) => r.kind === 'local' && !r.isHead)
+      .slice(0, 3)
+      .map((r, i) => {
+        const files = new Set(branchCommits(r, graphAll.refs, graphAll.commits, graphAll.head).flatMap((c) => c.files.map((f) => f.path)));
+        if (hot && i < 2) files.add(hot);
+        hotPath = hot;
+        return {
+          number: 41 + i, title: r.subject, url: `https://github.com/ornek/repo/pull/${41 + i}`, author: r.author,
+          headRef: r.name, baseRef: 'main', isDraft: i === 2, updatedAt: r.date, files: [...files], ci: cis[i % 3] ?? 'none',
+        };
+      });
+    const github: GitHubData = {
+      status: { state: 'connected', repo: 'ornek/repo', fetchedAt: now - 60_000, intervalMin: 2, baseIntervalMin: 2, rateLimit: { remaining: 4870, limit: 5000, resetAt: now + 3600_000 } },
+      pullRequests: prs,
+      branchCi: [{ branch: 'main', ci: 'success' }],
+    };
     const model = {
+      timeline,
+      contribs,
+      github,
       graphs,
       repoName: basename(snap.root),
       commits: snap.commits.slice(0, 1000),
@@ -70,6 +104,15 @@ async function main(): Promise<void> {
     { file: `${name}-graph-dark.png`, query: 'theme=dark&view=graph&autoselect=1', size: '1200,820' },
     { file: `${name}-graph-light.png`, query: 'theme=light&view=graph&autoselect=1', size: '1200,820' },
     { file: `${name}-graph-narrow.png`, query: 'theme=dark&view=graph&autoselect=1&width=360', size: '600,1500' },
+    { file: `${name}-time-dark.png`, query: 'theme=dark&view=time', size: '1200,820' },
+    { file: `${name}-time-light-early.png`, query: 'theme=light&view=time&timeback=60', size: '1200,820' },
+    { file: `${name}-contrib-dark.png`, query: 'theme=dark&view=contrib&range=all', size: '1200,900' },
+    { file: `${name}-contrib-light.png`, query: 'theme=light&view=contrib&range=all', size: '1200,900' },
+    { file: `${name}-gh-map-dark.png`, query: 'theme=dark&gh=connected', size: '1100,820' },
+    { file: `${name}-gh-card-light.png`, query: `theme=light&gh=connected&select=${encodeURIComponent(hotPath ?? '')}`, size: '1100,1000' },
+    { file: `${name}-gh-stale-dark.png`, query: 'theme=dark&gh=stale', size: '1100,820' },
+    { file: `${name}-gh-off-light.png`, query: 'theme=light&gh=off', size: '1100,820' },
+    { file: `${name}-gh-graph-dark.png`, query: 'theme=dark&view=graph&gh=connected', size: '1200,820' },
   ];
   if (sampleBranch) {
     const b = encodeURIComponent(`branch:${sampleBranch}`);

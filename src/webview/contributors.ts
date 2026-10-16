@@ -14,6 +14,8 @@ export interface ContributorsOptions {
 const COLORED = 5;
 const LABEL_MIN_PCT = 15;
 const RISK_PCT = 80;
+/** Aralıkta tek yazar varsa her modül "tek kişiye bağlı" olur; uyarı o zaman gürültüdür, gösterilmez. */
+let soloRepo = false;
 const DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 const DAY_MS = 24 * 3600_000;
 const OTHER = '\u0000diğer';
@@ -28,6 +30,7 @@ interface Who {
 }
 
 export function renderContributors(el: HTMLElement, opts: ContributorsOptions): void {
+  soloRepo = opts.data.authors.length <= 1;
   el.classList.add('rr-ct');
   const { data } = opts;
   const prevScroll = el.scrollTop;
@@ -102,7 +105,7 @@ function modulesSection(modules: readonly ModuleOwnership[], whoOf: (id: string)
     if (top) {
       const p = pct(top.lines);
       owner.append(h('span', 'rr-ct-owner-name', `${whoOf(top.author).name} %${p}`));
-      if (p >= RISK_PCT) {
+      if (p >= RISK_PCT && !soloRepo) {
         const risk = h('span', 'rr-ct-risk', 'tek kişiye bağlı');
         risk.title = 'Bu modülde değişen satırların %80 ya da fazlası tek kişiden';
         owner.append(risk);
@@ -188,7 +191,7 @@ function expertsSection(data: ContribData, whoOf: (id: string) => Who, onSelectF
     if (who.color >= 0) dot.style.setProperty('background', authorColor(who.color));
 
     const p = Math.round(e.share * 100);
-    const whoText = `${who.name} · %${p}${p >= RISK_PCT ? ' · tek kişi' : ''}`;
+    const whoText = `${who.name} · %${p}${p >= RISK_PCT && !soloRepo ? ' · tek kişi' : ''}`;
     list.append(h('li', 'rr-ct-expert', [file, dot, h('span', 'rr-ct-expert-who', whoText)]));
   }
   section.append(list);

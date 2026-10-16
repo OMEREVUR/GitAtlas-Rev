@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { HeatDecorationProvider } from './decorations/heatDecorations';
+import { GitHubLayer } from './github/githubLayer';
 import { BranchView } from './panel/branchTree';
 import { GIT_SCHEME, GitContentProvider } from './panel/gitContentProvider';
 import { RewiewRevPanelProvider } from './panel/panelProvider';
@@ -9,12 +10,14 @@ export function activate(context: vscode.ExtensionContext): void {
   const storageDir = context.globalStorageUri.fsPath;
   const decorations = new HeatDecorationProvider();
   const statusBar = new RewiewRevStatusBar();
-  const panel = new RewiewRevPanelProvider(context.extensionUri, storageDir, decorations, statusBar);
+  const github = new GitHubLayer(storageDir, context.workspaceState);
+  const panel = new RewiewRevPanelProvider(context.extensionUri, storageDir, decorations, statusBar, github);
   const branches = new BranchView();
 
   context.subscriptions.push(
     decorations,
     statusBar,
+    github,
     panel,
     branches,
     vscode.window.registerFileDecorationProvider(decorations),
@@ -26,10 +29,23 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('rewiewrev.refresh', () => panel.reload()),
     vscode.commands.registerCommand('rewiewrev.openInEditor', () => panel.openInEditor()),
     vscode.commands.registerCommand('rewiewrev.refreshBranches', () => panel.refreshRefs()),
+    vscode.commands.registerCommand('rewiewrev.github.connect', () => {
+      const st = github.data.status;
+      if (st.state === 'noRemote' || st.state === 'notGitHub') {
+        const where = st.state === 'notGitHub' ? `origin (${st.remoteUrl}) bir GitHub reposu değil` : 'Bu repoda origin remote yok';
+        void vscode.window.showInformationMessage(`RewiewRev: ${where}; GitHub katmanı kullanılamıyor.`);
+        return;
+      }
+      return github.connect();
+    }),
+    vscode.commands.registerCommand('rewiewrev.github.refresh', () => github.refresh()),
     // Branch'ler paneli ↔ harita/graph: seçilen branch'in dokunduğu dosyalar haritada yanar.
     panel.onDidLoadRefs((refs) => branches.update(refs, refs ? undefined : 'Git reposu bulunamadı.')),
     branches.onDidSelectBranch((ref) => panel.selectBranch(ref?.name)),
+    // GitHub PR/CI bilgisi Branch'ler ağacında da görünsün (panel bağlantısını panel kendisi kuruyor).
+    github.onDidChange((d) => branches.setGitHub(d.pullRequests, d.branchCi)),
   );
+  branches.setGitHub(github.data.pullRequests, github.data.branchCi);
 
   // HEAD veya ref'ler değişince (commit, checkout, pull, reset) otomatik yenile.
   let watchers: vscode.Disposable[] = [];
