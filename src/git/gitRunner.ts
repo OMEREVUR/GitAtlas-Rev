@@ -14,11 +14,18 @@ export class GitError extends Error {
   }
 }
 
+let gitPath = 'git';
+
+/** rewiewrev.git.path; boş/undefined → PATH'teki 'git'. */
+export function setGitPath(path: string | undefined): void {
+  gitPath = path?.trim() || 'git';
+}
+
 /** `git` komutunu shell olmadan çalıştırır, stdout'u döner. */
 export function runGit(args: string[], cwd: string): Promise<string> {
   return new Promise((resolve, reject) => {
     execFile(
-      'git',
+      gitPath,
       args,
       {
         cwd,
@@ -35,7 +42,11 @@ export function runGit(args: string[], cwd: string): Promise<string> {
         }
         const errCode: unknown = (err as NodeJS.ErrnoException).code;
         if (errCode === 'ENOENT') {
-          reject(new GitError('notFound', 'Git bulunamadı. Git kurulu ve PATH üzerinde olmalı.', stderr));
+          const message =
+            gitPath === 'git'
+              ? 'Git bulunamadı. Git kurulu ve PATH üzerinde olmalı.'
+              : `Git bulunamadı: ${gitPath}. rewiewrev.git.path ayarını kontrol edin.`;
+          reject(new GitError('notFound', message, stderr));
           return;
         }
         if (/not a git repository/i.test(stderr)) {

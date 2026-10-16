@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { GitRef } from '../src/types';
+import type { GitRef, PullRequest } from '../src/types';
 
 vi.mock('vscode', () => ({
   EventEmitter: class {
@@ -13,6 +13,10 @@ vi.mock('vscode', () => ({
 import {
   aheadBehindSentence,
   branchDescription,
+  githubBranchName,
+  githubDescription,
+  githubTooltipLines,
+  matchGitHub,
   groupBranches,
   isStale,
   sortBranches,
@@ -68,6 +72,34 @@ describe('branch açıklaması', () => {
     expect(aheadBehindSentence(ref('f', { upstream: 'origin/f', behind: 3 }))).toBe('Karşılaştırma: origin/f · 3 geride');
     expect(aheadBehindSentence(ref('f', { ahead: 1 }))).toBe('1 ileride');
     expect(aheadBehindSentence(ref('f'))).toBeUndefined();
+  });
+});
+
+describe('branch GitHub bilgisi', () => {
+  const pr = (number: number, headRef: string, ci: PullRequest['ci']): PullRequest => ({
+    number, title: `PR ${number}`, url: '', author: 'a', headRef, baseRef: 'main', isDraft: false, updatedAt: 0, files: [], ci,
+  });
+  const prs = [pr(41, 'feature/x', 'success'), pr(44, 'feature/y', 'failure'), pr(45, 'feature/y', 'pending')];
+  const ci = [{ branch: 'main', ci: 'failure' as const }];
+
+  it('GitHub branch adı: origin/ önekini atar, lokalde origin upstream adını kullanır', () => {
+    expect(githubBranchName({ name: 'origin/feature/x', kind: 'remote' })).toBe('feature/x');
+    expect(githubBranchName({ name: 'upstream/x', kind: 'remote' })).toBeUndefined();
+    expect(githubBranchName({ name: 'fx', kind: 'local', upstream: 'origin/feature/x' })).toBe('feature/x');
+    expect(githubBranchName({ name: 'fx', kind: 'local' })).toBe('fx');
+  });
+  it('tek PR → "#41 ✓", birden çok → "#44 #45", PR yoksa branch CI', () => {
+    expect(githubDescription(matchGitHub(ref('feature/x'), prs, ci))).toBe('#41 ✓');
+    expect(githubDescription(matchGitHub(ref('feature/y'), prs, ci))).toBe('#44 #45');
+    expect(githubDescription(matchGitHub(ref('main'), prs, ci))).toBe('CI ✗');
+    expect(matchGitHub(ref('nothing'), prs, ci)).toBeUndefined();
+    expect(branchDescription(ref('feature/x', { isHead: true }), NOW, matchGitHub(ref('feature/x'), prs, ci))).toBe(
+      'HEAD · #41 ✓ · 1 gün önce',
+    );
+  });
+  it('tooltip PR başlıklarını ve CI metnini içerir', () => {
+    const lines = githubTooltipLines(matchGitHub(ref('feature/y'), prs, ci));
+    expect(lines).toEqual(['PR #44: PR 44 → main · CI başarısız', 'PR #45: PR 45 → main · CI sürüyor']);
   });
 });
 

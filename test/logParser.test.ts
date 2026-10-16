@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { GitError, runGit } from '../src/git/gitRunner';
+import { GitError, runGit, setGitPath } from '../src/git/gitRunner';
 import { LOG_FORMAT, logArgs, parseNumstatLog } from '../src/git/logParser';
 
 const RS = '\x1e';
@@ -206,5 +206,42 @@ describe('gerçek geçici repo', () => {
 
   it('geçersiz komutta failed hatası', async () => {
     await expect(runGit(['log', 'olmayan-ref-xyz'], dir)).rejects.toMatchObject({ code: 'failed' });
+  });
+});
+
+describe('.mailmap ve setGitPath', () => {
+  let dir = '';
+  const commitAs = async (name: string, email: string, file: string) => {
+    await writeFile(path.join(dir, file), `${file}\n`);
+    await runGit(['add', '-A'], dir);
+    await runGit(['-c', `user.name=${name}`, '-c', `user.email=${email}`, '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', file], dir);
+  };
+
+  beforeAll(async () => {
+    dir = await mkdtemp(path.join(os.tmpdir(), 'rewiewrev-mailmap-'));
+    await runGit(['init', '-q'], dir);
+    await commitAs('Ali Veli', 'ali@is.example.com', 'a.txt');
+    await commitAs('ali', 'ali@ev.example.com', 'b.txt');
+    await writeFile(path.join(dir, '.mailmap'), 'Ali Veli <ali@is.example.com> ali <ali@ev.example.com>\n');
+    await commitAs('Ali Veli', 'ali@is.example.com', '.keep');
+  });
+
+  afterAll(async () => {
+    setGitPath(undefined);
+    if (dir) await rm(dir, { recursive: true, force: true });
+  });
+
+  it('iki e-posta tek yazara iner', async () => {
+    const commits = parseNumstatLog(await runGit(logArgs(), dir));
+    expect(commits).toHaveLength(3);
+    expect(new Set(commits.map((c) => `${c.author} <${c.email}>`))).toEqual(new Set(['Ali Veli <ali@is.example.com>']));
+  });
+
+  it('setGitPath: geçersiz yol notFound, boş değer varsayılana döner', async () => {
+    setGitPath(path.join(dir, 'olmayan-git.exe'));
+    await expect(runGit(['--version'], dir)).rejects.toMatchObject({ code: 'notFound' });
+    setGitPath('  ');
+    await expect(runGit(['--version'], dir)).resolves.toMatch(/git version/);
+    setGitPath(undefined);
   });
 });

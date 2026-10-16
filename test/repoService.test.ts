@@ -89,7 +89,7 @@ describe.skipIf(!bash)('loadSnapshot (fixture reposu)', () => {
     expect(snap.commits).toHaveLength(34);
     expect(snap.headHash).toBe(git(repo, 'rev-parse', 'HEAD'));
     expect(snap.root).toBe(repo);
-    expect(Object.keys(snap.lineCounts)).toHaveLength(14);
+    expect(Object.keys(snap.lineCounts)).toHaveLength(15);
     expect(snap.lineCounts['assets/logo.bin']).toBeUndefined();
     expect(snap.lineCounts['docs/old-notes.md']).toBeUndefined();
     expect(snap.lineCounts['src/model/repoModel.ts']).toBe(9);

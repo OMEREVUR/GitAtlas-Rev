@@ -1,6 +1,7 @@
 // Graph'ın sağındaki seçim ayrıntısı: mini harita, seçilen commit ya da branch, dokunduğu dosyalar.
-import type { CommitSummary, GitRef } from '../types';
+import type { CommitSummary, GitRef, PullRequest } from '../types';
 import type { WebviewToExtension } from '../protocol';
+import { prRow } from './githubBanner';
 import { baseName, formatDate, formatNumber, formatRelative } from './format';
 
 export type GraphSelection =
@@ -16,6 +17,11 @@ export interface CommitDetailOptions {
   renderMiniMap: (host: HTMLElement) => void;
   onShowInMap: () => void;
   onClear: () => void;
+  /**
+   * v3: branch adına göre açık PR'lar (PR'ın head branch'i). Remote ref'lerde remote öneki atılmış ad
+   * gelir ('origin/feature/x' → 'feature/x').
+   */
+  prsForBranch?: (name: string) => PullRequest[];
 }
 
 const STALE_MS = 30 * 24 * 3600_000;
@@ -83,7 +89,7 @@ export function renderCommitDetail(
   } else if (selection.kind === 'commit') {
     body = commitBody(selection.commit, selection.refs, post, opts);
   } else {
-    body = branchBody(selection.ref, selection.commits, opts);
+    body = branchBody(selection.ref, selection.commits, post, opts);
   }
 
   el.replaceChildren(h('div', 'rr-p-detail-body', [mapSection, ...body]));
@@ -156,10 +162,16 @@ function commitBody(
   });
   copy.setAttribute('aria-live', 'polite');
 
-  return [head, filesSection(files), h('div', 'rr-p-actions', [show, copy])];
+  const prs = prsForRefs(refs, opts);
+  return [head, ...prList(prs, post), filesSection(files), h('div', 'rr-p-actions', [show, copy])];
 }
 
-function branchBody(ref: GitRef, commits: readonly CommitSummary[], opts: CommitDetailOptions): HTMLElement[] {
+function branchBody(
+  ref: GitRef,
+  commits: readonly CommitSummary[],
+  post: (msg: WebviewToExtension) => void,
+  opts: CommitDetailOptions,
+): HTMLElement[] {
   const kind = ref.kind === 'local' ? 'BRANCH · LOKAL' : ref.kind === 'remote' ? 'BRANCH · REMOTE' : 'ETİKET';
   const kicker = `${kind}${ref.isHead ? ' · HEAD' : ''}`;
 
@@ -183,10 +195,29 @@ function branchBody(ref: GitRef, commits: readonly CommitSummary[], opts: Commit
 
   return [
     head,
+    ...prList(prsForRefs([ref], opts), post),
     h('div', 'rr-p-detail-count', `${formatNumber(commits.length)} commit`),
     filesSection(files),
     h('div', 'rr-p-actions', [primaryButton('Haritada aç', opts.onShowInMap)]),
   ];
+}
+
+/** Ref'lerin (lokal/remote branch) PR'ları, numaraya göre tekilleştirilmiş. Etiketler atlanır. */
+function prsForRefs(refs: readonly GitRef[], opts: CommitDetailOptions): PullRequest[] {
+  const lookup = opts.prsForBranch;
+  if (!lookup) return [];
+  const seen = new Map<number, PullRequest>();
+  for (const r of refs) {
+    if (r.kind === 'tag') continue;
+    const name = r.kind === 'remote' ? r.name.slice(r.name.indexOf('/') + 1) : r.name;
+    for (const pr of lookup(name)) if (!seen.has(pr.number)) seen.set(pr.number, pr);
+  }
+  return [...seen.values()];
+}
+
+function prList(prs: readonly PullRequest[], post: (msg: WebviewToExtension) => void): HTMLElement[] {
+  if (prs.length === 0) return [];
+  return [h('ul', 'rr-p-prs', prs.map((pr) => h('li', '', [prRow(pr, post)])))];
 }
 
 function filesSection(content: HTMLElement): HTMLElement {

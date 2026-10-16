@@ -1,6 +1,6 @@
 // Commit graph listesi: şeritler (SVG), ref etiketleri, sanal kaydırma, sonsuz yükleme. Tasarım: Graph.dc.html.
 import './graph.css';
-import type { CommitSummary, GitRef, GraphData, GraphRow } from '../types';
+import type { CiState, CommitSummary, GitRef, GraphData, GraphRow } from '../types';
 import { formatRelative } from './format';
 
 export interface GraphViewOptions {
@@ -12,6 +12,20 @@ export interface GraphViewOptions {
   loadingMore: boolean;
   onSelectCommit: (hash: string | undefined) => void;   // seçili satıra ikinci tık → undefined
   onLoadMore: () => void;
+  /** v3: branch → açık PR'lar. Anahtar: lokal branch adı ya da remote branch'in "origin/" sonrası. */
+  prsByBranch?: Map<string, { number: number; ci: CiState; url: string }[]>;
+}
+
+const CI_TEXT: Record<CiState, string> = { success: 'CI geçti', failure: 'CI başarısız', pending: 'CI sürüyor', none: 'CI yok' };
+
+/** Ref'in PR eşlemesindeki anahtarı: lokal ad ya da remote'un ilk "/" sonrası. */
+function prKey(r: GitRef): string | undefined {
+  if (r.kind === 'local') return r.name;
+  if (r.kind === 'remote') {
+    const i = r.name.indexOf('/');
+    return i < 0 ? r.name : r.name.slice(i + 1);
+  }
+  return undefined;
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -309,6 +323,22 @@ function rowItem(
   if (isMerge) ariaParts.push(c.parents.length > 2 ? `merge (${c.parents.length} parent)` : 'merge');
   if (isHead) ariaParts.push('HEAD');
   if (refNames.length) ariaParts.push(`ref: ${refNames.join(', ')}`);
+  // Bu satırdaki ref'lere bağlı PR'lar (lokal + remote aynı PR'ı iki kez göstermesin).
+  const prsByRef = new Map<GitRef, { number: number; ci: CiState; url: string }[]>();
+  if (opts.prsByBranch) {
+    const seen = new Set<number>();
+    for (const r of refs) {
+      const key = prKey(r);
+      const prs = key ? opts.prsByBranch.get(key) : undefined;
+      if (!prs) continue;
+      const fresh = prs.filter((p) => !seen.has(p.number));
+      fresh.forEach((p) => seen.add(p.number));
+      if (fresh.length) prsByRef.set(r, fresh);
+    }
+    for (const prs of prsByRef.values()) {
+      for (const p of prs) ariaParts.push(p.ci === 'none' ? `PR #${p.number}` : `PR #${p.number}, ${CI_TEXT[p.ci]}`);
+    }
+  }
   btn.setAttribute('aria-label', ariaParts.join(', '));
   btn.title = c.message;
 
@@ -327,6 +357,17 @@ function rowItem(
     tag.title = r.kind === 'remote' ? `${r.name} (remote)` : r.kind === 'tag' ? `${r.name} (etiket)` : r.name;
     if (r.isHead) tag.classList.add('rr-g-ref-current');
     msg.append(tag);
+    for (const p of prsByRef.get(r) ?? []) {
+      const chip = h('span', 'rr-g-pr');
+      chip.title = p.ci === 'none' ? `PR #${p.number}` : `PR #${p.number} · ${CI_TEXT[p.ci]}`;
+      chip.append(h('span', 'rr-g-ref-text', `#${p.number}`));
+      if (p.ci !== 'none') {
+        const dot = h('span', `rr-g-ci rr-g-ci-${p.ci}`);
+        dot.setAttribute('aria-hidden', 'true');
+        chip.append(dot);
+      }
+      msg.append(chip);
+    }
   }
   if (refs.length > MAX_REFS) {
     const more = h('span', 'rr-g-ref rr-g-ref-more', `+${refs.length - MAX_REFS}`);

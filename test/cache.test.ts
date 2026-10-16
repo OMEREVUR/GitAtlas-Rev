@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -73,16 +73,25 @@ describe('cache', () => {
   it('farklı sürüm veya eksik alan → undefined', async () => {
     await writeSnapshot(dir, snapshot);
     const file = await onlyCacheFile(dir);
-    await writeFile(file, JSON.stringify({ version: 2, snapshot }), 'utf8');
+    // Sürüm 1 (mailmap öncesi yazar adları) ve gelecekteki sürümler okunmaz → tam tarama.
+    for (const version of [1, 3]) {
+      await writeFile(file, JSON.stringify({ version, snapshot }), 'utf8');
+      expect(await readSnapshot(dir, ROOT)).toBeUndefined();
+    }
+    await writeFile(file, JSON.stringify({ version: 2, snapshot: { ...snapshot, commits: null } }), 'utf8');
     expect(await readSnapshot(dir, ROOT)).toBeUndefined();
-    await writeFile(file, JSON.stringify({ version: 1, snapshot: { ...snapshot, commits: null } }), 'utf8');
-    expect(await readSnapshot(dir, ROOT)).toBeUndefined();
+  });
+
+  it('yazılan dosya sürüm 2 taşır', async () => {
+    await writeSnapshot(dir, snapshot);
+    const data: unknown = JSON.parse(await readFile(await onlyCacheFile(dir), 'utf8'));
+    expect(data).toMatchObject({ version: 2 });
   });
 
   it('dosyadaki root farklıysa → undefined', async () => {
     await writeSnapshot(dir, snapshot);
     const file = await onlyCacheFile(dir);
-    await writeFile(file, JSON.stringify({ version: 1, snapshot: { ...snapshot, root: '/baska' } }), 'utf8');
+    await writeFile(file, JSON.stringify({ version: 2, snapshot: { ...snapshot, root: '/baska' } }), 'utf8');
     expect(await readSnapshot(dir, ROOT)).toBeUndefined();
   });
 

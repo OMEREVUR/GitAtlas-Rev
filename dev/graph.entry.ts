@@ -1,11 +1,11 @@
 // YALNIZCA dev önizlemesi: sahte veriyle commit graph (+ compact mini harita).
-// URL: ?theme=dark|light  ?plain=1  ?select=<satır no>  ?branch=1  ?filter=1  ?width=360  ?compact=1
+// URL: ?pr=1 (sahte PR + CI)  ?theme=dark|light  ?plain=1  ?select=<satır no>  ?branch=1  ?filter=1  ?width=360  ?compact=1
 //      ?n=2000 (commit sayısı; ≥1000'de süreler sağ üstte)  ?scroll=<satır no> (ekran görüntüsü için)
 import '../src/webview/base.css';
 import { renderGraph } from '../src/webview/graphView';
 import { renderTreemap } from '../src/webview/treemap';
 import { layoutGraph } from '../src/model/graphLayout';
-import type { CommitSummary, FileStat, GitRef, GraphData } from '../src/types';
+import type { CiState, CommitSummary, FileStat, GitRef, GraphData } from '../src/types';
 
 const params = new URLSearchParams(location.search);
 const theme = params.get('theme') === 'light' ? 'vscode-light' : 'vscode-dark';
@@ -200,6 +200,20 @@ const fileStats: FileStat[] = FILES.map((path, i) => ({
   authors: [AUTHORS[i % AUTHORS.length]],
 }));
 
+/** ?pr=1: açık branch'lere sahte PR'lar (CI geçti / başarısız / sürüyor / yok). */
+const prs = params.get('pr') === '1' ? new Map<string, { number: number; ci: CiState; url: string }[]>() : undefined;
+if (prs) {
+  const ciCycle: CiState[] = ['success', 'failure', 'pending', 'none'];
+  let n = 41;
+  for (const r of all.refs) {
+    if (r.kind !== 'local' || r.isHead) continue;
+    prs.set(r.name, [{ number: n, ci: ciCycle[(n - 41) % ciCycle.length], url: `https://github.com/ornek/rewiewrev/pull/${n}` }]);
+    n++;
+  }
+  const first = [...prs.keys()][0];
+  if (first) prs.get(first)?.push({ number: n, ci: 'success', url: '' });
+}
+
 function render(): void {
   const data = graphData();
   const t0 = performance.now();
@@ -207,6 +221,7 @@ function render(): void {
     plain: state.plain || filterOn,
     selectedHash: state.selected,
     branchHashes: bh,
+    prsByBranch: prs,
     visible,
     now: NOW,
     loadingMore: state.loadingMore,

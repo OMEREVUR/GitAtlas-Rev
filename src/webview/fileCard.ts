@@ -1,7 +1,8 @@
 // Dosya kartı: seçili dosyanın özeti, son 5 commit'i (yeniden adlandırmayı takip ederek) ve eylemleri.
-import type { CommitSummary, FileStat, TimeRange } from '../types';
+import type { CommitSummary, FileStat, PullRequest, TimeRange } from '../types';
 import type { WebviewToExtension } from '../protocol';
 import { HEAT_LABELS, heatVar, type HeatLevel } from './heat';
+import { prRow } from './githubBanner';
 import { RANGE_SHORT, baseName, formatDate, formatNumber, formatRelative } from './format';
 
 export interface FileCardOptions {
@@ -9,6 +10,10 @@ export interface FileCardOptions {
   heat: HeatLevel;
   now: number;
   onClose: () => void;
+  /** v3: bu dosyaya dokunan açık PR'lar. */
+  prs?: PullRequest[];
+  /** v3: GitHub verisi eski (oturum düştü, ağ yok, limit bitti). */
+  prStale?: boolean;
 }
 
 const RECENT_LIMIT = 5;
@@ -124,8 +129,41 @@ export function renderFileCard(
   open.addEventListener('click', () => post({ type: 'openFile', path: file.path }));
 
   el.replaceChildren(
-    h('div', 'rr-p-card-body', [head, stats, heat, facts, recentSection, h('div', 'rr-p-actions', [open])]),
+    h('div', 'rr-p-card-body', [
+      head,
+      stats,
+      heat,
+      ...prSections(opts.prs ?? [], opts.prStale === true, post),
+      facts,
+      recentSection,
+      h('div', 'rr-p-actions', [open]),
+    ]),
   );
+}
+
+/** v3: 2+ PR'da çakışma notu ve "AÇIK PR'LAR" listesi. PR yoksa hiçbir şey eklemez. */
+function prSections(prs: readonly PullRequest[], stale: boolean, post: (msg: WebviewToExtension) => void): HTMLElement[] {
+  if (prs.length === 0) return [];
+  const out: HTMLElement[] = [];
+  if (prs.length >= 2) {
+    const warn = h('span', `codicon codicon-warning rr-p-conflict-icon`);
+    warn.setAttribute('aria-hidden', 'true');
+    const note = h('div', `rr-p-conflict${stale ? ' is-stale' : ''}`, [
+      warn,
+      h('span', '', [
+        document.createTextNode('Bu dosyaya '),
+        h('strong', '', `${formatNumber(prs.length)} açık PR`),
+        document.createTextNode(' dokunuyor. Merge sırasında çakışabilir.' + (stale ? ' (eski veri)' : '')),
+      ]),
+    ]);
+    note.setAttribute('role', 'note');
+    out.push(note);
+  }
+  const heading = h('h3', 'rr-p-heading', "AÇIK PR'LAR");
+  if (stale) heading.append(h('span', 'rr-p-heading-note', ' · eski veri'));
+  const list = h('ul', 'rr-p-prs', prs.map((pr) => h('li', '', [prRow(pr, post)])));
+  out.push(h('section', 'rr-p-section', [heading, list]));
+  return out;
 }
 
 function stat(label: string, value: string): HTMLElement {

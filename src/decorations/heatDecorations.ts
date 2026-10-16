@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
-import type { FileStat } from '../types';
+import { type BadgeMode, getBadgeMode } from '../config';
+import type { FileStat, PullRequest } from '../types';
+import { heatLevels } from '../webview/heat';
 
 /** 2 = en sıcak %10 ("●●"), 1 = sonraki %20 ("●"). */
 export type HeatTier = 1 | 2;
@@ -28,6 +30,73 @@ export function heatBadge(tier: HeatTier, changes: number): { badge: string; too
     : { badge: '●', tooltip: `RewiewRev: sık değişiyor · ${changes} commit` };
 }
 
+/** Bu kadar ve üstü açık PR aynı dosyaya dokunursa PR rozeti ısının önüne geçer. */
+export const PR_BADGE_MIN = 2;
+
+export interface BadgeSpec {
+  kind: 'heat' | 'pr';
+  /** En fazla 2 karakter. */
+  badge: string;
+  tooltip: string;
+}
+
+/** Dosya yolu → kendisine dokunan açık PR sayısı. */
+export function countPrsByFile(prs: readonly Pick<PullRequest, 'files'>[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const pr of prs) {
+    for (const f of new Set(pr.files)) counts.set(f, (counts.get(f) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/** PR sayısı rozeti: 2..9, üstü "9+" (2 karakter). */
+export function prBadgeText(count: number): string {
+  return count > 9 ? '9+' : String(count);
+}
+
+/**
+ * Her dosyanın rozeti. 'off' → hiç; 'hot' → ●●/●; 'all' → değişen her dosyada 1..5 ısı seviyesi.
+ * prCounts'ta 2+ PR olan dosyada PR sayısı ısının önüne geçer ('off' hariç).
+ */
+export function computeBadges(
+  files: readonly FileStat[],
+  mode: BadgeMode,
+  prCounts?: ReadonlyMap<string, number>,
+): Map<string, BadgeSpec> {
+  const out = new Map<string, BadgeSpec>();
+  if (mode === 'off') return out;
+
+  if (mode === 'hot') {
+    const byPath = new Map(files.map((f) => [f.path, f]));
+    for (const [p, tier] of computeHeatTiers(files)) {
+      const stat = byPath.get(p);
+      if (stat) out.set(p, { kind: 'heat', ...heatBadge(tier, stat.changes) });
+    }
+  } else {
+    const levels = heatLevels(files);
+    for (const f of files) {
+      const level = levels.get(f.path) ?? 0;
+      if (level > 0) {
+        out.set(f.path, { kind: 'heat', badge: String(level), tooltip: `RewiewRev: ısı ${level}/5 · ${f.changes} commit` });
+      }
+    }
+  }
+
+  if (prCounts) {
+    for (const f of files) {
+      const n = prCounts.get(f.path) ?? 0;
+      if (n >= PR_BADGE_MIN) {
+        out.set(f.path, {
+          kind: 'pr',
+          badge: prBadgeText(n),
+          tooltip: `RewiewRev: ${n} açık PR bu dosyaya dokunuyor (çakışma riski)`,
+        });
+      }
+    }
+  }
+  return out;
+}
+
 /** Explorer URI'ları ile bizim ürettiğimiz URI'ların eşleşmesi için anahtar (Windows'ta büyük/küçük harf duyarsız). */
 function uriKey(uri: vscode.Uri): string {
   return process.platform === 'win32' ? uri.fsPath.toLowerCase() : uri.fsPath;
@@ -39,19 +108,17 @@ export class HeatDecorationProvider implements vscode.FileDecorationProvider, vs
 
   private entries = new Map<string, { uri: vscode.Uri; decoration: vscode.FileDecoration }>();
 
-  update(files: FileStat[], root: string): void {
+  /** Rozetleri yeniden kurar. Mod `rewiewrev.explorer.badges` ayarından okunur. */
+  update(files: FileStat[], root: string, prCounts?: Map<string, number>): void {
     const old = this.entries;
     const next = new Map<string, { uri: vscode.Uri; decoration: vscode.FileDecoration }>();
     if (root) {
       const base = vscode.Uri.file(root);
-      const byPath = new Map(files.map((f) => [f.path, f]));
-      for (const [path, tier] of computeHeatTiers(files)) {
-        const stat = byPath.get(path);
-        if (!stat) continue;
-        const { badge, tooltip } = heatBadge(tier, stat.changes);
-        const uri = vscode.Uri.joinPath(base, ...path.split('/'));
-        // Renk verilmez: Git'in M/U renklerini ezmesin; anlam tooltip'te.
-        const decoration = new vscode.FileDecoration(badge, tooltip);
+      for (const [p, spec] of computeBadges(files, getBadgeMode(), prCounts)) {
+        const uri = vscode.Uri.joinPath(base, ...p.split('/'));
+        // Isı rozetine renk verilmez (Git'in M/U renklerini ezmesin); PR çakışması mor.
+        const color = spec.kind === 'pr' ? new vscode.ThemeColor('charts.purple') : undefined;
+        const decoration = new vscode.FileDecoration(spec.badge, spec.tooltip, color);
         decoration.propagate = false;
         next.set(uriKey(uri), { uri, decoration });
       }

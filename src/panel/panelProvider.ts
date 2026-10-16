@@ -1,15 +1,18 @@
 import { randomBytes } from 'node:crypto';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { getIgnoreGlobs } from '../config';
-import type { HeatDecorationProvider } from '../decorations/heatDecorations';
-import { GitError, runGit } from '../git/gitRunner';
+import { CONFIG_KEYS, getDefaultRange, getGitPath, getGraphPageSize, getIgnoreGlobs } from '../config';
+import { countPrsByFile, type HeatDecorationProvider } from '../decorations/heatDecorations';
+import { GitError, runGit, setGitPath } from '../git/gitRunner';
 import { listRefs } from '../git/refs';
+import type { GitHubLayer } from '../github/githubLayer';
 import { computeFileStats } from '../model/aggregate';
+import { computeContrib } from '../model/contrib';
 import { loadGraph } from '../model/graphService';
 import { loadSnapshot, NoCommitsError } from '../model/repoService';
+import { buildTimeline } from '../model/timeline';
 import type { ErrorCode, ExtensionToWebview, StateAction, WebviewToExtension } from '../protocol';
-import type { GitRef, GraphData, RepoSnapshot, TimeRange } from '../types';
+import type { FileStat, GitHubData, GitRef, GraphData, RepoSnapshot, TimeRange } from '../types';
 import { makeGitUri } from './gitContentProvider';
 import type { RewiewRevStatusBar } from './statusBar';
 
@@ -41,6 +44,18 @@ export function isSafeRefName(v: unknown): v is string {
   return !/[\s\x00-\x1f\x7f~^:?*[\\]/.test(v);
 }
 
+/** Yalnızca https://github.com/… adresleri (kullanıcı adı/parola/port yok). */
+export function isGitHubUrl(v: unknown): v is string {
+  if (typeof v !== 'string' || v.length > 2048 || !v.startsWith('https://github.com/')) return false;
+  let u: URL;
+  try {
+    u = new URL(v);
+  } catch {
+    return false;
+  }
+  return u.protocol === 'https:' && u.hostname === 'github.com' && u.port === '' && u.username === '' && u.password === '';
+}
+
 /** Webview'dan gelen veriyi doğrular; tanınmayan/bozuk mesajda undefined. */
 export function parseWebviewMessage(raw: unknown): WebviewToExtension | undefined {
   if (typeof raw !== 'object' || raw === null) return undefined;
@@ -66,6 +81,18 @@ export function parseWebviewMessage(raw: unknown): WebviewToExtension | undefine
       if (branch === undefined) return { type: 'loadGraph', limit };
       return isSafeRefName(branch) ? { type: 'loadGraph', branch, limit } : undefined;
     }
+    case 'githubConnect':
+      return { type: 'githubConnect' };
+    case 'githubDismiss':
+      return { type: 'githubDismiss' };
+    case 'githubRefresh':
+      return { type: 'githubRefresh' };
+    case 'openUrl':
+      return isGitHubUrl(m.url) ? { type: 'openUrl', url: m.url } : undefined;
+    case 'loadTimeline':
+      return { type: 'loadTimeline' };
+    case 'loadContrib':
+      return isRange(m.range) ? { type: 'loadContrib', range: m.range } : undefined;
     default:
       return undefined;
   }
@@ -99,13 +126,25 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   readonly onDidLoadRefs: vscode.Event<GitRef[] | undefined> = this.refsEmitter.event;
 
   /** Açık webview'lar (yan panel ve/veya düzenleyici sekmesi); hepsi aynı modeli alır. */
-  private readonly webviews = new Map<vscode.Webview, vscode.Disposable[]>();
+  private readonly webviews = new Map<vscode.Webview, { disposables: vscode.Disposable[]; isVisible: () => boolean }>();
+  /** github.setVisible'a en son verilen değer. */
+  private anyVisible = false;
   private editorPanel: vscode.WebviewPanel | undefined;
   private readonly disposables: vscode.Disposable[] = [];
 
   private root: string | undefined;
   private snapshot: RepoSnapshot | undefined;
-  private range: TimeRange = '30d';
+  private range: TimeRange = getDefaultRange();
+  /** Son publishModel'de hesaplanan dosyalar (rozetleri ayar/GitHub değişince yeniden kurmak için). */
+  private files: FileStat[] = [];
+  /** Son listRefs sonucu (zaman makinesindeki etiket işaretleri için). */
+  private refs: GitRef[] | undefined;
+
+  /** v4: istendiyse her reload'da yeniden üretilir. */
+  private timelineRequested = false;
+  private contribRange: TimeRange | undefined;
+  private lastTimeline: ExtensionToWebview | undefined;
+  private lastContrib: ExtensionToWebview | undefined;
   /** Webview'a gönderilen son durum (model/loading/error); `ready` gelince yeniden gönderilir. */
   private lastState: ExtensionToWebview | undefined;
 
@@ -128,19 +167,37 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     private readonly storageDir: string,
     private readonly decorations: HeatDecorationProvider,
     private readonly statusBar: RewiewRevStatusBar,
+    private readonly github: GitHubLayer,
   ) {
+    setGitPath(getGitPath());
+    this.statusBar.setGitHub(github.data);
     this.disposables.push(
       this.rootEmitter,
       this.refsEmitter,
+      github.onDidChange((data) => this.onGitHubChange(data)),
       vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('rewiewrev.ignore')) this.recompute();
+        if (e.affectsConfiguration(CONFIG_KEYS.gitPath) || e.affectsConfiguration(CONFIG_KEYS.vscodeGitPath)) {
+          setGitPath(getGitPath());
+          void this.reload();
+          return;
+        }
+        if (e.affectsConfiguration(CONFIG_KEYS.defaultRange)) this.range = getDefaultRange();
+        if (
+          e.affectsConfiguration(CONFIG_KEYS.ignore) ||
+          e.affectsConfiguration(CONFIG_KEYS.defaultRange) ||
+          e.affectsConfiguration(CONFIG_KEYS.graphPageSize)
+        ) {
+          this.recompute();
+        } else if (e.affectsConfiguration(CONFIG_KEYS.badges)) {
+          this.updateDecorations();
+        }
       }),
       vscode.workspace.onDidChangeWorkspaceFolders(() => void this.reload()),
     );
   }
 
   resolveWebviewView(view: vscode.WebviewView): void {
-    this.attach(view.webview, view.onDidDispose);
+    this.attach(view.webview, view.onDidDispose, () => view.visible, view.onDidChangeVisibility);
   }
 
   /** Haritayı düzenleyici alanında bir sekmede açar; zaten açıksa öne getirir. */
@@ -169,21 +226,40 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     panel.onDidDispose(() => {
       if (this.editorPanel === panel) this.editorPanel = undefined;
     });
-    this.attach(panel.webview, panel.onDidDispose);
+    this.attach(panel.webview, panel.onDidDispose, () => panel.visible, panel.onDidChangeViewState);
   }
 
-  private attach(webview: vscode.Webview, onDidDispose: vscode.Event<void>): void {
+  private attach(
+    webview: vscode.Webview,
+    onDidDispose: vscode.Event<void>,
+    isVisible: () => boolean,
+    onDidChangeVisibility: vscode.Event<unknown>,
+  ): void {
     const dist = vscode.Uri.joinPath(this.extensionUri, 'dist');
     webview.options = { enableScripts: true, localResourceRoots: [dist] };
     webview.html = this.renderHtml(webview);
-    this.webviews.get(webview)?.forEach((d) => d.dispose());
-    this.webviews.set(webview, [
-      webview.onDidReceiveMessage((raw: unknown) => void this.onMessage(raw, webview)),
-      onDidDispose(() => {
-        this.webviews.get(webview)?.forEach((d) => d.dispose());
-        this.webviews.delete(webview);
-      }),
-    ]);
+    this.webviews.get(webview)?.disposables.forEach((d) => d.dispose());
+    this.webviews.set(webview, {
+      isVisible,
+      disposables: [
+        webview.onDidReceiveMessage((raw: unknown) => void this.onMessage(raw, webview)),
+        onDidChangeVisibility(() => this.updateVisibility()),
+        onDidDispose(() => {
+          this.webviews.get(webview)?.disposables.forEach((d) => d.dispose());
+          this.webviews.delete(webview);
+          this.updateVisibility();
+        }),
+      ],
+    });
+    this.updateVisibility();
+  }
+
+  /** GitHub katmanı yalnızca en az bir webview görünürken yenilenir. */
+  private updateVisibility(): void {
+    const visible = [...this.webviews.values()].some((w) => w.isVisible());
+    if (visible === this.anyVisible) return;
+    this.anyVisible = visible;
+    this.github.setVisible(visible);
   }
 
   /** Tarar ve her şeyi günceller. Devam eden tarama varsa bitince bir kez daha çalışır (paralel tarama yok). */
@@ -208,7 +284,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
 
   dispose(): void {
     this.disposed = true;
-    this.webviews.forEach((ds) => ds.forEach((d) => d.dispose()));
+    this.webviews.forEach((w) => w.disposables.forEach((d) => d.dispose()));
     this.webviews.clear();
     this.editorPanel?.dispose();
     this.disposables.forEach((d) => d.dispose());
@@ -233,10 +309,14 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
       // Snapshot bu taramadan önce üretildiyse cache'ten gelmiştir.
       if (fileCount !== undefined) this.statusBar.setReady(fileCount, snapshot.generatedAt < startedAt);
       await this.refreshRefs();
-      if (this.graphParams && !this.disposed) void this.requestGraph(this.graphParams);
+      if (this.disposed) return;
+      this.publishDerived();
+      if (this.graphParams) void this.requestGraph(this.graphParams);
     } catch (err) {
       if (this.disposed) return;
       this.snapshot = undefined;
+      this.files = [];
+      this.refs = undefined;
       this.refsEmitter.fire(undefined);
       this.decorations.update([], this.root ?? '');
       const e = err instanceof NoWorkspaceError
@@ -250,19 +330,31 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   private async resolveRoot(): Promise<string> {
     const folder = vscode.workspace.workspaceFolders?.[0];
     if (!folder || folder.uri.scheme !== 'file') {
-      this.root = undefined;
+      this.setRoot(undefined);
       throw new NoWorkspaceError();
     }
-    const out = (await runGit(['rev-parse', '--show-toplevel'], folder.uri.fsPath)).trim();
-    const root = vscode.Uri.file(out).fsPath;
-    if (root !== this.root) {
-      this.root = root;
-      this.snapshot = undefined;
-      this.graph = undefined;
-      this.lastGraphState = undefined;
-      this.rootEmitter.fire(root);
+    let out: string;
+    try {
+      out = (await runGit(['rev-parse', '--show-toplevel'], folder.uri.fsPath)).trim();
+    } catch (err) {
+      this.setRoot(undefined);
+      throw err;
     }
+    const root = vscode.Uri.file(out).fsPath;
+    this.setRoot(root);
     return root;
+  }
+
+  private setRoot(root: string | undefined): void {
+    if (root === this.root) return;
+    this.root = root;
+    this.snapshot = undefined;
+    this.graph = undefined;
+    this.lastGraphState = undefined;
+    this.lastTimeline = undefined;
+    this.lastContrib = undefined;
+    void this.github.setRoot(root);
+    if (root !== undefined) this.rootEmitter.fire(root);
   }
 
   /** Bellekteki snapshot'tan dosyaları hesaplar, rozetleri ve webview'ı günceller. Dosya sayısını döner. */
@@ -272,13 +364,15 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     if (!snapshot || !root) return undefined;
     try {
       const files = computeFileStats(snapshot, this.range, getIgnoreGlobs(), Date.now());
-      this.decorations.update(files, root);
+      this.files = files;
+      this.updateDecorations();
       this.post({
         type: 'model',
         range: this.range,
         repoName: path.basename(root),
         files,
         commits: snapshot.commits.slice(0, MAX_COMMITS),
+        graphPageSize: getGraphPageSize(),
       });
       return files.length;
     } catch (err) {
@@ -293,6 +387,56 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   private recompute(): void {
     if (this.running) return;
     this.publishModel();
+    this.publishDerived();
+  }
+
+  /** Explorer rozetleri: son dosyalar + (GitHub bağlı ya da eski veride) dosya başına açık PR sayısı. */
+  private updateDecorations(): void {
+    const root = this.root;
+    if (!root || !this.snapshot) return;
+    const s = this.github.data.status.state;
+    const prCounts = s === 'connected' || s === 'stale' ? countPrsByFile(this.github.data.pullRequests) : undefined;
+    this.decorations.update(this.files, root, prCounts);
+  }
+
+  private onGitHubChange(data: GitHubData): void {
+    this.broadcast({ type: 'github', data });
+    this.statusBar.setGitHub(data);
+    this.updateDecorations();
+  }
+
+  // ---- v4: zaman makinesi ve katkı ----
+
+  /** İstenmiş olan timeline/contrib verisini snapshot'tan yeniden üretip gönderir. */
+  private publishDerived(): void {
+    const snapshot = this.snapshot;
+    if (!snapshot) return;
+    const ignore = getIgnoreGlobs();
+    const now = Date.now();
+    if (this.timelineRequested) {
+      try {
+        const timeline = buildTimeline(snapshot, computeFileStats(snapshot, 'all', ignore, now), this.refs);
+        this.lastTimeline = { type: 'timeline', timeline };
+        this.broadcast(this.lastTimeline);
+      } catch (err) {
+        this.reportDerivedError('Zaman makinesi', err);
+      }
+    }
+    if (this.contribRange) {
+      const range = this.contribRange;
+      try {
+        const contrib = computeContrib(snapshot.commits, computeFileStats(snapshot, range, ignore, now), range, now);
+        this.lastContrib = { type: 'contrib', contrib };
+        this.broadcast(this.lastContrib);
+      } catch (err) {
+        this.reportDerivedError('Katkı paneli', err);
+      }
+    }
+  }
+
+  private reportDerivedError(what: string, err: unknown): void {
+    const text = err instanceof Error ? err.message : String(err);
+    void vscode.window.showErrorMessage(`RewiewRev: ${what} hazırlanamadı: ${text}`);
   }
 
   // ---- branch'ler ve graph ----
@@ -302,8 +446,10 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     try {
       const root = this.root ?? (await this.resolveRoot());
       const refs = await listRefs(root);
+      this.refs = refs;
       if (!this.disposed) this.refsEmitter.fire(refs);
     } catch {
+      this.refs = undefined;
       if (!this.disposed) this.refsEmitter.fire(undefined);
     }
   }
@@ -378,6 +524,9 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
           if (this.lastState) void from.postMessage(this.lastState);
           if (this.lastGraphState) void from.postMessage(this.lastGraphState);
           if (this.selectedBranch !== undefined) void from.postMessage({ type: 'selectBranch', name: this.selectedBranch });
+          void from.postMessage({ type: 'github', data: this.github.data });
+          if (this.lastTimeline) void from.postMessage(this.lastTimeline);
+          if (this.lastContrib) void from.postMessage(this.lastContrib);
           if (!this.started) void this.reload();
           break;
         case 'setRange':
@@ -398,6 +547,26 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
           break;
         case 'loadGraph':
           await this.requestGraph({ limit: msg.limit, branch: msg.branch });
+          break;
+        case 'githubConnect':
+          await this.github.connect();
+          break;
+        case 'githubDismiss':
+          this.github.dismiss();
+          break;
+        case 'githubRefresh':
+          await this.github.refresh();
+          break;
+        case 'openUrl':
+          await vscode.env.openExternal(vscode.Uri.parse(msg.url, true));
+          break;
+        case 'loadTimeline':
+          this.timelineRequested = true;
+          if (!this.running) this.publishDerived();
+          break;
+        case 'loadContrib':
+          this.contribRange = msg.range;
+          if (!this.running) this.publishDerived();
           break;
       }
     } catch (err) {

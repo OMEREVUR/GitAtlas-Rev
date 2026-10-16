@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RewiewRev — katkı paneli</title>
+  <link rel="stylesheet" href="themes.css">
+  <link rel="stylesheet" href="../node_modules/@vscode/codicons/dist/codicon.css">
+  <link rel="stylesheet" href="out/contrib.entry.css">
+  <style>
+    /* Yalnızca önizleme düzeni. */
+    body { display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+    #contrib { flex: 1 1 auto; min-height: 0; }
+    #log { flex: 0 0 90px; overflow: auto; padding: 6px 12px; border-top: 1px solid var(--vscode-panel-border); font-family: var(--vscode-editor-font-family); font-size: 11px; color: var(--vscode-descriptionForeground); }
+  </style>
+</head>
+<body class="vscode-dark">
+  <div id="contrib"></div>
+  <div id="log"></div>
+  <script src="out/contrib.entry.js"></script>
+</body>
+</html>

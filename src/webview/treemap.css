@@ -323,3 +323,68 @@
 .rr-tm-compact .rr-tm-name {
   font-size: 11px;
 }
+
+/* --- v3: PR rozeti ve çakışma çerçevesi --- */
+.rr-tm {
+  --rr-tm-pr: var(--vscode-charts-purple);
+}
+.rr-tm.rr-tm-prstale {
+  --rr-tm-pr: var(--vscode-descriptionForeground);
+}
+.rr-tm-conflict {
+  fill: none;
+  stroke: var(--rr-tm-pr);
+  stroke-width: 2px;
+  stroke-dasharray: 5 3;
+  pointer-events: none;
+}
+.rr-tm-prbadge {
+  pointer-events: none;
+}
+.rr-tm-prbadge-bg {
+  fill: var(--vscode-editor-background);
+  stroke: var(--rr-tm-pr);
+  stroke-width: 1px;
+}
+.rr-tm-prbadge-icon {
+  font-family: codicon;
+  font-size: 12px;
+  fill: var(--vscode-foreground);
+}
+.rr-tm-prbadge-text {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--vscode-foreground);
+}
+.rr-tm-prbadge-conflict .rr-tm-prbadge-bg {
+  fill: var(--rr-tm-pr);
+  stroke: none;
+}
+.rr-tm-prbadge-conflict .rr-tm-prbadge-icon,
+.rr-tm-prbadge-conflict .rr-tm-prbadge-text {
+  fill: var(--vscode-editor-background);
+}
+.rr-tm-swatch-conflict {
+  outline: 2px dashed var(--rr-tm-pr);
+  outline-offset: -2px;
+}
+.rr-tm-tip-pr {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.rr-tm-tip-conflict .codicon {
+  color: var(--rr-tm-pr);
+}
+
+/* --- v4: o tarihte henüz olmayan dosyalar --- */
+.rr-tm-missing {
+  fill: none;
+  stroke: var(--vscode-panel-border);
+  stroke-width: 1px;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+.rr-tm-swatch-missing {
+  border: 1px dashed var(--vscode-panel-border);
+}

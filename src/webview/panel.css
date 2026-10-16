@@ -684,3 +684,211 @@
 .rr-p-file-more {
   padding-top: 4px;
 }
+
+/* ======================= v3: GitHub bandı ======================= */
+.rr-p-gh {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 3px;
+  font-size: 12px;
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-panel-border);
+}
+.rr-p-gh[hidden] {
+  display: none;
+}
+.rr-p-gh[data-tone='info'] {
+  background: var(--vscode-inputValidation-infoBackground, var(--vscode-editorWidget-background));
+  border-color: var(--vscode-inputValidation-infoBorder, var(--vscode-focusBorder));
+}
+.rr-p-gh[data-tone='warning'] {
+  background: var(--vscode-inputValidation-warningBackground, var(--vscode-editorWidget-background));
+  border-color: var(--vscode-inputValidation-warningBorder, var(--vscode-editorWarning-foreground, var(--vscode-charts-yellow)));
+}
+.rr-p-gh[data-tone='error'] {
+  background: var(--vscode-inputValidation-errorBackground, var(--vscode-editorWidget-background));
+  border-color: var(--vscode-inputValidation-errorBorder, var(--vscode-errorForeground));
+}
+.rr-p-gh-icon {
+  flex: 0 0 16px;
+  margin-top: 1px;
+}
+.rr-p-gh[data-tone='warning'] .rr-p-gh-icon.codicon-warning {
+  color: var(--vscode-editorWarning-foreground, var(--vscode-charts-yellow));
+}
+.rr-p-gh[data-tone='error'] .rr-p-gh-icon {
+  color: var(--vscode-errorForeground);
+}
+.rr-p-gh-body,
+.rr-p-gh-stack {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rr-p-gh-text {
+  overflow-wrap: anywhere;
+}
+.rr-p-gh-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rr-p-btn.rr-p-btn-gh {
+  height: 26px;
+  padding: 0 12px;
+}
+.rr-p-gh-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.rr-p-gh-line .rr-p-gh-icon {
+  margin-top: 0;
+}
+.rr-p-gh-summary {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rr-p-gh-time {
+  flex: 0 0 auto;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+}
+.rr-p-gh-warn {
+  align-items: flex-start;
+  padding-top: 8px;
+  border-top: 1px solid var(--vscode-inputValidation-warningBorder, var(--vscode-panel-border));
+}
+.rr-p-gh-progress {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  background: var(--vscode-textCodeBlock-background);
+}
+.rr-p-gh-progress-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 35%;
+  background: var(--vscode-progressBar-background);
+  animation: rr-p-gh-slide 1.2s ease-in-out infinite;
+}
+@keyframes rr-p-gh-slide {
+  from { left: -35%; }
+  to { left: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rr-p-gh-progress-fill {
+    animation: none;
+  }
+}
+.rr-p-gh > .rr-p-gh-line {
+  flex: 1 1 auto;
+}
+.rr-p-gh-line > .rr-p-gh-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+@container (max-width: 480px) {
+  .rr-p-gh-summary {
+    white-space: normal;
+  }
+  .rr-p-gh-line {
+    align-items: flex-start;
+  }
+  .rr-p-gh-time {
+    display: none;
+  }
+}
+
+/* ======================= v3: açık PR'lar ve çakışma notu ======================= */
+.rr-p-conflict {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  outline: 2px dashed var(--vscode-charts-purple);
+  outline-offset: -2px;
+  font-size: 12px;
+}
+.rr-p-conflict-icon {
+  flex: 0 0 16px;
+  margin-top: 1px;
+  color: var(--vscode-charts-purple);
+}
+.rr-p-conflict.is-stale {
+  outline-color: var(--vscode-descriptionForeground);
+  color: var(--vscode-descriptionForeground);
+}
+.rr-p-conflict.is-stale .rr-p-conflict-icon {
+  color: var(--vscode-descriptionForeground);
+}
+.rr-p-heading-note {
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.rr-p-prs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rr-p-pr-row {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--rr-btn-border);
+  border-radius: 4px;
+  background: var(--vscode-textCodeBlock-background);
+  color: var(--vscode-foreground);
+  text-align: left;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.rr-p-pr-row:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.rr-p-pr-icon {
+  flex: 0 0 14px;
+  margin-top: 2px;
+  color: var(--vscode-charts-purple);
+}
+.rr-p-pr-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rr-p-pr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-p-ci-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--vscode-descriptionForeground);
+}
+.rr-p-ci-dot.is-success { background: var(--vscode-charts-green); }
+.rr-p-ci-dot.is-failure { background: var(--vscode-charts-red); }
+.rr-p-ci-dot.is-pending { background: var(--vscode-charts-yellow); }

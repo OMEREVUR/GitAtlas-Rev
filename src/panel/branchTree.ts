@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { GitRef } from '../types';
+import type { BranchCi, CiState, GitRef, PullRequest } from '../types';
 import { formatDate, formatRelative } from '../webview/format';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -33,10 +33,72 @@ export function aheadBehindText(ref: Pick<GitRef, 'ahead' | 'behind'>): string {
   return parts.join(' ');
 }
 
-/** Ağaç öğesinin açıklaması: "HEAD · bayat · 3 gün önce · ↑2 ↓0" (olmayan parçalar atlanır). */
-export function branchDescription(ref: GitRef, now: number): string {
+/** Bir branch'e ait GitHub bilgisi: head'i bu branch olan açık PR'lar ve branch'in kendi CI'ı. */
+export interface BranchGitHub {
+  prs: PullRequest[];
+  ci?: CiState;
+}
+
+const CI_SYMBOL: Record<CiState, string> = { success: '✓', failure: '✗', pending: '…', none: '' };
+const CI_TEXT: Record<CiState, string> = { success: 'başarılı', failure: 'başarısız', pending: 'sürüyor', none: 'yok' };
+
+/**
+ * GitHub'daki branch adı: remote'ta 'origin/x' → 'x' (yalnızca origin; GitHub katmanı origin'i okur),
+ * lokalde origin'e upstream'i varsa upstream'in adı, yoksa kendi adı.
+ */
+export function githubBranchName(ref: Pick<GitRef, 'name' | 'kind' | 'upstream'>): string | undefined {
+  if (ref.kind === 'remote') return ref.name.startsWith('origin/') ? ref.name.slice('origin/'.length) : undefined;
+  if (ref.kind !== 'local') return undefined;
+  if (ref.upstream?.startsWith('origin/')) return ref.upstream.slice('origin/'.length);
+  return ref.name;
+}
+
+export function matchGitHub(
+  ref: GitRef,
+  prs: readonly PullRequest[],
+  branchCi: readonly BranchCi[],
+): BranchGitHub | undefined {
+  const name = githubBranchName(ref);
+  if (name === undefined) return undefined;
+  const mine = prs.filter((p) => p.headRef === name).sort((a, b) => a.number - b.number);
+  const ci = branchCi.find((b) => b.branch === name)?.ci;
+  if (mine.length === 0 && (ci === undefined || ci === 'none')) return undefined;
+  return { prs: mine, ci };
+}
+
+/** "#41 ✓" (tek PR, CI'ıyla), "#41 #44" (birden çok), PR yoksa "CI ✓"; gösterilecek bir şey yoksa ''. */
+export function githubDescription(gh: BranchGitHub | undefined): string {
+  if (!gh) return '';
+  if (gh.prs.length === 1) {
+    const sym = CI_SYMBOL[gh.prs[0].ci];
+    return sym ? `#${gh.prs[0].number} ${sym}` : `#${gh.prs[0].number}`;
+  }
+  if (gh.prs.length > 1) return gh.prs.map((p) => `#${p.number}`).join(' ');
+  const sym = gh.ci ? CI_SYMBOL[gh.ci] : '';
+  return sym ? `CI ${sym}` : '';
+}
+
+/** Tooltip satırları: "PR #41 (taslak): başlık · CI başarılı", "CI (main): başarısız". */
+export function githubTooltipLines(gh: BranchGitHub | undefined): string[] {
+  if (!gh) return [];
+  const lines = gh.prs.map(
+    (p) => `PR #${p.number}${p.isDraft ? ' (taslak)' : ''}: ${p.title} → ${p.baseRef}${p.ci !== 'none' ? ` · CI ${CI_TEXT[p.ci]}` : ''}`,
+  );
+  if (gh.ci && gh.ci !== 'none') lines.push(`Branch CI: ${CI_TEXT[gh.ci]}`);
+  return lines;
+}
+
+/** Ekran okuyucu için ✓/✗/… yerine sözcük. */
+function speakable(text: string): string {
+  return text.replace(/✓/g, 'CI başarılı').replace(/✗/g, 'CI başarısız').replace(/…/g, 'CI sürüyor');
+}
+
+/** Ağaç öğesinin açıklaması: "HEAD · #41 ✓ · bayat · 3 gün önce · ↑2 ↓0" (olmayan parçalar atlanır). */
+export function branchDescription(ref: GitRef, now: number, gh?: BranchGitHub): string {
   const parts: string[] = [];
   if (ref.isHead) parts.push('HEAD');
+  const ghText = githubDescription(gh);
+  if (ghText) parts.push(ghText);
   if (isStale(ref, now)) parts.push('bayat');
   if (ref.date > 0) parts.push(formatRelative(ref.date, now));
   const ab = aheadBehindText(ref);
@@ -85,6 +147,15 @@ class BranchTreeProvider implements vscode.TreeDataProvider<BranchNode> {
   readonly byName = new Map<string, Extract<BranchNode, { kind: 'ref' }>>();
   private readonly parents = new Map<BranchNode, BranchNode>();
   private now = Date.now();
+  private prs: PullRequest[] = [];
+  private branchCi: BranchCi[] = [];
+
+  setGitHub(prs: readonly PullRequest[], branchCi: readonly BranchCi[]): void {
+    this.prs = [...prs];
+    this.branchCi = [...branchCi];
+    this.now = Date.now();
+    this.emitter.fire();
+  }
 
   setRefs(refs: readonly GitRef[]): void {
     this.now = Date.now();
@@ -125,7 +196,8 @@ class BranchTreeProvider implements vscode.TreeDataProvider<BranchNode> {
     const { ref } = node;
     const item = new vscode.TreeItem(ref.name, vscode.TreeItemCollapsibleState.None);
     item.id = `ref:${ref.fullName}`;
-    item.description = branchDescription(ref, this.now);
+    const gh = matchGitHub(ref, this.prs, this.branchCi);
+    item.description = branchDescription(ref, this.now, gh);
     const color = ref.isHead
       ? new vscode.ThemeColor('charts.blue')
       : isStale(ref, this.now)
@@ -136,12 +208,12 @@ class BranchTreeProvider implements vscode.TreeDataProvider<BranchNode> {
     md.appendMarkdown('**');
     md.appendText(ref.name);
     md.appendMarkdown('**');
-    for (const line of branchTooltipLines(ref, this.now)) {
+    for (const line of [...branchTooltipLines(ref, this.now), ...githubTooltipLines(gh)]) {
       md.appendMarkdown('\n\n');
       md.appendText(line);
     }
     item.tooltip = md;
-    item.accessibilityInformation = { label: `${ref.name}, ${item.description}` };
+    item.accessibilityInformation = { label: speakable(`${ref.name}, ${item.description}`) };
     return item;
   }
 
@@ -181,10 +253,17 @@ export class BranchView implements vscode.Disposable {
     );
   }
 
-  update(refs: GitRef[] | undefined, message?: string): void {
+  /** prs/branchCi verilirse GitHub bilgisi de güncellenir (ayrıca setGitHub ile de verilebilir). */
+  update(refs: GitRef[] | undefined, message?: string, prs?: PullRequest[], branchCi?: BranchCi[]): void {
+    if (prs || branchCi) this.provider.setGitHub(prs ?? [], branchCi ?? []);
     this.provider.setRefs(refs ?? []);
     const empty = this.provider.sections.length === 0;
     this.treeView.message = message ?? (empty && refs ? 'Bu repoda branch yok.' : undefined);
+  }
+
+  /** Açık PR'lar ve branch CI'ları (GitHub kapalı/bağlı değilse boş diziler). */
+  setGitHub(prs: readonly PullRequest[], branchCi: readonly BranchCi[]): void {
+    this.provider.setGitHub(prs, branchCi);
   }
 
   reveal(name: string | undefined): void {

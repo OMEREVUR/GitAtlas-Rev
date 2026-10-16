@@ -3,8 +3,8 @@ import type { CommitFileChange, CommitSummary } from '../types';
 const RS = '\x1e';
 const FS = '\x1f';
 
-/** Kayıt başı \x1e, alan ayracı \x1f: hash, kısa hash, parent'lar, yazar, e-posta, tarih (sn), konu. */
-export const LOG_FORMAT = RS + ['%H', '%h', '%P', '%an', '%ae', '%at', '%s'].join(FS);
+/** Kayıt başı \x1e, alan ayracı \x1f: hash, kısa hash, parent'lar, yazar, e-posta (.mailmap uygulanmış), tarih (sn), konu. */
+export const LOG_FORMAT = RS + ['%H', '%h', '%P', '%aN', '%aE', '%at', '%s'].join(FS);
 
 /** repoService'in çağıracağı tam `git` argümanları. Çıktı en yeniden en eskiye. */
 export function logArgs(revisionRange?: string): string[] {

@@ -15,7 +15,10 @@
 #   Binary dosya .................. assets/logo.bin (2 commit: oluşturma + 1 değişiklik)
 #   Ignore denemesi ............... node_modules/leftpad/index.js, package-lock.json (2'şer commit)
 #   Silinen dosya ................. docs/old-notes.md (oluşturulup sonra silinir; lineCounts'ta yok)
-#   İzlenen dosya sayısı .......... 15 (binary dahil; lineCounts'ta 14)
+#   İzlenen dosya sayısı .......... 16 (binary ve .mailmap dahil; lineCounts'ta 15)
+#   .mailmap ...................... ilk commit'te; Zeynep'in 3 commit'i (85g, 70g, 20g) eski e-postayla
+#                                   "Zeynep K. <zkaya@eski.example.com>" atılır, %aN/%aE ile Zeynep Kaya'ya birleşir
+#                                   (mailmap'siz %an ile 4 yazar adı görünür).
 #   (Yukarıdakiler HEAD = lokal main içindir; v2 eklemeleri main'i değiştirmez.)
 #
 # v2 BEKLENEN DEĞERLER (graph + branch paneli)
@@ -48,6 +51,8 @@ author() {
     A) export GIT_AUTHOR_NAME="Ayse Yilmaz" GIT_AUTHOR_EMAIL="ayse@example.com" ;;
     B) export GIT_AUTHOR_NAME="Mehmet Demir" GIT_AUTHOR_EMAIL="mehmet@example.com" ;;
     C) export GIT_AUTHOR_NAME="Zeynep Kaya" GIT_AUTHOR_EMAIL="zeynep@example.com" ;;
+    # Zeynep'in eski e-postası; .mailmap bunu "Zeynep Kaya <zeynep@example.com>" ile birleştirir.
+    Z) export GIT_AUTHOR_NAME="Zeynep K." GIT_AUTHOR_EMAIL="zkaya@eski.example.com" ;;
   esac
   export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME" GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
 }
@@ -78,6 +83,7 @@ line README.md "# Fixture"
 line README.md "RewiewRev deneme reposu."
 line src/extension.ts "export function activate() {}"
 line package.json '{ "name": "fixture" }'
+line .mailmap "Zeynep Kaya <zeynep@example.com> <zkaya@eski.example.com>"
 commit A $((90 * D)) "chore: ilk commit"
 
 line src/git/runner.ts "export const runner = 1;"
@@ -87,7 +93,7 @@ commit B $((88 * D)) "feat: git runner"
 line src/model/model.ts "export interface Model {}"
 line src/model/model.ts "export const empty = {};"
 line src/model/model.ts "export const version = 1;"
-commit C $((85 * D)) "feat: model"
+commit Z $((85 * D)) "feat: model"
 
 line docs/guide.md "# Rehber"
 line docs/old-notes.md "eski notlar"
@@ -108,7 +114,7 @@ printf 'BIN\000\001\002v1' >assets/logo.bin
 commit B $((72 * D)) "feat: logo"
 
 line test/model.test.ts "test('model', () => {});"
-commit C $((70 * D)) "test: model"
+commit Z $((70 * D)) "test: model"
 FORK_SPIKE=$(git rev-parse HEAD)
 
 line src/model/model.ts "export const a = 'a';"
@@ -151,7 +157,7 @@ line src/webview/main.ts "console.log('ikinci');"
 commit B $((25 * D)) "feat: webview düzen"
 
 line test/model.test.ts "test('ikinci', () => {});"
-commit C $((20 * D)) "test: ikinci"
+commit Z $((20 * D)) "test: ikinci"
 
 line src/git/log.ts "export const parse = () => [];"
 commit A $((15 * D)) "feat: log parse"

@@ -1,8 +1,8 @@
 // YALNIZCA dev önizlemesi: graph araç çubuğu + seçim ayrıntısı paneli, sahte veriyle.
-// URL: ?theme=dark|light  ?sel=commit|merge|branch|stale|none  ?width=360  ?selftest=1
+// URL: ?theme=dark|light  ?sel=commit|merge|branch|stale|none  ?width=360  ?selftest=1  ?pr=1 (PR satırları)
 import '../src/webview/base.css';
 import '../src/webview/panel.css';
-import type { CommitFileChange, CommitSummary, GitRef } from '../src/types';
+import type { CommitFileChange, CommitSummary, GitRef, PullRequest } from '../src/types';
 import type { WebviewToExtension } from '../src/protocol';
 import { renderGraphToolbar, type GraphFilters } from '../src/webview/graphToolbar';
 import { renderCommitDetail, type GraphSelection } from '../src/webview/commitDetail';
@@ -133,6 +133,11 @@ function fakeMiniMap(host: HTMLElement, hot: Set<string>): void {
   }
 }
 
+const FAKE_PRS: PullRequest[] = [
+  { number: 41, title: 'Graph görünümü', url: 'https://github.com/ornek/rewiewrev/pull/41', author: 'mert', headRef: 'feature/graph', baseRef: 'main', isDraft: false, updatedAt: NOW, files: [], ci: 'success' },
+  { number: 42, title: 'main üzerinde sürüm hazırlığı', url: 'https://github.com/ornek/rewiewrev/pull/42', author: 'deniz', headRef: 'main', baseRef: 'release', isDraft: true, updatedAt: NOW, files: [], ci: 'pending' },
+];
+
 // ---------- sayfa ----------
 const logEl = document.getElementById('log') as HTMLElement;
 function log(text: string): void {
@@ -187,6 +192,7 @@ function render(): void {
   renderCommitDetail(detailEl, selection, post, {
     now: NOW,
     touchedCount: hot.size,
+    prsForBranch: params.get('pr') === '1' ? (name) => FAKE_PRS.filter((p) => p.headRef === name) : undefined,
     totalCount: MAP_FILES.length,
     renderMiniMap: (host) => fakeMiniMap(host, hot),
     onShowInMap: () => log('onShowInMap'),

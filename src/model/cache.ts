@@ -3,7 +3,8 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { RepoSnapshot } from '../types';
 
-const CACHE_VERSION = 1;
+// 2: yazar adları .mailmap uygulanmış (%aN/%aE); eski cache yeniden üretilir.
+const CACHE_VERSION = 2;
 
 function cacheFile(storageDir: string, root: string): string {
   const id = createHash('sha1').update(root).digest('hex').slice(0, 16);

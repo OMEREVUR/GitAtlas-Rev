@@ -1,0 +1,284 @@
+/* Zaman makinesi. Yalnızca --vscode-* ve --rr-* değişkenleri. */
+
+/* el: renderTimeMachine'in kapsayıcısı. Yüksekliği dışarıdan verilir. */
+.rr-tm2 {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.rr-tm2-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+.rr-tm2-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px 14px;
+}
+.rr-tm2-top {
+  display: flex;
+  justify-content: flex-end;
+}
+.rr-tm2-note {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-tm2-map {
+  flex: 1 1 auto;
+  min-height: 200px;
+}
+
+/* Kaydırıcı kutusu */
+.rr-tm2-controls {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  background: var(--vscode-editorWidget-background);
+}
+.rr-tm2-bars {
+  height: 44px;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  cursor: pointer;
+}
+.rr-tm2-bar {
+  flex: 1 1 0;
+  min-width: 1px;
+  border-radius: 1px 1px 0 0;
+}
+.rr-tm2-bar-win {
+  background: var(--rr-c5);
+}
+.rr-tm2-bar-past {
+  background: var(--rr-c2);
+}
+.rr-tm2-bar-future {
+  background: var(--vscode-textCodeBlock-background);
+}
+.rr-tm2-bar-cur {
+  box-shadow: 0 -2px 0 var(--vscode-focusBorder);
+}
+.rr-tm2-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rr-tm2-btn {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--vscode-input-border, var(--rr-btn-border));
+  border-radius: 4px;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+}
+.rr-tm2-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.rr-tm2-play {
+  width: 32px;
+  border-color: var(--rr-btn-border);
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+.rr-tm2-play:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+}
+.rr-tm2-slider {
+  flex: 1 1 auto;
+  min-width: 0;
+  accent-color: var(--vscode-focusBorder);
+}
+.rr-tm2-date {
+  flex: 0 0 auto;
+  min-width: 84px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+}
+.rr-tm2-ticks {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 94px 0 112px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* "Bu tarihte" paneli */
+.rr-tm2-side {
+  flex: 0 0 280px;
+  box-sizing: border-box;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--vscode-editorWidget-background);
+  border-left: 1px solid var(--vscode-panel-border);
+}
+.rr-tm2-kicker {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-tm2-title {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.rr-tm2-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.rr-tm2-stat {
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: var(--vscode-textCodeBlock-background);
+}
+.rr-tm2-stat-k {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-tm2-stat-v {
+  font-size: 16px;
+  font-weight: 600;
+}
+.rr-tm2-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rr-tm2-h3 {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-tm2-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rr-tm2-empty {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-tm2-hot,
+.rr-tm2-mark {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  color: var(--vscode-foreground);
+}
+.rr-tm2-hot:hover,
+.rr-tm2-mark:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.rr-tm2-swatch {
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border-radius: 2px;
+  border: 1px solid var(--vscode-panel-border);
+}
+.rr-tm2-hot-name,
+.rr-tm2-mark-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rr-tm2-hot-heat {
+  flex: 0 0 auto;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-tm2-mark {
+  padding: 6px 8px;
+}
+.rr-tm2-mark .codicon {
+  flex: 0 0 auto;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-tm2-mark-date {
+  flex: 0 0 56px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-tm2-mark-cur {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+  outline: 1px solid var(--rr-sel-outline);
+  outline-offset: -1px;
+}
+.rr-tm2-mark-cur:hover {
+  background: var(--vscode-list-activeSelectionBackground);
+}
+.rr-tm2-mark-cur .rr-tm2-mark-date,
+.rr-tm2-mark-cur .codicon {
+  color: inherit;
+}
+.rr-tm2-foot {
+  margin-top: auto;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* Dar alan: panel alta iner. */
+@container (max-width: 640px) {
+  .rr-tm2-wrap {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .rr-tm2-main {
+    flex: 0 0 auto;
+    padding: 10px 12px;
+  }
+  .rr-tm2-map {
+    flex: 0 0 auto;
+    height: 300px;
+  }
+  .rr-tm2-side {
+    flex: 0 0 auto;
+    overflow: visible;
+    border-left: 0;
+    border-top: 1px solid var(--vscode-panel-border);
+  }
+  .rr-tm2-ticks {
+    padding: 0;
+  }
+  .rr-tm2-date {
+    min-width: 0;
+  }
+}

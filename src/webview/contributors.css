@@ -1,0 +1,321 @@
+/* Katkı paneli. Renkler yalnızca --vscode-* ve --rr-*; yazar renkleri --vscode-scmGraph-foreground1..5. */
+.rr-ct {
+  container-type: inline-size;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--vscode-editor-background);
+  --rr-ct-b1: color-mix(in srgb, var(--vscode-charts-blue) 25%, var(--vscode-editor-background));
+  --rr-ct-b2: color-mix(in srgb, var(--vscode-charts-blue) 45%, var(--vscode-editor-background));
+  --rr-ct-b3: color-mix(in srgb, var(--vscode-charts-blue) 70%, var(--vscode-editor-background));
+  --rr-ct-b4: color-mix(in srgb, var(--vscode-charts-blue) 95%, var(--vscode-editor-background));
+  --rr-ct-other: color-mix(in srgb, var(--vscode-descriptionForeground) 45%, var(--vscode-editor-background));
+}
+.rr-ct-layout {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 100%;
+}
+.rr-ct-main {
+  flex: 999 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 12px 16px 18px;
+}
+.rr-ct-head {
+  display: flex;
+  justify-content: flex-end;
+}
+.rr-ct-range {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-ct-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* modül sahipliği */
+.rr-ct-modules {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rr-ct-module-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) 230px;
+  align-items: center;
+  column-gap: 12px;
+}
+.rr-ct-module {
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rr-ct-bar {
+  display: flex;
+  height: 22px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--vscode-textCodeBlock-background);
+}
+.rr-ct-seg {
+  display: flex;
+  align-items: center;
+  padding-left: 6px;
+  box-sizing: border-box;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--rr-onhot);
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 1px solid var(--rr-box-border);
+}
+.rr-ct-seg.is-other {
+  background: var(--rr-ct-other);
+  color: var(--vscode-foreground);
+}
+.rr-ct-seg.is-dim {
+  opacity: 0.3;
+}
+.rr-ct-owner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.rr-ct-owner-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rr-ct-risk {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid var(--vscode-editorWarning-foreground, var(--vscode-charts-yellow));
+  color: var(--vscode-foreground);
+}
+
+/* ritim + uzman */
+.rr-ct-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+}
+.rr-ct-rhythm {
+  flex: 1 1 260px;
+}
+.rr-ct-experts {
+  flex: 1 1 300px;
+}
+.rr-ct-grid {
+  display: grid;
+  gap: 3px;
+  max-width: 420px;
+}
+.rr-ct-week {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+}
+.rr-ct-day {
+  align-self: center;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-ct-cell {
+  height: 22px;
+  min-width: 4px;
+  border-radius: 2px;
+}
+.rr-ct-l0 { background: var(--vscode-textCodeBlock-background); }
+.rr-ct-l1 { background: var(--rr-ct-b1); }
+.rr-ct-l2 { background: var(--rr-ct-b2); }
+.rr-ct-l3 { background: var(--rr-ct-b3); }
+.rr-ct-l4 { background: var(--rr-ct-b4); }
+.rr-ct-cell.rr-ct-l0,
+.rr-ct-swatch {
+  outline: 1px solid var(--rr-btn-border);
+  outline-offset: -1px;
+}
+.rr-ct-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-ct-swatch {
+  width: 14px;
+  height: 10px;
+}
+.rr-ct-expert-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rr-ct-expert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  font-size: 12px;
+}
+.rr-ct-file {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: inherit;
+  font-size: 12px;
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rr-ct-file:hover {
+  text-decoration: underline;
+}
+.rr-ct-dot {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.rr-ct-dot.is-other {
+  background: var(--rr-ct-other);
+}
+.rr-ct-expert-who {
+  flex: 0 0 auto;
+  min-width: 110px;
+}
+
+/* yazarlar */
+.rr-ct-authors {
+  flex: 1 1 280px;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--vscode-editorWidget-background);
+  border-left: 1px solid var(--vscode-panel-border);
+}
+.rr-ct-author-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rr-ct-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.rr-ct-author:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.rr-ct-author[aria-pressed='true'] {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+  border-color: var(--rr-sel-outline);
+}
+.rr-ct-author[aria-pressed='true'] .rr-p-meta {
+  color: inherit;
+}
+.rr-ct-avatar {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--rr-onhot);
+}
+.rr-ct-avatar.is-all {
+  background: var(--vscode-textCodeBlock-background);
+  color: var(--vscode-foreground);
+}
+.rr-ct-avatar.is-other {
+  background: var(--rr-ct-other);
+  color: var(--vscode-foreground);
+}
+.rr-ct-author-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rr-ct-author-name {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rr-ct-note {
+  margin: auto 0 0;
+  padding-top: 8px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* scmGraph-foreground3 varsayılan temalarda koyu kahve: üstündeki yazı açık renk olmalı.
+   button-foreground orta-koyu dolgu üstünde okunmak üzere seçilen tema rengidir. */
+.rr-ct-seg.is-c3,
+.rr-ct-avatar.is-c3 {
+  color: var(--vscode-button-foreground);
+}
+
+/* dar alan: tek sütun */
+@container (max-width: 640px) {
+  .rr-ct-main,
+  .rr-ct-authors {
+    flex-basis: 100%;
+  }
+  .rr-ct-authors {
+    border-left: 0;
+    border-top: 1px solid var(--vscode-panel-border);
+  }
+  .rr-ct-module-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 3px;
+  }
+  .rr-ct-module-row .rr-ct-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .rr-ct-head {
+    justify-content: flex-start;
+  }
+}
