@@ -34,6 +34,10 @@
           "type": "webview",
           "id": "rewiewrev.panel",
           "name": "Harita"
+        },
+        {
+          "id": "rewiewrev.branches",
+          "name": "Branch'ler"
         }
       ]
     },
@@ -49,6 +53,12 @@
         "title": "Haritayı düzenleyicide aç",
         "category": "RewiewRev",
         "icon": "$(open-preview)"
+      },
+      {
+        "command": "rewiewrev.refreshBranches",
+        "title": "Branch'leri yenile",
+        "category": "RewiewRev",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
@@ -61,6 +71,11 @@
         {
           "command": "rewiewrev.openInEditor",
           "when": "view == rewiewrev.panel",
+          "group": "navigation"
+        },
+        {
+          "command": "rewiewrev.refreshBranches",
+          "when": "view == rewiewrev.branches",
           "group": "navigation"
         }
       ]
