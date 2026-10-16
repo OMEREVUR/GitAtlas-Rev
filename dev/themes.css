@@ -1,7 +1,8 @@
 /* YALNIZCA dev önizlemeleri için: VS Code'un webview'a verdiği --vscode-* değişkenlerinin taklidi.
-   Eklentiye girmez. <body class="vscode-dark"> ya da <body class="vscode-light"> ile seçilir.
+   Eklentiye girmez. <body class="vscode-dark"> ya da <body class="vscode-light"> ile seçilir;
+   değişkenler VS Code'taki gibi <html> (:root) üzerinde tanımlanır ki base.css'teki --rr-* türetmeleri çözülsün.
    Değerler rewiewrev-design/Main.dc.html içindeki önizleme temalarından alınmıştır. */
-body.vscode-dark {
+:root:has(> body.vscode-dark) {
   --vscode-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif;
   --vscode-font-size: 13px;
   --vscode-editor-font-family: Consolas, 'Courier New', monospace;
@@ -20,7 +21,7 @@ body.vscode-dark {
   --vscode-progressBar-background: #0078D4; --vscode-errorForeground: #F85149;
   --vscode-scrollbarSlider-background: #79797966;
 }
-body.vscode-light {
+:root:has(> body.vscode-light) {
   --vscode-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif;
   --vscode-font-size: 13px;
   --vscode-editor-font-family: Consolas, 'Courier New', monospace;

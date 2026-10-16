@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RewiewRev önizleme</title>
+<!-- YALNIZCA geliştirme: VS Code webview'ını taklit eder. Model scripts/preview.ts ile üretilir. -->
+<link rel="stylesheet" href="themes.css">
+<link rel="stylesheet" href="../dist/codicons/codicon.css">
+<link rel="stylesheet" href="../dist/webview.css">
+</head>
+<body class="vscode-dark">
+<div id="app"></div>
+<script src="out/preview-model.js"></script>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var theme = params.get('theme') === 'light' ? 'light' : 'dark';
+  document.body.className = 'vscode-' + theme;
+  if (params.get('autoselect') === '1') document.body.dataset.autoselect = 'first-commit';
+  // Headless Chrome pencereyi ~500px'in altına indirmiyor; dar paneli genişliği sınırlayarak taklit et.
+  var width = Number(params.get('width'));
+  if (width > 0) document.body.style.width = width + 'px';
+  var model = window.__RR_PREVIEW__;
+  var range = params.get('range') || '30d';
+  var state;
+  function send(msg) { window.postMessage(msg, '*'); }
+  function sendModel() {
+    send({ type: 'model', range: range, repoName: model.repoName, files: model.ranges[range], commits: model.commits });
+  }
+  window.acquireVsCodeApi = function () {
+    return {
+      getState: function () { return state; },
+      setState: function (s) { state = s; },
+      postMessage: function (msg) {
+        console.log('[webview → eklenti]', JSON.stringify(msg));
+        if (!model) { send({ type: 'error', code: 'unknown', message: 'dev/out/preview-model.js yok: npm run preview -- <repo> çalıştır.' }); return; }
+        if (msg.type === 'ready' || msg.type === 'refresh') { send({ type: 'loading', progress: 0.5 }); setTimeout(sendModel, 50); }
+        else if (msg.type === 'setRange') { range = msg.range; sendModel(); }
+      }
+    };
+  };
+})();
+</script>
+<script src="../dist/webview.js"></script>
+</body>
+</html>

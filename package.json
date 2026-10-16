@@ -74,7 +74,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "fixture": "bash scripts/make-fixture.sh",
-    "vscode:prepublish": "node esbuild.mjs --production"
+    "vscode:prepublish": "node esbuild.mjs --production",
+    "try-fixture": "node scripts/run-ts.mjs scripts/try-fixture.ts",
+    "preview": "npm run build && node scripts/run-ts.mjs scripts/preview.ts"
   },
   "dependencies": {
     "@vscode/codicons": "^0.0.46-24",

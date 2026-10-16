@@ -27,8 +27,10 @@
 - Tip kontrolü: `npm run typecheck` (= `npx tsc --noEmit`)
 - Test: `npm test` (= `npx vitest run`)
 - Fixture reposu: `npm run fixture` (= `bash scripts/make-fixture.sh`; repo yolunu stdout'a basar)
-- Fixture'da uçtan uca deneme (loadSnapshot + computeFileStats, cache süresi): `npx tsx scripts/try-fixture.ts <repo-yolu>` *(birleştirmede eklenecek)*
-- Webview önizlemesi: `npm run preview -- <repo-yolu>` → `dev/preview.html` + ekran görüntüleri `dev/screenshots/` *(birleştirmede eklenecek)*
+- Fixture'da uçtan uca deneme (loadSnapshot + computeFileStats; 7g/30g/tümü, rename, binary, ignore, cache süresi): `npm run try-fixture -- <repo-yolu>`
+- Webview önizlemesi (gerçek model + headless Chrome ekran görüntüleri): `npm run preview -- <repo-yolu> [--name ad] [--no-shots]` → `dev/out/preview-model.js`, `dev/preview.html` (`?theme=dark|light`, `?autoselect=1`, `?width=360`, `?range=7d|30d|all`), görüntüler `dev/screenshots/<ad>-*.png`
+- Bileşen önizlemeleri (sahte veri): `npm run build:dev`, sonra tarayıcıda `dev/treemap.html` ve `dev/panel.html` (`?theme=…`, `?state=…`, `?root=…`, `?highlight=1`)
+- Bir TS scriptini çalıştırma: `node scripts/run-ts.mjs <dosya.ts>` (esbuild ile bundle eder, `vscode` modülünü taklit eder)
 - Extension Development Host: VS Code'da F5 (`.vscode/launch.json`, önce `npm: build` çalışır).
 
 ## Klasör yapısı
@@ -38,8 +40,8 @@
 - `src/panel/` — `WebviewViewProvider`, HTML/CSP, mesaj işleme, diff içerik sağlayıcı, durum çubuğu.
 - `src/decorations/` — Explorer rozeti (`FileDecorationProvider`).
 - `src/config.ts` — ayarlar (`rewiewrev.ignore` + varsayılan hariçler).
-- `src/webview/` — webview: `main.ts` (düzen + durum), `treemap.ts`, `rangeFilter.ts`, `fileCard.ts`, `commitFeed.ts`, `states.ts`, `heat.ts`, CSS'ler.
-- `test/` — vitest testleri. `scripts/` — fixture ve deneme scriptleri. `dev/` — sahte veriyle açılan önizleme sayfaları.
+- `src/webview/` — webview: `main.ts` (düzen + durum), `layout.css`, `treemap.ts`, `rangeFilter.ts`, `fileCard.ts`, `commitFeed.ts`, `states.ts`, `heat.ts` (ortak ısı seviyesi), `format.ts` (Türkçe biçimleyiciler), `base.css` (`--rr-*` tokenları).
+- `test/` — vitest testleri. `scripts/` — fixture, deneme ve önizleme scriptleri. `dev/` — önizleme sayfaları (`themes.css` sahte `--vscode-*` değişkenleri; eklentiye girmez). `dev/out/`, `dev/screenshots/` git'e girmez.
 
 ## Sözleşme kuralı
 - `src/types.ts` ve `src/protocol.ts` sözleşmedir. Değişiklik ancak bilinçli bir kararla ve tüm kullanan yerler aynı anda güncellenerek yapılır.

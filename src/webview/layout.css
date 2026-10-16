@@ -1,0 +1,123 @@
+/* Panel düzeni: üstte zaman filtresi, solda treemap, sağda commit akışı, altta dosya kartı; dar panelde alt alta. */
+.rr-app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: auto;
+  box-sizing: border-box;
+}
+.rr-app [hidden] {
+  display: none !important;
+}
+
+.rr-topprogress {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 2px;
+  background: transparent;
+}
+.rr-topprogress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--vscode-progressBar-background);
+  transition: width 0.2s ease;
+}
+
+.rr-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 6px;
+}
+.rr-spacer {
+  flex: 1 1 auto;
+}
+.rr-iconbtn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--rr-btn-border);
+  border-radius: 4px;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+}
+.rr-iconbtn:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+
+.rr-body {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+  grid-template-rows: minmax(340px, 1fr) auto;
+  grid-template-areas:
+    'map feed'
+    'card card';
+  gap: 0;
+  min-height: 0;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+.rr-map {
+  grid-area: map;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  padding: 8px 12px 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.rr-feed {
+  grid-area: feed;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow: auto;
+  /* Akış uzunluğu satır yüksekliğini büyütmesin; satır yüksekliğini harita belirler. */
+  contain: size;
+  border-left: 1px solid var(--vscode-panel-border);
+}
+.rr-card {
+  grid-area: card;
+  min-width: 0;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
+/* Dar panel (varsayılan yan çubuk genişliği): alt alta. Panel genişliğine göre (container query). */
+body {
+  container-type: inline-size;
+}
+@container (max-width: 640px) {
+  .rr-app {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+  .rr-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      'map'
+      'card'
+      'feed';
+  }
+  .rr-map {
+    height: max(400px, 100cqw);
+  }
+  .rr-feed {
+    contain: none;
+    border-left: 0;
+    border-top: 1px solid var(--vscode-panel-border);
+    max-height: 360px;
+  }
+}
+
+.rr-state {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}

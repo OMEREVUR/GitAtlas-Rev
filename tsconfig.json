@@ -16,5 +16,5 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "include": ["src", "test", "scripts", "dev", "esbuild.mjs", "vitest.config.ts"]
+  "include": ["src", "test", "scripts", "dev", "esbuild.mjs", "vitest.config.mts"]
 }
