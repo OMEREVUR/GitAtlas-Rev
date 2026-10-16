@@ -8,6 +8,7 @@ import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { DEFAULT_IGNORE } from '../src/config';
 import { computeFileStats } from '../src/model/aggregate';
+import { loadGraph } from '../src/model/graphService';
 import { loadSnapshot } from '../src/model/repoService';
 
 const CHROME_CANDIDATES = [
@@ -25,12 +26,21 @@ async function main(): Promise<void> {
   const name = nameIdx >= 0 ? args[nameIdx + 1] ?? 'preview' : basename(resolve(repo));
   if (!existsSync('dist/webview.js')) throw new Error('Önce npm run build çalıştır.');
 
+  let sampleBranch: string | undefined;
   const storageDir = mkdtempSync(join(tmpdir(), 'rewiewrev-preview-'));
   try {
     const snap = await loadSnapshot(resolve(repo), storageDir, () => undefined);
     const now = Date.now();
     const ignore = [...DEFAULT_IGNORE];
+    // Graph: tüm branch'ler + her branch için ayrı (önizlemede branch filtresi çalışsın diye), en fazla 20 branch.
+    const graphAll = await loadGraph(snap.root, { limit: 500 });
+    const graphs: Record<string, unknown> = { '': graphAll };
+    for (const ref of graphAll.refs.filter((r) => r.kind !== 'tag').slice(0, 20)) {
+      graphs[ref.name] = await loadGraph(snap.root, { limit: 500, branch: ref.name });
+    }
+    sampleBranch = graphAll.refs.find((r) => r.kind === 'local' && !r.isHead)?.name ?? graphAll.currentBranch;
     const model = {
+      graphs,
       repoName: basename(snap.root),
       commits: snap.commits.slice(0, 1000),
       ranges: {
@@ -41,7 +51,7 @@ async function main(): Promise<void> {
     };
     mkdirSync('dev/out', { recursive: true });
     writeFileSync('dev/out/preview-model.js', `window.__RR_PREVIEW__ = ${JSON.stringify(model)};\n`);
-    console.log(`model: ${model.commits.length} commit, ${model.ranges.all.length} dosya → dev/out/preview-model.js`);
+    console.log(`model: ${model.commits.length} commit, ${model.ranges.all.length} dosya, graph ${graphAll.commits.length} commit / ${graphAll.refs.length} ref → dev/out/preview-model.js`);
   } finally {
     rmSync(storageDir, { recursive: true, force: true });
   }
@@ -57,7 +67,17 @@ async function main(): Promise<void> {
     { file: `${name}-dark-highlight.png`, query: 'theme=dark&autoselect=1', size: '1100,820' },
     { file: `${name}-light-highlight.png`, query: 'theme=light&autoselect=1', size: '1100,820' },
     { file: `${name}-dark-narrow.png`, query: 'theme=dark&autoselect=1&width=360', size: '600,1300' },
+    { file: `${name}-graph-dark.png`, query: 'theme=dark&view=graph&autoselect=1', size: '1200,820' },
+    { file: `${name}-graph-light.png`, query: 'theme=light&view=graph&autoselect=1', size: '1200,820' },
+    { file: `${name}-graph-narrow.png`, query: 'theme=dark&view=graph&autoselect=1&width=360', size: '600,1500' },
   ];
+  if (sampleBranch) {
+    const b = encodeURIComponent(`branch:${sampleBranch}`);
+    shots.push(
+      { file: `${name}-graph-branch.png`, query: `theme=dark&view=graph&autoselect=${b}`, size: '1200,820' },
+      { file: `${name}-map-branch.png`, query: `theme=light&autoselect=${b}`, size: '1100,820' },
+    );
+  }
   for (const s of shots) {
     const out = resolve('dev/screenshots', s.file);
     const r = spawnSync(chrome, [

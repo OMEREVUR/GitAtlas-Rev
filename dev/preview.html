@@ -17,13 +17,15 @@
   var params = new URLSearchParams(location.search);
   var theme = params.get('theme') === 'light' ? 'light' : 'dark';
   document.body.className = 'vscode-' + theme;
-  if (params.get('autoselect') === '1') document.body.dataset.autoselect = 'first-commit';
+  var auto = params.get('autoselect');
+  if (auto === '1') document.body.dataset.autoselect = 'first-commit';
+  else if (auto) document.body.dataset.autoselect = auto;
   // Headless Chrome pencereyi ~500px'in altına indirmiyor; dar paneli genişliği sınırlayarak taklit et.
   var width = Number(params.get('width'));
   if (width > 0) document.body.style.width = width + 'px';
   var model = window.__RR_PREVIEW__;
   var range = params.get('range') || '30d';
-  var state;
+  var state = params.get('view') === 'graph' ? { view: 'graph' } : undefined;
   function send(msg) { window.postMessage(msg, '*'); }
   function sendModel() {
     send({ type: 'model', range: range, repoName: model.repoName, files: model.ranges[range], commits: model.commits });
@@ -37,6 +39,14 @@
         if (!model) { send({ type: 'error', code: 'unknown', message: 'dev/out/preview-model.js yok: npm run preview -- <repo> çalıştır.' }); return; }
         if (msg.type === 'ready' || msg.type === 'refresh') { send({ type: 'loading', progress: 0.5 }); setTimeout(sendModel, 50); }
         else if (msg.type === 'setRange') { range = msg.range; sendModel(); }
+        else if (msg.type === 'loadGraph') {
+          send({ type: 'graphLoading' });
+          var g = model.graphs && model.graphs[msg.branch || ''];
+          setTimeout(function () {
+            if (g) send({ type: 'graph', graph: g });
+            else send({ type: 'graphError', message: 'Önizlemede bu branch için graph yok.' });
+          }, 30);
+        }
       }
     };
   };

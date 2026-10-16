@@ -122,7 +122,8 @@ export function renderGraph(el: HTMLElement, graph: GraphData, opts: GraphViewOp
     arr.sort((a, b) => Number(b.isHead) - Number(a.isHead) || kindOrder[a.kind] - kindOrder[b.kind] || a.name.localeCompare(b.name));
   }
 
-  const graphW = showGraph ? LANE_X0 + Math.max(1, graph.layout.laneCount) * LANE_W : 8;
+  // En az 44px: tek şeritte "Graph" başlığı kesilmesin.
+  const graphW = showGraph ? Math.max(44, LANE_X0 + Math.max(1, graph.layout.laneCount) * LANE_W) : 8;
   el.replaceChildren();
   el.classList.add('rr-g');
   el.style.setProperty('--rr-g-gw', `${graphW}px`);

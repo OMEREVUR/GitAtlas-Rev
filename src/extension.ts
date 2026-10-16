@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { HeatDecorationProvider } from './decorations/heatDecorations';
+import { BranchView } from './panel/branchTree';
 import { GIT_SCHEME, GitContentProvider } from './panel/gitContentProvider';
 import { RewiewRevPanelProvider } from './panel/panelProvider';
 import { RewiewRevStatusBar } from './panel/statusBar';
@@ -9,11 +10,13 @@ export function activate(context: vscode.ExtensionContext): void {
   const decorations = new HeatDecorationProvider();
   const statusBar = new RewiewRevStatusBar();
   const panel = new RewiewRevPanelProvider(context.extensionUri, storageDir, decorations, statusBar);
+  const branches = new BranchView();
 
   context.subscriptions.push(
     decorations,
     statusBar,
     panel,
+    branches,
     vscode.window.registerFileDecorationProvider(decorations),
     vscode.workspace.registerTextDocumentContentProvider(GIT_SCHEME, new GitContentProvider()),
     vscode.window.registerWebviewViewProvider(RewiewRevPanelProvider.viewType, panel, {
@@ -22,6 +25,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerWebviewPanelSerializer(RewiewRevPanelProvider.editorViewType, panel),
     vscode.commands.registerCommand('rewiewrev.refresh', () => panel.reload()),
     vscode.commands.registerCommand('rewiewrev.openInEditor', () => panel.openInEditor()),
+    vscode.commands.registerCommand('rewiewrev.refreshBranches', () => panel.refreshRefs()),
+    // Branch'ler paneli ↔ harita/graph: seçilen branch'in dokunduğu dosyalar haritada yanar.
+    panel.onDidLoadRefs((refs) => branches.update(refs, refs ? undefined : 'Git reposu bulunamadı.')),
+    branches.onDidSelectBranch((ref) => panel.selectBranch(ref?.name)),
   );
 
   // HEAD veya ref'ler değişince (commit, checkout, pull, reset) otomatik yenile.

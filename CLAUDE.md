@@ -8,7 +8,8 @@
 
 ## Sürüm durumu
 - **v1 (MVP) tamam** (Ekim 2026, kullanıcı F5 ile denedi): yan panel + düzenleyici sekmesi (komut "RewiewRev: Haritayı düzenleyicide aç"; ikisi aynı provider'dan beslenir), treemap (klasöre inme ile), zaman filtresi 7g/30g/tümü, dosya kartı, son commit'ler akışı, Explorer rozeti, globalStorage cache, ignore ayarı, durum ekranları, durum çubuğu.
-- Sıradaki: **v2**: commit graph + branch paneli. v3: GitHub katmanı (PR çakışma uyarısı). v4: zaman makinesi + katkı paneli.
+- **v2 tamam** (Ekim 2026): webview'da "Harita | Graph" sekmeleri; commit graph (şerit yerleşimi eklentide `layoutGraph`, `--topo-order`, 500'lük sayfalar, kaydırınca daha eskisi), graph filtreleri (branch, yazar, arama: mesaj/dosya/hash, graph'ın kendi tarih aralığı, "Sade liste"), seçim ayrıntısı + mini harita; yan çubukta yerel TreeView "Branch'ler" (lokal/remote, ahead/behind, bayat = 30 gün); seçilen commit/branch'in dosyaları haritada yanar, haritanın üstünde seçim çubuğu.
+- Sıradaki: v3 (GitHub katmanı). Raporun yol haritasındaki kapıya dikkat: v3'e geçmeden gerçek kullanıcı geri bildirimi. v3: GitHub katmanı (PR çakışma uyarısı). v4: zaman makinesi + katkı paneli.
 - Kapsam dışı iş yapılmaz. Tipler ileriye uygun tutulur (ör. commit'lerde `parents`).
 
 ## Teknoloji kararları (tartışmaya kapalı)
@@ -26,21 +27,21 @@
 - İzleme: `npm run watch`
 - Tip kontrolü: `npm run typecheck` (= `npx tsc --noEmit`)
 - Test: `npm test` (= `npx vitest run`)
-- Fixture reposu: `npm run fixture` (= `bash scripts/make-fixture.sh`; repo yolunu stdout'a basar)
+- Fixture reposu: `npm run fixture` (= `bash scripts/make-fixture.sh`; repo yolunu stdout'a basar; beklenen sayılar scriptin başındaki yorumda: main 34 commit, graph 43 commit / 7 ref, branch'ler, bayat branch, origin `<repo>/.git/fixture-origin.git`)
 - Fixture'da uçtan uca deneme (loadSnapshot + computeFileStats; 7g/30g/tümü, rename, binary, ignore, cache süresi): `npm run try-fixture -- <repo-yolu>`
-- Webview önizlemesi (gerçek model + headless Chrome ekran görüntüleri): `npm run preview -- <repo-yolu> [--name ad] [--no-shots]` → `dev/out/preview-model.js`, `dev/preview.html` (`?theme=dark|light`, `?autoselect=1`, `?width=360`, `?range=7d|30d|all`), görüntüler `dev/screenshots/<ad>-*.png`
-- Bileşen önizlemeleri (sahte veri): `npm run build:dev`, sonra tarayıcıda `dev/treemap.html` ve `dev/panel.html` (`?theme=…`, `?state=…`, `?root=…`, `?highlight=1`)
+- Webview önizlemesi (gerçek model + headless Chrome ekran görüntüleri): `npm run preview -- <repo-yolu> [--name ad] [--no-shots]` → `dev/out/preview-model.js`, `dev/preview.html` (`?theme=dark|light`, `?autoselect=1` ya da `?autoselect=branch:<ad>`, `?view=graph`, `?width=360`, `?range=7d|30d|all`), görüntüler `dev/screenshots/<ad>-*.png`
+- Bileşen önizlemeleri (sahte veri): `npm run build:dev`, sonra tarayıcıda `dev/treemap.html`, `dev/panel.html`, `dev/graph.html`, `dev/graphside.html` (`?theme=…`, `?state=…`, `?root=…`, `?highlight=1`, `?n=2000`, `?sel=commit|merge|branch` …)
 - Bir TS scriptini çalıştırma: `node scripts/run-ts.mjs <dosya.ts>` (esbuild ile bundle eder, `vscode` modülünü taklit eder)
 - Extension Development Host: VS Code'da F5 (`.vscode/launch.json`, önce `npm: build` çalışır).
 
 ## Klasör yapısı
 - `src/types.ts`, `src/protocol.ts` — sözleşme.
-- `src/git/` — git komutları, `git log --numstat` ayrıştırma, satır sayımı.
-- `src/model/` — snapshot'tan `FileStat` üretme, glob eşleme, cache, `loadSnapshot` servisi.
-- `src/panel/` — `WebviewViewProvider`, HTML/CSP, mesaj işleme, diff içerik sağlayıcı, durum çubuğu.
+- `src/git/` — git komutları, `git log --numstat` ayrıştırma, satır sayımı, `refs.ts` (for-each-ref + ahead/behind), `graphLog.ts` (graph log argümanları).
+- `src/model/` — snapshot'tan `FileStat` üretme, glob eşleme, cache, `loadSnapshot` servisi; `graphLayout.ts` + `graphSelect.ts` (saf, webview de import eder), `graphService.ts` (`loadGraph`).
+- `src/panel/` — `WebviewViewProvider` + düzenleyici sekmesi, HTML/CSP, mesaj işleme, diff içerik sağlayıcı, durum çubuğu, `branchTree.ts` (Branch'ler TreeView).
 - `src/decorations/` — Explorer rozeti (`FileDecorationProvider`).
 - `src/config.ts` — ayarlar (`rewiewrev.ignore` + varsayılan hariçler).
-- `src/webview/` — webview: `main.ts` (düzen + durum), `layout.css`, `treemap.ts`, `rangeFilter.ts`, `fileCard.ts`, `commitFeed.ts`, `states.ts`, `heat.ts` (ortak ısı seviyesi), `format.ts` (Türkçe biçimleyiciler), `base.css` (`--rr-*` tokenları).
+- `src/webview/` — webview: `main.ts` (düzen + durum), `layout.css`, `treemap.ts`, `rangeFilter.ts`, `fileCard.ts`, `commitFeed.ts`, `states.ts`, `heat.ts` (ortak ısı seviyesi), `format.ts` (Türkçe biçimleyiciler), `base.css` (`--rr-*` tokenları); v2: `graphView.ts` + `graph.css`, `graphToolbar.ts`, `commitDetail.ts`; treemap'in `compact` modu mini harita içindir.
 - `test/` — vitest testleri. `scripts/` — fixture, deneme ve önizleme scriptleri. `dev/` — önizleme sayfaları (`themes.css` sahte `--vscode-*` değişkenleri; eklentiye girmez). `dev/out/`, `dev/screenshots/` git'e girmez.
 
 ## Sözleşme kuralı
