@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>RewiewRev katkı paneli</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="display: flex; flex-direction: column; min-height: 780px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif; font-size: 13px; line-height: 1.4; color: var(--vscode-foreground); background: var(--vscode-editor-background); {{themeVars}}">
+  <div role="tablist" style="height: 35px; flex: 0 0 35px; display: flex; background: var(--vscode-editorGroupHeader-tabsBackground); border-bottom: 1px solid var(--vscode-panel-border)">
+    <div role="tab" aria-selected="true" style="display: flex; align-items: center; gap: 6px; padding: 0 14px; background: var(--vscode-tab-activeBackground); border-top: 1px solid var(--vscode-tab-activeBorderTop); border-right: 1px solid var(--vscode-panel-border); margin-bottom: -1px">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true"><circle cx="5.5" cy="5" r="2.2"></circle><circle cx="11" cy="6" r="1.8"></circle><path d="M1.5 13c.5-2.5 2-3.8 4-3.8s3.5 1.3 4 3.8"></path><path d="M10 9.3c2 0 3.6 1.2 4 3.7"></path></svg>
+      RewiewRev: Katkı
+    </div>
+  </div>
+
+  <div style="flex: 1 1 auto; display: flex; flex-wrap: wrap; min-height: 0">
+    <section aria-label="Katkı paneli" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 18px; padding: 12px 16px 18px">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+        <nav aria-label="Görünüm" style="display: flex; gap: 2px; padding: 2px; border: 1px solid var(--vscode-input-border); border-radius: 4px; background: var(--vscode-input-background)">
+          <a href="Main.dc.html" style="height: 24px; display: flex; align-items: center; padding: 0 10px; border-radius: 3px; border: 1px solid transparent; font-size: 12px; text-decoration: none; color: var(--vscode-descriptionForeground)">Harita</a>
+          <a href="Graph.dc.html" style="height: 24px; display: flex; align-items: center; padding: 0 10px; border-radius: 3px; border: 1px solid transparent; font-size: 12px; text-decoration: none; color: var(--vscode-descriptionForeground)">Graph</a>
+          <a href="TimeMachine.dc.html" style="height: 24px; display: flex; align-items: center; padding: 0 10px; border-radius: 3px; border: 1px solid transparent; font-size: 12px; text-decoration: none; color: var(--vscode-descriptionForeground)">Zaman</a>
+          <span aria-current="page" style="height: 24px; display: flex; align-items: center; padding: 0 10px; border-radius: 3px; font-size: 12px; background: var(--vscode-inputOption-activeBackground); border: 1px solid var(--vscode-inputOption-activeBorder); color: var(--vscode-foreground)">Katkı</span>
+        </nav>
+        <span style="margin-left: auto; font-size: 12px; color: var(--vscode-descriptionForeground)">Son 30 gün · değişen satırlara göre</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">MODÜL SAHİPLİĞİ</h2>
+        <sc-for list="{{modules}}" as="m" hint-placeholder-count="5">
+          <div style="display: grid; grid-template-columns: 110px minmax(0, 1fr) 230px; align-items: center; column-gap: 12px">
+            <span style="font-size: 12px; font-weight: 600">{{m.label}}</span>
+            <span role="img" aria-label="{{m.aria}}" style="display: flex; height: 22px; border-radius: 3px; overflow: hidden; background: var(--vscode-textCodeBlock-background)">
+              <sc-for list="{{m.segs}}" as="s" hint-placeholder-count="3">
+                <span style="display: flex; align-items: center; padding-left: 6px; box-sizing: border-box; font-size: 11px; font-weight: 700; color: var(--rr-onseg); overflow: hidden; white-space: nowrap; border-right: 1px solid var(--vscode-editor-background); {{s.style}}">{{s.text}}</span>
+              </sc-for>
+            </span>
+            <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap">
+              {{m.owner}}
+              <sc-if value="{{m.risk}}" hint-placeholder-val="{{false}}">
+                <span style="display: inline-flex; align-items: center; gap: 3px; height: 18px; padding: 0 6px; border-radius: 9px; font-size: 10px; font-weight: 700; border: 1px solid var(--vscode-editorWarning-foreground); color: var(--vscode-foreground)">tek kişiye bağlı</span>
+              </sc-if>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 28px">
+        <div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 8px">
+          <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">HAFTALIK RİTİM · {{rhythmWho}}</h2>
+          <div style="display: grid; grid-template-columns: 34px repeat(4, minmax(0, 1fr)); gap: 3px; max-width: 360px">
+            <span></span>
+            <span style="font-size: 10px; color: var(--vscode-descriptionForeground)">21 Eyl</span>
+            <span style="font-size: 10px; color: var(--vscode-descriptionForeground)">28 Eyl</span>
+            <span style="font-size: 10px; color: var(--vscode-descriptionForeground)">5 Eki</span>
+            <span style="font-size: 10px; color: var(--vscode-descriptionForeground)">12 Eki</span>
+            <sc-for list="{{rhythm}}" as="r" hint-placeholder-count="7">
+              <span style="font-size: 11px; color: var(--vscode-descriptionForeground); align-self: center">{{r.day}}</span>
+              <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4">
+                <span role="img" aria-label="{{c.aria}}" title="{{c.aria}}" style="height: 22px; border-radius: 2px; {{c.style}}"></span>
+              </sc-for>
+            </sc-for>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--vscode-descriptionForeground)">
+            Az
+            <span aria-hidden="true" style="width: 14px; height: 10px; background: var(--rr-b1)"></span>
+            <span aria-hidden="true" style="width: 14px; height: 10px; background: var(--rr-b2)"></span>
+            <span aria-hidden="true" style="width: 14px; height: 10px; background: var(--rr-b3)"></span>
+            <span aria-hidden="true" style="width: 14px; height: 10px; background: var(--rr-b4)"></span>
+            Çok commit
+          </div>
+        </div>
+
+        <div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 8px">
+          <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">BU DOSYAYI EN İYİ KİM BİLİR?</h2>
+          <sc-for list="{{experts}}" as="e" hint-placeholder-count="4">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--vscode-panel-border); font-size: 12px">
+              <span style="flex: 1 1 auto; min-width: 0">{{e.file}} <span style="color: var(--vscode-descriptionForeground)">{{e.dir}}</span></span>
+              <span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; {{e.dot}}"></span>
+              <span style="min-width: 110px">{{e.who}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <aside aria-label="Yazarlar" style="flex: 1 1 280px; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; background: var(--vscode-editorWidget-background); border-left: 1px solid var(--vscode-panel-border)">
+      <h2 style="margin: 0 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">YAZARLAR</h2>
+      <sc-for list="{{authors}}" as="a" hint-placeholder-count="4">
+        <button onClick="{{a.pick}}" aria-pressed="{{a.pressed}}" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 4px; font: inherit; text-align: left; cursor: pointer; {{a.style}}">
+          <span aria-hidden="true" style="width: 32px; height: 32px; flex: 0 0 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12px; font-weight: 700; {{a.avatar}}">{{a.initials}}</span>
+          <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column">
+            <span style="font-size: 13px; font-weight: 600">{{a.name}}</span>
+            <span style="font-size: 11px; color: var(--vscode-descriptionForeground)">{{a.meta}}</span>
+          </span>
+        </button>
+      </sc-for>
+      <p style="margin: auto 0 0; font-size: 11px; color: var(--vscode-descriptionForeground)">Yazarlar git'teki isim ve e-postaya göre gruplanır; aynı kişinin farklı e-postaları .mailmap ile birleşir.</p>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light","hc"],"default":"dark","section":"Tema"},"$preview":{"width":1280,"height":780}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { who: null };
+  }
+
+  rrTheme(name) {
+    var T = {
+      dark: {'editor-background':'#1F1F1F','editor-foreground':'#CCCCCC','foreground':'#CCCCCC','descriptionForeground':'#9D9D9D','editorGroupHeader-tabsBackground':'#181818','tab-activeBackground':'#1F1F1F','tab-activeBorderTop':'#0078D4','panel-border':'#2B2B2B','input-background':'#313131','input-border':'#3C3C3C','inputOption-activeBackground':'#2489DB82','inputOption-activeBorder':'#2488DB','list-activeSelectionBackground':'#04395E','list-activeSelectionForeground':'#FFFFFF','editorWidget-background':'#202020','textCodeBlock-background':'#2B2B2B','editorWarning-foreground':'#CCA700','charts-blue':'#3794FF','scmGraph-foreground1':'#FFB000','scmGraph-foreground2':'#DC267F','scmGraph-foreground4':'#40B0A6'},
+      light: {'editor-background':'#FFFFFF','editor-foreground':'#3B3B3B','foreground':'#3B3B3B','descriptionForeground':'#616161','editorGroupHeader-tabsBackground':'#F8F8F8','tab-activeBackground':'#FFFFFF','tab-activeBorderTop':'#005FB8','panel-border':'#E5E5E5','input-background':'#FFFFFF','input-border':'#CECECE','inputOption-activeBackground':'#BED6ED','inputOption-activeBorder':'#005FB8','list-activeSelectionBackground':'#E4E6F1','list-activeSelectionForeground':'#000000','editorWidget-background':'#F8F8F8','textCodeBlock-background':'#EFEFEF','editorWarning-foreground':'#BF8803','charts-blue':'#1A85FF','scmGraph-foreground1':'#FFB000','scmGraph-foreground2':'#DC267F','scmGraph-foreground4':'#40B0A6'},
+      hc: {'editor-background':'#000000','editor-foreground':'#FFFFFF','foreground':'#FFFFFF','descriptionForeground':'#FFFFFF','editorGroupHeader-tabsBackground':'#000000','tab-activeBackground':'#000000','tab-activeBorderTop':'#F38518','panel-border':'#6FC3DF','input-background':'#000000','input-border':'#6FC3DF','inputOption-activeBackground':'#0F4A85','inputOption-activeBorder':'#6FC3DF','list-activeSelectionBackground':'#000000','list-activeSelectionForeground':'#FFFFFF','editorWidget-background':'#0C141F','textCodeBlock-background':'#1A1A1A','editorWarning-foreground':'#FFD370','charts-blue':'#75BEFF','scmGraph-foreground1':'#FFB000','scmGraph-foreground2':'#DC267F','scmGraph-foreground4':'#40B0A6'}
+    };
+    var t = T[name] ? name : 'dark';
+    var v = Object.keys(T[t]).map(function (k) { return '--vscode-' + k + ':' + T[t][k]; });
+    v.push('--rr-onseg:#000000');
+    v.push('--rr-sel-outline:' + (t === 'hc' ? '#F38518' : 'transparent'));
+    [25, 45, 70, 95].forEach(function (p, i) { v.push('--rr-b' + (i + 1) + ':color-mix(in srgb, var(--vscode-charts-blue) ' + p + '%, var(--vscode-editor-background))'); });
+    return v.join(';') + ';';
+  }
+
+  renderVals() {
+    var self = this;
+    var who = this.state.who;
+    var A = {
+      deniz: { name: '@deniz', initials: 'D', color: 'var(--vscode-scmGraph-foreground4)', meta: '41 commit · +2.140 −610 · en çok git/' },
+      mert: { name: '@mert', initials: 'M', color: 'var(--vscode-scmGraph-foreground1)', meta: '33 commit · +1.720 −380 · en çok core/' },
+      ayse: { name: '@ayse', initials: 'A', color: 'var(--vscode-scmGraph-foreground2)', meta: '27 commit · +1.310 −290 · en çok webview/' }
+    };
+    var ORDER = ['deniz', 'mert', 'ayse'];
+    var M = [
+      ['core/', { deniz: 20, mert: 55, ayse: 25 }],
+      ['git/', { deniz: 72, mert: 24, ayse: 4 }],
+      ['webview/', { deniz: 5, mert: 10, ayse: 85 }],
+      ['github/', { deniz: 100, mert: 0, ayse: 0 }],
+      ['src/ kök', { deniz: 10, mert: 80, ayse: 10 }]
+    ];
+    var modules = M.map(function (m) {
+      var top = ORDER.slice().sort(function (a, b) { return m[1][b] - m[1][a]; })[0];
+      return {
+        label: m[0],
+        owner: A[top].name + ' %' + m[1][top],
+        risk: m[1][top] >= 80,
+        aria: m[0] + ': ' + ORDER.map(function (k) { return A[k].name + ' %' + m[1][k]; }).join(', '),
+        segs: ORDER.filter(function (k) { return m[1][k] > 0; }).map(function (k) {
+          var dim = who && who !== k;
+          return {
+            text: m[1][k] >= 15 ? A[k].name + ' %' + m[1][k] : '',
+            style: 'width:' + m[1][k] + '%;background:' + A[k].color + ';' + (dim ? 'opacity:0.3;' : '')
+          };
+        })
+      };
+    });
+    var R = {
+      deniz: [[2, 3, 1, 4], [1, 2, 3, 2], [3, 1, 2, 5], [0, 2, 1, 3], [2, 4, 2, 1], [0, 0, 1, 0], [0, 1, 0, 0]],
+      mert: [[1, 0, 2, 1], [2, 3, 1, 2], [1, 2, 0, 1], [3, 1, 2, 2], [1, 1, 3, 4], [2, 0, 0, 1], [0, 0, 0, 0]],
+      ayse: [[0, 1, 2, 1], [1, 0, 2, 3], [2, 2, 1, 2], [1, 3, 2, 1], [0, 1, 1, 2], [0, 0, 0, 0], [1, 2, 0, 3]]
+    };
+    var grid = R.deniz.map(function (row, d) {
+      return row.map(function (_, w) { return who ? R[who][d][w] : R.deniz[d][w] + R.mert[d][w] + R.ayse[d][w]; });
+    });
+    var max = 0;
+    grid.forEach(function (r) { r.forEach(function (v) { if (v > max) max = v; }); });
+    var DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+    var WEEKS = ['21 Eyl', '28 Eyl', '5 Eki', '12 Eki'];
+    var rhythm = grid.map(function (row, d) {
+      return {
+        day: DAYS[d],
+        cells: row.map(function (v, w) {
+          var lvl = v === 0 ? 0 : Math.max(1, Math.ceil(v / max * 4));
+          return {
+            aria: WEEKS[w] + ' haftası, ' + DAYS[d] + ': ' + v + ' commit',
+            style: lvl === 0 ? 'background:var(--vscode-textCodeBlock-background);' : 'background:var(--rr-b' + lvl + ');'
+          };
+        })
+      };
+    });
+    var EX = [
+      ['logParser.ts', 'src/git/', 'deniz', 70, false],
+      ['RepoModel.ts', 'src/core/', 'mert', 58, false],
+      ['Treemap.tsx', 'src/webview/', 'ayse', 88, true],
+      ['GitHubProvider.ts', 'src/github/', 'deniz', 100, true]
+    ];
+    var experts = EX.map(function (e) {
+      return { file: e[0], dir: e[1], who: A[e[2]].name + ' · %' + e[3] + (e[4] ? ' · tek kişi' : ''), dot: 'background:' + A[e[2]].color + ';' };
+    });
+    var selStyle = 'background:var(--vscode-list-activeSelectionBackground);color:var(--vscode-list-activeSelectionForeground);border:1px solid var(--rr-sel-outline);';
+    var offStyle = 'background:transparent;color:var(--vscode-foreground);border:1px solid transparent;';
+    var authors = [{ key: null, name: 'Herkes', initials: '3', meta: '101 commit · 3 yazar', avatar: 'background:var(--vscode-textCodeBlock-background);color:var(--vscode-foreground);' }]
+      .concat(ORDER.map(function (k) { return { key: k, name: A[k].name, initials: A[k].initials, meta: A[k].meta, avatar: 'background:' + A[k].color + ';color:#000000;' }; }))
+      .map(function (a) {
+        var on = a.key === who;
+        return Object.assign({}, a, {
+          pressed: on ? 'true' : 'false',
+          style: on ? selStyle : offStyle,
+          pick: function () { self.setState({ who: a.key }); }
+        });
+      });
+    return {
+      themeVars: this.rrTheme(this.props.theme),
+      modules: modules,
+      rhythm: rhythm,
+      rhythmWho: who ? A[who].name.toUpperCase() : 'HERKES',
+      experts: experts,
+      authors: authors
+    };
+  }
+}
+</script>
+</body>
+</html>

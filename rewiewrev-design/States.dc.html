@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>RewiewRev durum ekranları</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1280px; height: 780px; box-sizing: border-box; padding: 28px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif; font-size: 13px; line-height: 1.4; color: var(--vscode-foreground); background: var(--vscode-sideBar-background); {{themeVars}}">
+
+  <div style="display: flex; flex-direction: column; gap: 8px; min-height: 0">
+    <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">1 · İLK TARAMA</div>
+    <div style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--vscode-panel-border); border-radius: 4px; overflow: hidden; background: var(--vscode-editor-background)">
+      <div style="height: 30px; flex: 0 0 30px; display: flex; align-items: center; padding: 0 12px; font-size: 12px; background: var(--vscode-editorGroupHeader-tabsBackground); border-bottom: 1px solid var(--vscode-panel-border)">RewiewRev: Harita</div>
+      <div style="position: relative; flex: 1 1 auto">
+        <div aria-hidden="true" style="position: absolute; inset: 14px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 3px; opacity: 0.5">
+          <span style="grid-column: span 2; grid-row: span 2; background: var(--vscode-textCodeBlock-background)"></span>
+          <span style="grid-column: span 2; background: var(--vscode-textCodeBlock-background)"></span>
+          <span style="grid-column: span 2; grid-row: span 3; background: var(--vscode-textCodeBlock-background)"></span>
+          <span style="background: var(--vscode-textCodeBlock-background)"></span>
+          <span style="background: var(--vscode-textCodeBlock-background)"></span>
+          <span style="grid-column: span 3; background: var(--vscode-textCodeBlock-background)"></span>
+          <span style="background: var(--vscode-textCodeBlock-background)"></span>
+        </div>
+        <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 360px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: 6px; background: var(--vscode-editorWidget-background); border: 1px solid var(--vscode-editorHoverWidget-border); box-shadow: 0 4px 16px var(--vscode-widget-shadow)">
+          <sc-if value="{{scanning}}" hint-placeholder-val="{{true}}">
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <div style="font-size: 13px; font-weight: 600">Git geçmişi taranıyor</div>
+              <div role="progressbar" aria-label="Tarama ilerlemesi" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{pct}}" style="height: 4px; border-radius: 2px; overflow: hidden; background: var(--vscode-textCodeBlock-background)">
+                <div style="height: 100%; background: var(--vscode-progressBar-background); {{barStyle}}"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--vscode-descriptionForeground)">
+                <span>{{doneText}} / 2.000 commit</span>
+                <span>{{etaText}}</span>
+              </div>
+              <div style="font-size: 12px; color: var(--vscode-descriptionForeground)">İlk tarama bir kez yapılır. Sonraki açılışlarda sadece yeni commit'ler işlenir.</div>
+              <div style="display: flex; gap: 8px">
+                <button style="height: 26px; padding: 0 12px; border: 1px solid var(--rr-btn-border); border-radius: 4px; font: inherit; font-size: 12px; cursor: pointer; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)">Arka planda devam et</button>
+                <button onClick="{{cancel}}" style="height: 26px; padding: 0 12px; border: 1px solid transparent; border-radius: 4px; font: inherit; font-size: 12px; cursor: pointer; background: transparent; color: var(--vscode-textLink-foreground)">İptal</button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{cancelled}}" hint-placeholder-val="{{false}}">
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <div style="font-size: 13px; font-weight: 600">Tarama durduruldu</div>
+              <div style="font-size: 12px; color: var(--vscode-descriptionForeground)">{{doneText}} commit işlendi ve cache'e yazıldı. Yeniden başlatınca kaldığı yerden devam eder.</div>
+              <div><button onClick="{{restart}}" style="height: 26px; padding: 0 12px; border: 1px solid var(--rr-btn-border); border-radius: 4px; font: inherit; font-size: 12px; cursor: pointer; background: var(--vscode-button-background); color: var(--vscode-button-foreground)">Taramaya devam et</button></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{finished}}" hint-placeholder-val="{{false}}">
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <div style="font-size: 13px; font-weight: 600">Tarama tamam</div>
+              <div style="font-size: 12px; color: var(--vscode-descriptionForeground)">2.000 commit işlendi. Harita açılıyor…</div>
+              <div><button onClick="{{restart}}" style="height: 26px; padding: 0 12px; border: 1px solid var(--rr-btn-border); border-radius: 4px; font: inherit; font-size: 12px; cursor: pointer; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)">Örneği tekrar oynat</button></div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px; min-height: 0">
+    <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">2 · KLASÖR GIT REPOSU DEĞİL</div>
+    <div style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--vscode-panel-border); border-radius: 4px; overflow: hidden; background: var(--vscode-editor-background)">
+      <div style="height: 30px; flex: 0 0 30px; display: flex; align-items: center; padding: 0 12px; font-size: 12px; background: var(--vscode-editorGroupHeader-tabsBackground); border-bottom: 1px solid var(--vscode-panel-border)">RewiewRev: Harita</div>
+      <div style="flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 20px; text-align: center">
+        <svg width="40" height="40" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.8" aria-hidden="true" style="color: var(--vscode-descriptionForeground)"><path d="M1.5 4.5h4.5l1.5 1.5h7v7.5h-13z"></path><path d="M6 10h4"></path></svg>
+        <div style="font-size: 14px; font-weight: 600">Bu klasör bir git reposu değil</div>
+        <div style="max-width: 380px; font-size: 12px; color: var(--vscode-descriptionForeground)">RewiewRev haritayı git geçmişinden çizer. <code style="font-family: var(--vscode-editor-font-family, Menlo, Consolas, monospace); font-size: 11px">~/projeler/notlar</code> içinde <code style="font-family: var(--vscode-editor-font-family, Menlo, Consolas, monospace); font-size: 11px">.git</code> bulunamadı.</div>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 4px">
+          <button style="height: 28px; padding: 0 14px; border: 1px solid var(--rr-btn-border); border-radius: 4px; font: inherit; font-size: 12px; cursor: pointer; background: var(--vscode-button-background); color: var(--vscode-button-foreground)">Repoyu başlat</button>
+          <button style="height: 28px; padding: 0 14px; border: 1px solid var(--rr-btn-border); border-radius: 4px; font: inherit; font-size: 12px; cursor: pointer; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)">Başka klasör aç</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px; min-height: 0">
+    <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">3 · REPO VAR, HENÜZ COMMIT YOK</div>
+    <div style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--vscode-panel-border); border-radius: 4px; overflow: hidden; background: var(--vscode-editor-background)">
+      <div style="height: 30px; flex: 0 0 30px; display: flex; align-items: center; padding: 0 12px; font-size: 12px; background: var(--vscode-editorGroupHeader-tabsBackground); border-bottom: 1px solid var(--vscode-panel-border)">RewiewRev: Harita</div>
+      <div style="flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 20px; text-align: center">
+        <svg width="40" height="40" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.8" aria-hidden="true" style="color: var(--vscode-descriptionForeground)"><rect x="1.5" y="1.5" width="13" height="13" rx="1" stroke-dasharray="1.5 1.2"></rect><path d="M8 5.5v5M5.5 8h5"></path></svg>
+        <div style="font-size: 14px; font-weight: 600">Henüz commit yok</div>
+        <div style="max-width: 380px; font-size: 12px; color: var(--vscode-descriptionForeground)">Harita ilk commit'ten sonra burada oluşur. Dosyaların boyutu ve değişim sıklığı commit'lerden hesaplanır.</div>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 4px">
+          <button style="height: 28px; padding: 0 14px; border: 1px solid var(--rr-btn-border); border-radius: 4px; font: inherit; font-size: 12px; cursor: pointer; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)">Kaynak denetimini aç</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px; min-height: 0">
+    <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">4 · GIT BULUNAMADI</div>
+    <div style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--vscode-panel-border); border-radius: 4px; overflow: hidden; background: var(--vscode-editor-background)">
+      <div style="height: 30px; flex: 0 0 30px; display: flex; align-items: center; padding: 0 12px; font-size: 12px; background: var(--vscode-editorGroupHeader-tabsBackground); border-bottom: 1px solid var(--vscode-panel-border)">RewiewRev: Harita</div>
+      <div style="flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 20px; text-align: center">
+        <svg width="40" height="40" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" aria-hidden="true" style="color: var(--vscode-charts-red)"><circle cx="8" cy="8" r="6.5"></circle><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"></path></svg>
+        <div style="font-size: 14px; font-weight: 600">Git bulunamadı</div>
+        <div style="max-width: 400px; font-size: 12px; color: var(--vscode-descriptionForeground)">RewiewRev <code style="font-family: var(--vscode-editor-font-family, Menlo, Consolas, monospace); font-size: 11px">git</code> komutunu çalıştıramadı. Git kurulu değilse indir; kuruluysa yolunu <code style="font-family: var(--vscode-editor-font-family, Menlo, Consolas, monospace); font-size: 11px">git.path</code> ayarında belirt.</div>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 4px">
+          <a href="https://git-scm.com/downloads" style="height: 28px; display: flex; align-items: center; padding: 0 14px; box-sizing: border-box; border: 1px solid var(--rr-btn-border); border-radius: 4px; font-size: 12px; text-decoration: none; background: var(--vscode-button-background); color: var(--vscode-button-foreground)">Git'i indir</a>
+          <button style="height: 28px; padding: 0 14px; border: 1px solid var(--rr-btn-border); border-radius: 4px; font: inherit; font-size: 12px; cursor: pointer; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)">git.path ayarını aç</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light","hc"],"default":"dark","section":"Tema"},"$preview":{"width":1280,"height":780}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { done: 1240, status: 'scan' };
+  }
+
+  componentDidMount() { this.start(); }
+  componentWillUnmount() { clearInterval(this.timer); }
+
+  start() {
+    var self = this;
+    clearInterval(this.timer);
+    this.timer = setInterval(function () {
+      var d = self.state.done + 40;
+      if (d >= 2000) { clearInterval(self.timer); self.setState({ done: 2000, status: 'done' }); }
+      else self.setState({ done: d });
+    }, 300);
+  }
+
+  rrTheme(name) {
+    var T = {
+      dark: {'editor-background':'#1F1F1F','editor-foreground':'#CCCCCC','foreground':'#CCCCCC','descriptionForeground':'#9D9D9D','sideBar-background':'#181818','editorGroupHeader-tabsBackground':'#181818','panel-border':'#2B2B2B','focusBorder':'#0078D4','button-background':'#0078D4','button-foreground':'#FFFFFF','button-secondaryBackground':'#313131','button-secondaryForeground':'#CCCCCC','editorWidget-background':'#202020','editorHoverWidget-border':'#454545','widget-shadow':'#0000005C','textCodeBlock-background':'#2B2B2B','textLink-foreground':'#4DAAFC','progressBar-background':'#0078D4','charts-orange':'#D18616','charts-red':'#F14C4C'},
+      light: {'editor-background':'#FFFFFF','editor-foreground':'#3B3B3B','foreground':'#3B3B3B','descriptionForeground':'#616161','sideBar-background':'#F8F8F8','editorGroupHeader-tabsBackground':'#F8F8F8','panel-border':'#E5E5E5','focusBorder':'#005FB8','button-background':'#005FB8','button-foreground':'#FFFFFF','button-secondaryBackground':'#E5E5E5','button-secondaryForeground':'#3B3B3B','editorWidget-background':'#F8F8F8','editorHoverWidget-border':'#C8C8C8','widget-shadow':'#00000029','textCodeBlock-background':'#EFEFEF','textLink-foreground':'#005FB8','progressBar-background':'#005FB8','charts-orange':'#D18616','charts-red':'#E51400'},
+      hc: {'editor-background':'#000000','editor-foreground':'#FFFFFF','foreground':'#FFFFFF','descriptionForeground':'#FFFFFF','sideBar-background':'#000000','editorGroupHeader-tabsBackground':'#000000','panel-border':'#6FC3DF','focusBorder':'#F38518','button-background':'#0F4A85','button-foreground':'#FFFFFF','button-secondaryBackground':'#000000','button-secondaryForeground':'#FFFFFF','editorWidget-background':'#0C141F','editorHoverWidget-border':'#6FC3DF','widget-shadow':'#00000000','textCodeBlock-background':'#1A1A1A','textLink-foreground':'#21A6FF','progressBar-background':'#6FC3DF','charts-orange':'#D18616','charts-red':'#F48771'}
+    };
+    var X = {
+      dark: { '--rr-btn-border': 'transparent' },
+      light: { '--rr-btn-border': 'transparent' },
+      hc: { '--rr-btn-border': '#6FC3DF' }
+    };
+    var t = T[name] ? name : 'dark';
+    var v = Object.keys(T[t]).map(function (k) { return '--vscode-' + k + ':' + T[t][k]; });
+    Object.keys(X[t]).forEach(function (k) { v.push(k + ':' + X[t][k]); });
+    return v.join(';') + ';';
+  }
+
+  renderVals() {
+    var self = this;
+    var done = this.state.done;
+    var pct = Math.round(done / 2000 * 100);
+    var secs = Math.max(1, Math.round((2000 - done) / 40 * 0.3));
+    return {
+      themeVars: this.rrTheme(this.props.theme),
+      scanning: this.state.status === 'scan',
+      cancelled: this.state.status === 'cancel',
+      finished: this.state.status === 'done',
+      pct: pct,
+      barStyle: 'width:' + pct + '%;',
+      doneText: done.toLocaleString('tr-TR'),
+      etaText: '~' + secs + ' sn kaldı',
+      cancel: function () { clearInterval(self.timer); self.setState({ status: 'cancel' }); },
+      restart: function () {
+        var from = self.state.status === 'done' ? 0 : self.state.done;
+        self.setState({ status: 'scan', done: from }, function () { self.start(); });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

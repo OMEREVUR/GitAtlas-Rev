@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>RewiewRev ayarları</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="display: flex; flex-direction: column; min-height: 780px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif; font-size: 13px; line-height: 1.4; color: var(--vscode-foreground); background: var(--vscode-editor-background); {{themeVars}}">
+  <div role="tablist" style="height: 35px; flex: 0 0 35px; display: flex; background: var(--vscode-editorGroupHeader-tabsBackground); border-bottom: 1px solid var(--vscode-panel-border)">
+    <div role="tab" aria-selected="true" style="display: flex; align-items: center; gap: 6px; padding: 0 14px; background: var(--vscode-tab-activeBackground); border-top: 1px solid var(--vscode-tab-activeBorderTop); border-right: 1px solid var(--vscode-panel-border); margin-bottom: -1px">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true"><circle cx="8" cy="8" r="2.2"></circle><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"></path></svg>
+      Ayarlar
+    </div>
+  </div>
+
+  <div style="flex: 1 1 auto; display: flex; flex-direction: column; max-width: 1100px; width: 100%; box-sizing: border-box; margin: 0 auto; padding: 14px 24px 24px; gap: 12px">
+    <div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border: 1px solid var(--vscode-focusBorder); background: var(--vscode-input-background)">
+      <label for="rr-set-search" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Ayarlarda ara</label>
+      <input id="rr-set-search" type="search" value="@ext:rewiewrev" style="flex: 1 1 auto; min-width: 0; background: transparent; border: 0; outline: none; font: inherit; color: var(--vscode-foreground)">
+      <span style="font-size: 11px; color: var(--vscode-descriptionForeground)">8 ayar bulundu</span>
+    </div>
+    <div role="tablist" aria-label="Kapsam" style="display: flex; gap: 18px; border-bottom: 1px solid var(--vscode-panel-border)">
+      <span role="tab" aria-selected="true" style="padding: 6px 0; font-size: 12px; border-bottom: 1px solid var(--vscode-settings-headerForeground); color: var(--vscode-settings-headerForeground)">Kullanıcı</span>
+      <span role="tab" aria-selected="false" style="padding: 6px 0; font-size: 12px; color: var(--vscode-descriptionForeground)">Çalışma Alanı</span>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <nav aria-label="İçindekiler" style="flex: 0 0 180px; display: flex; flex-direction: column; gap: 2px; font-size: 13px">
+        <span style="padding: 3px 8px; color: var(--vscode-descriptionForeground)">Uzantılar</span>
+        <span style="padding: 3px 8px 3px 20px; font-weight: 600; color: var(--vscode-settings-headerForeground)">RewiewRev</span>
+        <a href="#harita" style="padding: 3px 8px 3px 32px; text-decoration: none; color: var(--vscode-foreground)">Harita</a>
+        <a href="#graph" style="padding: 3px 8px 3px 32px; text-decoration: none; color: var(--vscode-foreground)">Graph</a>
+        <a href="#explorer" style="padding: 3px 8px 3px 32px; text-decoration: none; color: var(--vscode-foreground)">Explorer</a>
+        <a href="#github" style="padding: 3px 8px 3px 32px; text-decoration: none; color: var(--vscode-foreground)">GitHub</a>
+        <a href="#git" style="padding: 3px 8px 3px 32px; text-decoration: none; color: var(--vscode-foreground)">Git</a>
+      </nav>
+
+      <div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column">
+        <h2 id="harita" style="margin: 0 0 4px; font-size: 20px; font-weight: 600; color: var(--vscode-settings-headerForeground)">RewiewRev</h2>
+
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-left: 2px solid transparent">
+          <div><span style="color: var(--vscode-descriptionForeground)">Harita: </span><strong>Varsayılan Zaman Aralığı</strong></div>
+          <div style="font-size: 12px; color: var(--vscode-descriptionForeground)">Panel açıldığında seçili olan aralık.</div>
+          <label style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)" for="rr-period">Varsayılan zaman aralığı</label>
+          <select id="rr-period" style="width: 200px; height: 26px; padding: 0 6px; font: inherit; font-size: 13px; background: var(--vscode-dropdown-background); color: var(--vscode-foreground); border: 1px solid var(--vscode-dropdown-border)">
+            <option>7 gün</option>
+            <option selected>30 gün</option>
+            <option>Tümü</option>
+          </select>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-left: 2px solid var(--vscode-settings-modifiedItemIndicator)">
+          <div><span style="color: var(--vscode-descriptionForeground)">Harita: </span><strong>Hariç Tutulanlar</strong> <span style="font-size: 11px; color: var(--vscode-descriptionForeground)">(Değiştirildi)</span></div>
+          <div style="font-size: 12px; color: var(--vscode-descriptionForeground)">Bu glob desenlerine uyan dosyalar haritaya, churn hesabına ve rozetlere girmez. Lock dosyaları ve üretilen kodlar "en riskli" görünmesin diye.</div>
+          <ul aria-label="Hariç tutulan desenler" style="list-style: none; margin: 4px 0 0; padding: 0; max-width: 560px; border: 1px solid var(--vscode-panel-border)">
+            <sc-for list="{{patterns}}" as="p" hint-placeholder-count="6">
+              <li style="height: 30px; display: flex; align-items: center; gap: 10px; padding: 0 6px 0 10px; border-bottom: 1px solid var(--vscode-panel-border); {{p.rowStyle}}">
+                <code style="flex: 1 1 auto; min-width: 0; font-family: var(--vscode-editor-font-family, Menlo, Consolas, monospace); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{p.glob}}</code>
+                <span style="font-size: 11px; color: var(--vscode-descriptionForeground)">{{p.origin}}</span>
+                <button onClick="{{p.remove}}" aria-label="{{p.removeLabel}}" style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: none; border: 0; border-radius: 3px; color: var(--vscode-foreground); cursor: pointer">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg>
+                </button>
+              </li>
+            </sc-for>
+          </ul>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; max-width: 560px">
+            <label for="rr-newglob" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Yeni desen</label>
+            <input id="rr-newglob" type="text" value="{{draft}}" onChange="{{onDraft}}" placeholder="ör. **/*.snap" style="flex: 1 1 200px; height: 26px; padding: 0 8px; box-sizing: border-box; font-family: var(--vscode-editor-font-family, Menlo, Consolas, monospace); font-size: 12px; background: var(--vscode-input-background); color: var(--vscode-foreground); border: 1px solid var(--vscode-input-border)">
+            <button onClick="{{add}}" style="height: 26px; padding: 0 12px; border: 1px solid var(--rr-btn-border); border-radius: 2px; font: inherit; font-size: 12px; cursor: pointer; background: var(--vscode-button-background); color: var(--vscode-button-foreground)">Desen ekle</button>
+            <button onClick="{{reset}}" style="height: 26px; padding: 0 12px; border: 1px solid var(--rr-btn-border); border-radius: 2px; font: inherit; font-size: 12px; cursor: pointer; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)">Varsayılana dön</button>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-left: 2px solid transparent">
+          <div><span style="color: var(--vscode-descriptionForeground)">Harita: </span><strong>Klasör Seviyesinden Başla</strong></div>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--vscode-descriptionForeground)">
+            <input type="checkbox" checked style="width: 16px; height: 16px; margin: 0; accent-color: var(--vscode-focusBorder)">
+            Büyük repolarda harita önce klasörleri gösterir; tıklayınca içine inilir.
+          </label>
+        </div>
+
+        <h3 id="graph" style="margin: 14px 0 0; font-size: 14px; font-weight: 600; color: var(--vscode-settings-headerForeground)">Graph</h3>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-left: 2px solid transparent">
+          <div><span style="color: var(--vscode-descriptionForeground)">Graph: </span><strong>İlk Yüklenecek Commit Sayısı</strong></div>
+          <div style="font-size: 12px; color: var(--vscode-descriptionForeground)">Daha eskileri kaydırdıkça yüklenir.</div>
+          <label for="rr-maxc" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">İlk yüklenecek commit sayısı</label>
+          <input id="rr-maxc" type="number" value="500" style="width: 120px; height: 26px; padding: 0 8px; box-sizing: border-box; font: inherit; background: var(--vscode-input-background); color: var(--vscode-foreground); border: 1px solid var(--vscode-input-border)">
+        </div>
+
+        <h3 id="explorer" style="margin: 14px 0 0; font-size: 14px; font-weight: 600; color: var(--vscode-settings-headerForeground)">Explorer</h3>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-left: 2px solid transparent">
+          <div><span style="color: var(--vscode-descriptionForeground)">Explorer: </span><strong>Rozetler</strong></div>
+          <div style="font-size: 12px; color: var(--vscode-descriptionForeground)">Gezgin'deki dosya adlarının yanında hangi rozetlerin görüneceği.</div>
+          <label for="rr-badges" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Rozetler</label>
+          <select id="rr-badges" style="width: 200px; height: 26px; padding: 0 6px; font: inherit; font-size: 13px; background: var(--vscode-dropdown-background); color: var(--vscode-foreground); border: 1px solid var(--vscode-dropdown-border)">
+            <option selected>Sıcaklar</option>
+            <option>Hepsi</option>
+            <option>Kapalı</option>
+          </select>
+        </div>
+
+        <h3 id="github" style="margin: 14px 0 0; font-size: 14px; font-weight: 600; color: var(--vscode-settings-headerForeground)">GitHub</h3>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-left: 2px solid transparent">
+          <div><span style="color: var(--vscode-descriptionForeground)">GitHub: </span><strong>Etkin</strong></div>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--vscode-descriptionForeground)">
+            <input type="checkbox" checked style="width: 16px; height: 16px; margin: 0; accent-color: var(--vscode-focusBorder)">
+            origin GitHub ise açık PR'ları, çakışmaları ve CI sonuçlarını göster.
+          </label>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-left: 2px solid transparent">
+          <div><span style="color: var(--vscode-descriptionForeground)">GitHub: </span><strong>Yenileme Aralığı</strong></div>
+          <div style="font-size: 12px; color: var(--vscode-descriptionForeground)">Dakika. Sadece panel açıkken yenilenir; istek limiti azalınca otomatik uzar.</div>
+          <label for="rr-refresh" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Yenileme aralığı, dakika</label>
+          <input id="rr-refresh" type="number" value="2" style="width: 120px; height: 26px; padding: 0 8px; box-sizing: border-box; font: inherit; background: var(--vscode-input-background); color: var(--vscode-foreground); border: 1px solid var(--vscode-input-border)">
+        </div>
+
+        <h3 id="git" style="margin: 14px 0 0; font-size: 14px; font-weight: 600; color: var(--vscode-settings-headerForeground)">Git</h3>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-left: 2px solid transparent">
+          <div><span style="color: var(--vscode-descriptionForeground)">Git: </span><strong>Yol</strong></div>
+          <div style="font-size: 12px; color: var(--vscode-descriptionForeground)">Boş bırakılırsa VS Code'un <code style="font-family: var(--vscode-editor-font-family, Menlo, Consolas, monospace); font-size: 11px">git.path</code> ayarı kullanılır.</div>
+          <label for="rr-gitpath" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Git yolu</label>
+          <input id="rr-gitpath" type="text" placeholder="/usr/bin/git" style="max-width: 420px; height: 26px; padding: 0 8px; box-sizing: border-box; font-family: var(--vscode-editor-font-family, Menlo, Consolas, monospace); font-size: 12px; background: var(--vscode-input-background); color: var(--vscode-foreground); border: 1px solid var(--vscode-input-border)">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light","hc"],"default":"dark","section":"Tema"},"$preview":{"width":1280,"height":780}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { list: this.defaults().concat([{ glob: 'src/generated/**', user: true }]), draft: '' };
+  }
+
+  defaults() {
+    return ['**/node_modules/**', '**/dist/**', '**/out/**', '**/*.lock', 'package-lock.json', '**/*.min.js'].map(function (g) { return { glob: g, user: false }; });
+  }
+
+  rrTheme(name) {
+    var T = {
+      dark: {'editor-background':'#1F1F1F','foreground':'#CCCCCC','descriptionForeground':'#9D9D9D','editorGroupHeader-tabsBackground':'#181818','tab-activeBackground':'#1F1F1F','tab-activeBorderTop':'#0078D4','panel-border':'#2B2B2B','focusBorder':'#0078D4','button-background':'#0078D4','button-foreground':'#FFFFFF','button-secondaryBackground':'#313131','button-secondaryForeground':'#CCCCCC','input-background':'#313131','input-border':'#3C3C3C','dropdown-background':'#313131','dropdown-border':'#3C3C3C','settings-headerForeground':'#FFFFFF','settings-modifiedItemIndicator':'#BB800966','list-hoverBackground':'#2A2D2E'},
+      light: {'editor-background':'#FFFFFF','foreground':'#3B3B3B','descriptionForeground':'#616161','editorGroupHeader-tabsBackground':'#F8F8F8','tab-activeBackground':'#FFFFFF','tab-activeBorderTop':'#005FB8','panel-border':'#E5E5E5','focusBorder':'#005FB8','button-background':'#005FB8','button-foreground':'#FFFFFF','button-secondaryBackground':'#E5E5E5','button-secondaryForeground':'#3B3B3B','input-background':'#FFFFFF','input-border':'#CECECE','dropdown-background':'#FFFFFF','dropdown-border':'#CECECE','settings-headerForeground':'#1F1F1F','settings-modifiedItemIndicator':'#BB800966','list-hoverBackground':'#F2F2F2'},
+      hc: {'editor-background':'#000000','foreground':'#FFFFFF','descriptionForeground':'#FFFFFF','editorGroupHeader-tabsBackground':'#000000','tab-activeBackground':'#000000','tab-activeBorderTop':'#F38518','panel-border':'#6FC3DF','focusBorder':'#F38518','button-background':'#0F4A85','button-foreground':'#FFFFFF','button-secondaryBackground':'#000000','button-secondaryForeground':'#FFFFFF','input-background':'#000000','input-border':'#6FC3DF','dropdown-background':'#000000','dropdown-border':'#6FC3DF','settings-headerForeground':'#FFFFFF','settings-modifiedItemIndicator':'#00497A','list-hoverBackground':'#000000'}
+    };
+    var t = T[name] ? name : 'dark';
+    var v = Object.keys(T[t]).map(function (k) { return '--vscode-' + k + ':' + T[t][k]; });
+    v.push('--rr-btn-border:' + (t === 'hc' ? '#6FC3DF' : 'transparent'));
+    return v.join(';') + ';';
+  }
+
+  renderVals() {
+    var self = this;
+    var list = this.state.list;
+    return {
+      themeVars: this.rrTheme(this.props.theme),
+      patterns: list.map(function (p, i) {
+        return {
+          glob: p.glob,
+          origin: p.user ? 'senin eklediğin' : 'varsayılan',
+          rowStyle: p.user ? 'background:var(--vscode-list-hoverBackground);' : '',
+          removeLabel: p.glob + ' desenini kaldır',
+          remove: function () {
+            var next = self.state.list.slice();
+            next.splice(i, 1);
+            self.setState({ list: next });
+          }
+        };
+      }),
+      draft: this.state.draft,
+      onDraft: function (e) { self.setState({ draft: e.target.value }); },
+      add: function () {
+        var g = (self.state.draft || '').trim();
+        if (!g) return;
+        self.setState({ list: self.state.list.concat([{ glob: g, user: true }]), draft: '' });
+      },
+      reset: function () { self.setState({ list: self.defaults(), draft: '' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

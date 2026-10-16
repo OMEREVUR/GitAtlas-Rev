@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>RewiewRev Explorer rozeti</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1280px; height: 780px; box-sizing: border-box; padding: 40px 48px; display: flex; gap: 48px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif; font-size: 13px; line-height: 1.4; color: var(--vscode-foreground); background: var(--vscode-editor-background); {{themeVars}}">
+
+  <div style="flex: 0 0 560px; display: flex; flex-direction: column; gap: 10px">
+    <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">GEZGİN · 2× YAKINLAŞTIRILMIŞ</div>
+    <div style="position: relative; flex: 1 1 auto; border: 1px solid var(--vscode-panel-border); border-radius: 6px; background: var(--vscode-sideBar-background); padding: 12px 0">
+      <ul aria-label="Gezgin" style="list-style: none; margin: 0; padding: 0">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+          <li onMouseEnter="{{r.hover}}" style="height: 44px; display: flex; align-items: center; gap: 8px; font-size: 24px; {{r.style}}">
+            <sc-if value="{{r.folder}}" hint-placeholder-val="{{false}}">
+              <svg width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true"><path d="M4 6l4 4 4-4"></path></svg>
+            </sc-if>
+            <sc-if value="{{r.file}}" hint-placeholder-val="{{true}}">
+              <span aria-hidden="true" style="width: 26px; display: inline-flex; justify-content: center; font-size: 13px; font-weight: 700; color: var(--vscode-charts-blue)">TS</span>
+            </sc-if>
+            <span style="flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; {{r.labelStyle}}">{{r.label}}</span>
+            <span style="display: flex; gap: 10px; padding-right: 22px; font-size: 22px; font-weight: 700">
+              <sc-if value="{{r.git}}" hint-placeholder-val="{{false}}">
+                <span aria-label="Git: değiştirildi" style="color: var(--vscode-gitDecoration-modifiedResourceForeground)">M</span>
+              </sc-if>
+              <sc-if value="{{r.hasBadge}}" hint-placeholder-val="{{false}}">
+                <span aria-label="{{r.badgeLabel}}" style="{{r.badgeStyle}}">{{r.badge}}</span>
+              </sc-if>
+            </span>
+          </li>
+        </sc-for>
+      </ul>
+      <sc-if value="{{hasTip}}" hint-placeholder-val="{{true}}">
+        <div role="tooltip" style="position: absolute; right: 24px; max-width: 360px; padding: 8px 12px; border-radius: 4px; font-size: 18px; background: var(--vscode-editorHoverWidget-background); border: 1px solid var(--vscode-editorHoverWidget-border); box-shadow: 0 2px 8px var(--vscode-widget-shadow); {{tipStyle}}">{{tipText}}</div>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 22px">
+    <div>
+      <h1 style="margin: 0 0 6px; font-size: 22px; font-weight: 650">Explorer rozeti</h1>
+      <p style="margin: 0; color: var(--vscode-descriptionForeground)">VS Code'un <code style="font-family: var(--vscode-editor-font-family, Menlo, Consolas, monospace); font-size: 12px">FileDecorationProvider</code> API'si en fazla 2 karakterlik rozet ve bir renk verir. Git'in kendi "M" rozetiyle yan yana durur, onu ezmez.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1fr); column-gap: 16px; font-size: 13px">
+      <div style="padding: 8px 0; font-size: 11px; font-weight: 600; color: var(--vscode-descriptionForeground); border-bottom: 1px solid var(--vscode-panel-border)">Rozet</div>
+      <div style="padding: 8px 0; font-size: 11px; font-weight: 600; color: var(--vscode-descriptionForeground); border-bottom: 1px solid var(--vscode-panel-border)">Anlamı</div>
+      <div style="padding: 8px 0; font-size: 11px; font-weight: 600; color: var(--vscode-descriptionForeground); border-bottom: 1px solid var(--vscode-panel-border)">Ne zaman</div>
+
+      <div style="padding: 10px 0; font-size: 20px; font-weight: 700; color: var(--vscode-charts-orange); border-bottom: 1px solid var(--vscode-panel-border)">●</div>
+      <div style="padding: 10px 0; border-bottom: 1px solid var(--vscode-panel-border)">Sık değişiyor</div>
+      <div style="padding: 10px 0; color: var(--vscode-descriptionForeground); border-bottom: 1px solid var(--vscode-panel-border)">Seçili aralıkta ısı 4–5</div>
+
+      <div style="padding: 10px 0; font-size: 18px; font-weight: 700; color: var(--vscode-charts-orange); border-bottom: 1px solid var(--vscode-panel-border)">1–5</div>
+      <div style="padding: 10px 0; border-bottom: 1px solid var(--vscode-panel-border)">Isı seviyesi</div>
+      <div style="padding: 10px 0; color: var(--vscode-descriptionForeground); border-bottom: 1px solid var(--vscode-panel-border)">Sadece "Hepsi" ayarında</div>
+
+      <div style="padding: 10px 0; font-size: 18px; font-weight: 700; color: var(--vscode-charts-purple); border-bottom: 1px solid var(--vscode-panel-border)">2</div>
+      <div style="padding: 10px 0; border-bottom: 1px solid var(--vscode-panel-border)">Açık PR sayısı</div>
+      <div style="padding: 10px 0; color: var(--vscode-descriptionForeground); border-bottom: 1px solid var(--vscode-panel-border)">GitHub bağlı ve 2+ PR aynı dosyada; ısının önüne geçer</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="font-size: 12px; color: var(--vscode-descriptionForeground)">Ayar: <code style="font-family: var(--vscode-editor-font-family, Menlo, Consolas, monospace); font-size: 12px">rewiewrev.explorer.badges</code></div>
+      <div role="group" aria-label="Rozet ayarı" style="display: flex; gap: 2px; padding: 2px; width: fit-content; border: 1px solid var(--vscode-input-border); border-radius: 4px; background: var(--vscode-input-background)">
+        <sc-for list="{{modes}}" as="m" hint-placeholder-count="3">
+          <button onClick="{{m.pick}}" aria-pressed="{{m.pressed}}" style="height: 28px; padding: 0 12px; border-radius: 3px; font: inherit; font-size: 12px; cursor: pointer; {{m.style}}">{{m.label}}</button>
+        </sc-for>
+      </div>
+      <div style="font-size: 12px; color: var(--vscode-descriptionForeground)">{{modeHelp}}</div>
+    </div>
+
+    <div style="font-size: 12px; color: var(--vscode-descriptionForeground)">Rozetin üstüne gelince VS Code tooltip'i açar; metni RewiewRev verir.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light","hc"],"default":"dark","section":"Tema"},"$preview":{"width":1280,"height":780}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { mode: 'hot', hover: 'logParser.ts' };
+  }
+
+  rrTheme(name) {
+    var T = {
+      dark: {'editor-background':'#1F1F1F','foreground':'#CCCCCC','descriptionForeground':'#9D9D9D','sideBar-background':'#181818','panel-border':'#2B2B2B','input-background':'#313131','input-border':'#3C3C3C','inputOption-activeBackground':'#2489DB82','inputOption-activeBorder':'#2488DB','list-hoverBackground':'#2A2D2E','editorHoverWidget-background':'#202020','editorHoverWidget-border':'#454545','widget-shadow':'#0000005C','gitDecoration-modifiedResourceForeground':'#E2C08D','charts-orange':'#D18616','charts-purple':'#B180D7','charts-blue':'#3794FF'},
+      light: {'editor-background':'#FFFFFF','foreground':'#3B3B3B','descriptionForeground':'#616161','sideBar-background':'#F8F8F8','panel-border':'#E5E5E5','input-background':'#FFFFFF','input-border':'#CECECE','inputOption-activeBackground':'#BED6ED','inputOption-activeBorder':'#005FB8','list-hoverBackground':'#E8E8E8','editorHoverWidget-background':'#F8F8F8','editorHoverWidget-border':'#C8C8C8','widget-shadow':'#00000029','gitDecoration-modifiedResourceForeground':'#895503','charts-orange':'#B26F0A','charts-purple':'#652D90','charts-blue':'#1A85FF'},
+      hc: {'editor-background':'#000000','foreground':'#FFFFFF','descriptionForeground':'#FFFFFF','sideBar-background':'#000000','panel-border':'#6FC3DF','input-background':'#000000','input-border':'#6FC3DF','inputOption-activeBackground':'#0F4A85','inputOption-activeBorder':'#6FC3DF','list-hoverBackground':'#000000','editorHoverWidget-background':'#0C141F','editorHoverWidget-border':'#6FC3DF','widget-shadow':'#00000000','gitDecoration-modifiedResourceForeground':'#E2C08D','charts-orange':'#D18616','charts-purple':'#B180D7','charts-blue':'#75BEFF'}
+    };
+    var t = T[name] ? name : 'dark';
+    var v = Object.keys(T[t]).map(function (k) { return '--vscode-' + k + ':' + T[t][k]; });
+    v.push('--rr-hover-outline:' + (t === 'hc' ? '#F38518' : 'transparent'));
+    return v.join(';') + ';';
+  }
+
+  renderVals() {
+    var self = this;
+    var mode = this.state.mode;
+    // etiket, derinlik, klasör mü, ısı, açık PR, git M
+    var R = [
+      ['src', 0, true], ['core', 1, true],
+      ['RepoModel.ts', 2, false, 4, 1, true], ['cache.ts', 2, false, 3, 0, false], ['types.ts', 2, false, 2, 0, false],
+      ['git', 1, true],
+      ['logParser.ts', 2, false, 5, 2, false], ['gitRunner.ts', 2, false, 2, 0, false], ['numstat.ts', 2, false, 1, 1, false],
+      ['extension.ts', 1, false, 2, 0, true], ['decorations.ts', 1, false, 2, 0, false]
+    ];
+    var tipText = '', tipStyle = '', hasTip = false;
+    var rows = R.map(function (r, i) {
+      var badge = '', badgeStyle = '', badgeLabel = '';
+      if (!r[2] && mode !== 'off') {
+        if (r[4] >= 2) { badge = String(r[4]); badgeStyle = 'color:var(--vscode-charts-purple);'; badgeLabel = r[4] + ' açık PR'; }
+        else if (mode === 'all') { badge = String(r[3]); badgeStyle = 'color:var(--vscode-charts-orange);'; badgeLabel = 'Isı ' + r[3]; }
+        else if (r[3] >= 4) { badge = '●'; badgeStyle = 'color:var(--vscode-charts-orange);'; badgeLabel = 'Sık değişiyor'; }
+      }
+      var isHover = self.state.hover === r[0];
+      if (isHover && !r[2]) {
+        hasTip = true;
+        tipText = 'RewiewRev: ' + (r[4] >= 2 ? r[4] + ' açık PR (#41, #43) · ' : '') + 'son 30 günde ' + [0, 2, 6, 12, 31, 38][r[3]] + ' commit';
+        tipStyle = 'top:' + (12 + (i + 1) * 44 + 4) + 'px;';
+      }
+      return {
+        label: r[0], folder: r[2], file: !r[2], git: !!r[5],
+        hasBadge: badge !== '', badge: badge, badgeStyle: badgeStyle, badgeLabel: badgeLabel,
+        labelStyle: r[5] ? 'color:var(--vscode-gitDecoration-modifiedResourceForeground);' : '',
+        style: 'padding-left:' + (16 + r[1] * 24) + 'px;' + (isHover ? 'background:var(--vscode-list-hoverBackground);outline:1px dashed var(--rr-hover-outline);outline-offset:-1px;' : ''),
+        hover: function () { self.setState({ hover: r[0] }); }
+      };
+    });
+    var HELP = {
+      hot: 'Varsayılan. Sadece sık değişen dosyalar ve PR çakışmaları işaretlenir; Gezgin kalabalıklaşmaz.',
+      all: 'Her dosyada 1–5 arası ısı seviyesi görünür. Kod tabanını tanımaya çalışanlar için.',
+      off: 'Rozet yok. Harita paneli yine çalışır.'
+    };
+    var modes = [['hot', 'Sıcaklar'], ['all', 'Hepsi'], ['off', 'Kapalı']].map(function (m) {
+      var on = m[0] === mode;
+      return {
+        label: m[1], pressed: on ? 'true' : 'false',
+        style: on
+          ? 'background:var(--vscode-inputOption-activeBackground);border:1px solid var(--vscode-inputOption-activeBorder);color:var(--vscode-foreground);'
+          : 'background:transparent;border:1px solid transparent;color:var(--vscode-descriptionForeground);',
+        pick: function () { self.setState({ mode: m[0] }); }
+      };
+    });
+    return {
+      themeVars: this.rrTheme(this.props.theme),
+      rows: rows, modes: modes, modeHelp: HELP[mode],
+      hasTip: hasTip, tipText: tipText, tipStyle: tipStyle
+    };
+  }
+}
+</script>
+</body>
+</html>

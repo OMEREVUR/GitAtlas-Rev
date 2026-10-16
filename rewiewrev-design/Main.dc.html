@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>RewiewRev ana panel</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="display: flex; flex-direction: column; min-height: 780px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif; font-size: 13px; line-height: 1.4; color: var(--vscode-foreground); background: var(--vscode-editor-background); {{themeVars}}">
+
+  <div style="display: flex; flex-wrap: wrap; flex: 1 1 auto; min-height: 0">
+
+    <nav aria-label="Etkinlik çubuğu" style="flex: 0 0 48px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; background: var(--vscode-activityBar-background); border-right: 1px solid var(--vscode-panel-border)">
+      <button aria-label="Gezgin" style="width: 48px; height: 44px; display: flex; align-items: center; justify-content: center; background: none; border: 0; border-left: 2px solid transparent; color: var(--vscode-activityBar-inactiveForeground); cursor: pointer">
+        <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true"><path d="M4 1.5h5l3 3v10H4z"></path><path d="M9 1.5v3h3"></path></svg>
+      </button>
+      <button aria-label="Ara" style="width: 48px; height: 44px; display: flex; align-items: center; justify-content: center; background: none; border: 0; border-left: 2px solid transparent; color: var(--vscode-activityBar-inactiveForeground); cursor: pointer">
+        <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.5 10.5L14 14"></path></svg>
+      </button>
+      <button aria-label="Kaynak denetimi" style="width: 48px; height: 44px; display: flex; align-items: center; justify-content: center; background: none; border: 0; border-left: 2px solid transparent; color: var(--vscode-activityBar-inactiveForeground); cursor: pointer">
+        <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true"><circle cx="4" cy="3" r="1.6"></circle><circle cx="4" cy="13" r="1.6"></circle><circle cx="12" cy="5" r="1.6"></circle><path d="M4 4.6v6.8"></path><path d="M12 6.6c0 3.2-8 2-8 4.8"></path></svg>
+      </button>
+      <button aria-label="RewiewRev haritası" aria-pressed="true" style="width: 48px; height: 44px; display: flex; align-items: center; justify-content: center; background: none; border: 0; border-left: 2px solid var(--vscode-activityBar-activeBorder); color: var(--vscode-activityBar-foreground); cursor: pointer">
+        <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="1"></rect><path d="M8 1.5v13"></path><path d="M1.5 9.5H8"></path><path d="M8 6h6.5"></path><path d="M11 6v8.5"></path></svg>
+      </button>
+    </nav>
+
+    <aside aria-label="Gezgin" style="flex: 0 0 236px; display: flex; flex-direction: column; background: var(--vscode-sideBar-background); border-right: 1px solid var(--vscode-panel-border)">
+      <div style="height: 35px; display: flex; align-items: center; padding: 0 20px; font-size: 11px; letter-spacing: 0.04em; color: var(--vscode-foreground)">GEZGİN</div>
+      <div style="height: 22px; display: flex; align-items: center; gap: 4px; padding: 0 8px; font-size: 11px; font-weight: 700; color: var(--vscode-foreground)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M4 6l4 4 4-4"></path></svg>
+        REWIEWREV
+      </div>
+      <ul style="list-style: none; margin: 0; padding: 0">
+        <sc-for list="{{explorer}}" as="row" hint-placeholder-count="12">
+          <li>
+            <button onClick="{{row.pick}}" aria-current="{{row.current}}" style="width: 100%; height: 22px; display: flex; align-items: center; gap: 4px; border: 0; font: inherit; text-align: left; cursor: pointer; {{row.style}}">
+              <sc-if value="{{row.isFolder}}" hint-placeholder-val="{{false}}">
+                <sc-if value="{{row.open}}" hint-placeholder-val="{{true}}">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M4 6l4 4 4-4"></path></svg>
+                </sc-if>
+                <sc-if value="{{row.closed}}" hint-placeholder-val="{{false}}">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M6 4l4 4-4 4"></path></svg>
+                </sc-if>
+              </sc-if>
+              <sc-if value="{{row.isFile}}" hint-placeholder-val="{{true}}">
+                <span aria-hidden="true" style="width: 16px; display: inline-flex; justify-content: center; font-size: 9px; font-weight: 700; color: var(--vscode-charts-blue)">TS</span>
+              </sc-if>
+              <span style="flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{row.label}}</span>
+              <sc-if value="{{row.hasBadge}}" hint-placeholder-val="{{false}}">
+                <span aria-label="{{row.badgeLabel}}" style="min-width: 14px; padding-right: 12px; text-align: right; font-size: 11px; font-weight: 700; {{row.badgeStyle}}">{{row.badge}}</span>
+              </sc-if>
+            </button>
+          </li>
+        </sc-for>
+      </ul>
+    </aside>
+
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+      <div role="tablist" style="height: 35px; display: flex; background: var(--vscode-editorGroupHeader-tabsBackground); border-bottom: 1px solid var(--vscode-panel-border)">
+        <div role="tab" aria-selected="false" style="display: flex; align-items: center; gap: 6px; padding: 0 14px; background: var(--vscode-tab-inactiveBackground); color: var(--vscode-descriptionForeground); border-right: 1px solid var(--vscode-panel-border)">extension.ts</div>
+        <div role="tab" aria-selected="true" style="display: flex; align-items: center; gap: 6px; padding: 0 10px 0 14px; background: var(--vscode-tab-activeBackground); color: var(--vscode-foreground); border-top: 1px solid var(--vscode-tab-activeBorderTop); border-right: 1px solid var(--vscode-panel-border); margin-bottom: -1px">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="1"></rect><path d="M8 1.5v13"></path><path d="M1.5 9.5H8"></path><path d="M8 6h6.5"></path></svg>
+          RewiewRev: Harita
+          <button aria-label="Sekmeyi kapat" style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; background: none; border: 0; color: var(--vscode-foreground); cursor: pointer">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <div style="flex: 1 1 auto; display: flex; flex-wrap: wrap; min-height: 0">
+
+        <section aria-label="Repo haritası" style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 14px">
+
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+            <nav aria-label="Görünüm" style="display: flex; gap: 2px; padding: 2px; border: 1px solid var(--vscode-input-border); border-radius: 4px; background: var(--vscode-input-background)">
+              <span aria-current="page" style="height: 24px; display: flex; align-items: center; padding: 0 10px; border-radius: 3px; font-size: 12px; background: var(--vscode-inputOption-activeBackground); border: 1px solid var(--vscode-inputOption-activeBorder); color: var(--vscode-foreground)">Harita</span>
+              <a href="Graph.dc.html" style="height: 24px; display: flex; align-items: center; padding: 0 10px; border-radius: 3px; border: 1px solid transparent; font-size: 12px; text-decoration: none; color: var(--vscode-descriptionForeground)">Graph</a>
+              <a href="TimeMachine.dc.html" style="height: 24px; display: flex; align-items: center; padding: 0 10px; border-radius: 3px; border: 1px solid transparent; font-size: 12px; text-decoration: none; color: var(--vscode-descriptionForeground)">Zaman</a>
+              <a href="Contributors.dc.html" style="height: 24px; display: flex; align-items: center; padding: 0 10px; border-radius: 3px; border: 1px solid transparent; font-size: 12px; text-decoration: none; color: var(--vscode-descriptionForeground)">Katkı</a>
+            </nav>
+            <div role="group" aria-label="Zaman aralığı" style="display: flex; gap: 2px; padding: 2px; border: 1px solid var(--vscode-input-border); border-radius: 4px; background: var(--vscode-input-background)">
+              <sc-for list="{{periods}}" as="pr" hint-placeholder-count="3">
+                <button onClick="{{pr.pick}}" aria-pressed="{{pr.pressed}}" style="height: 24px; padding: 0 10px; border-radius: 3px; font: inherit; font-size: 12px; cursor: pointer; {{pr.style}}">{{pr.label}}</button>
+              </sc-for>
+            </div>
+
+            <div role="group" aria-label="Katmanlar" style="display: flex; gap: 6px; align-items: center">
+              <button aria-pressed="true" style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border-radius: 4px; font: inherit; font-size: 12px; cursor: default; background: var(--vscode-inputOption-activeBackground); border: 1px solid var(--vscode-inputOption-activeBorder); color: var(--vscode-foreground)">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="4" cy="3" r="1.6"></circle><circle cx="4" cy="13" r="1.6"></circle><circle cx="12" cy="5" r="1.6"></circle><path d="M4 4.6v6.8"></path><path d="M12 6.6c0 3.2-8 2-8 4.8"></path></svg>
+                Git
+              </button>
+              <button onClick="{{toggleGitHub}}" aria-pressed="{{ghPressed}}" style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border-radius: 4px; font: inherit; font-size: 12px; cursor: pointer; {{ghStyle}}">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="4" cy="3.5" r="1.5"></circle><circle cx="4" cy="12.5" r="1.5"></circle><circle cx="12" cy="12.5" r="1.5"></circle><path d="M4 5v6"></path><path d="M12 11V6.5a2 2 0 0 0-2-2H7.5"></path><path d="M9 3L7.5 4.5 9 6"></path></svg>
+                GitHub
+              </button>
+            </div>
+
+            <div style="flex: 1 1 160px; min-width: 140px; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; box-sizing: border-box; border: 1px solid var(--vscode-input-border); border-radius: 4px; background: var(--vscode-input-background)">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true" style="color: var(--vscode-input-placeholderForeground)"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.5 10.5L14 14"></path></svg>
+              <label for="rr-search" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Dosya ara</label>
+              <input id="rr-search" type="search" placeholder="Dosya ara" style="flex: 1 1 auto; min-width: 0; background: transparent; border: 0; outline: none; font: inherit; font-size: 12px; color: var(--vscode-foreground)">
+            </div>
+
+            <button aria-label="Yenile" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: none; border: 1px solid transparent; border-radius: 4px; color: var(--vscode-foreground); cursor: pointer">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.5-3.5"></path><path d="M13 2.5v3h-3"></path></svg>
+            </button>
+          </div>
+
+          <nav aria-label="Konum" style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--vscode-descriptionForeground)">
+            <button aria-label="Üst klasöre çık" style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; background: none; border: 0; color: var(--vscode-foreground); cursor: pointer">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M10 3L5 8l5 5"></path></svg>
+            </button>
+            <a href="#" style="color: var(--vscode-descriptionForeground); text-decoration: none">rewiewrev</a>
+            <span aria-hidden="true">›</span>
+            <span style="color: var(--vscode-foreground)">src</span>
+            <span style="margin-left: auto">16 dosya · kutu boyutu = satır sayısı</span>
+          </nav>
+
+          <div style="overflow-x: auto">
+            <div style="position: relative; min-width: 560px; height: 470px; background: var(--rr-box-border)">
+              <sc-for list="{{groups}}" as="g" hint-placeholder-count="5">
+                <div style="position: absolute; box-sizing: border-box; display: flex; flex-direction: column; padding: 1px; {{g.style}}">
+                  <div style="height: 20px; flex: 0 0 20px; display: flex; align-items: center; padding: 0 6px; font-size: 11px; font-weight: 600; color: var(--vscode-descriptionForeground); background: var(--vscode-sideBar-background)">{{g.label}}</div>
+                  <div style="position: relative; flex: 1 1 auto">
+                    <sc-for list="{{g.files}}" as="f" hint-placeholder-count="3">
+                      <button onClick="{{f.pick}}" aria-pressed="{{f.pressed}}" aria-label="{{f.aria}}" style="position: absolute; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 4px; padding: 6px 7px; border: 1px solid var(--rr-box-border); font: inherit; text-align: left; overflow: hidden; cursor: pointer; {{f.dyn}}">
+                        <span style="max-width: 100%; display: flex; flex-direction: column; gap: 1px">
+                          <span style="font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{f.name}}</span>
+                          <sc-if value="{{f.showLines}}" hint-placeholder-val="{{true}}">
+                            <span style="font-size: 11px; opacity: 0.85">{{f.lines}} satır · {{f.commits}} commit</span>
+                          </sc-if>
+                        </span>
+                        <sc-if value="{{f.hasPr}}" hint-placeholder-val="{{false}}">
+                          <span style="display: inline-flex; align-items: center; gap: 3px; height: 18px; padding: 0 6px; border-radius: 9px; font-size: 11px; font-weight: 700; {{f.badgeStyle}}">
+                            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="4" cy="3.5" r="1.5"></circle><circle cx="4" cy="12.5" r="1.5"></circle><circle cx="12" cy="12.5" r="1.5"></circle><path d="M4 5v6"></path><path d="M12 11V6.5a2 2 0 0 0-2-2H7.5"></path></svg>
+                            {{f.prLabel}}
+                          </span>
+                        </sc-if>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div aria-label="Lejant" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; font-size: 11px; color: var(--vscode-descriptionForeground)">
+            <span style="display: flex; align-items: center; gap: 6px">
+              Az değişen
+              <span aria-hidden="true" style="display: flex">
+                <span style="width: 18px; height: 10px; background: var(--rr-c1)"></span>
+                <span style="width: 18px; height: 10px; background: var(--rr-c2)"></span>
+                <span style="width: 18px; height: 10px; background: var(--rr-c3)"></span>
+                <span style="width: 18px; height: 10px; background: var(--rr-c4)"></span>
+                <span style="width: 18px; height: 10px; background: var(--rr-c5)"></span>
+              </span>
+              Sık değişen
+            </span>
+            <sc-if value="{{github}}" hint-placeholder-val="{{true}}">
+              <span style="display: flex; align-items: center; gap: 6px">
+                <span aria-hidden="true" style="width: 22px; height: 12px; outline: 2px dashed var(--vscode-charts-purple); outline-offset: -2px"></span>
+                Aynı dosyada 2+ açık PR (çakışma riski)
+              </span>
+            </sc-if>
+            <span style="display: flex; align-items: center; gap: 6px">
+              <span aria-hidden="true" style="width: 22px; height: 12px; box-shadow: inset 0 0 0 2px var(--vscode-focusBorder)"></span>
+              Seçili dosya
+            </span>
+          </div>
+        </section>
+
+        <aside aria-label="Dosya kartı" style="flex: 1 1 280px; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; padding: 14px 16px; background: var(--vscode-editorWidget-background); border-left: 1px solid var(--vscode-panel-border)">
+          <sc-if value="{{hasSel}}" hint-placeholder-val="{{true}}">
+            <div style="display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; align-items: flex-start; gap: 8px">
+                <div style="flex: 1 1 auto; min-width: 0">
+                  <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--vscode-foreground)">{{card.name}}</h2>
+                  <div style="font-size: 12px; color: var(--vscode-descriptionForeground); overflow-wrap: anywhere">{{card.path}}</div>
+                </div>
+                <button onClick="{{clearSel}}" aria-label="Kartı kapat" style="width: 24px; height: 24px; flex: 0 0 24px; display: flex; align-items: center; justify-content: center; background: none; border: 0; border-radius: 4px; color: var(--vscode-foreground); cursor: pointer">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg>
+                </button>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+                <div style="padding: 8px 10px; border-radius: 4px; background: var(--vscode-textCodeBlock-background)">
+                  <div style="font-size: 11px; color: var(--vscode-descriptionForeground)">Satır</div>
+                  <div style="font-size: 16px; font-weight: 600">{{card.lines}}</div>
+                </div>
+                <div style="padding: 8px 10px; border-radius: 4px; background: var(--vscode-textCodeBlock-background)">
+                  <div style="font-size: 11px; color: var(--vscode-descriptionForeground)">Commit · {{card.period}}</div>
+                  <div style="font-size: 16px; font-weight: 600">{{card.commits}}</div>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--vscode-descriptionForeground)">
+                  <span>Değişim sıklığı</span>
+                  <span style="color: var(--vscode-foreground); font-weight: 600">{{card.heatLabel}}</span>
+                </div>
+                <div aria-hidden="true" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px">
+                  <sc-for list="{{card.meter}}" as="m" hint-placeholder-count="5">
+                    <span style="height: 6px; border-radius: 1px; {{m.style}}"></span>
+                  </sc-for>
+                </div>
+              </div>
+
+              <sc-if value="{{card.conflict}}" hint-placeholder-val="{{true}}">
+                <div role="note" style="display: flex; gap: 8px; padding: 8px 10px; border-radius: 4px; outline: 2px dashed var(--vscode-charts-purple); outline-offset: -2px; font-size: 12px">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true" style="flex: 0 0 16px; color: var(--vscode-charts-purple); margin-top: 1px"><path d="M8 1.8l6.5 12H1.5z"></path><path d="M8 6.5v3.5"></path><path d="M8 11.8v.4"></path></svg>
+                  <span>Bu dosyaya <strong>{{card.prCount}} açık PR</strong> dokunuyor. Merge sırasında çakışabilir.</span>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{card.hasPrs}}" hint-placeholder-val="{{true}}">
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <h3 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">AÇIK PR'LAR</h3>
+                  <sc-for list="{{card.prs}}" as="p" hint-placeholder-count="2">
+                    <a href="#" style="display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; border-radius: 4px; text-decoration: none; color: var(--vscode-foreground); background: var(--vscode-textCodeBlock-background)">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true" style="flex: 0 0 14px; margin-top: 2px; color: var(--vscode-charts-purple)"><circle cx="4" cy="3.5" r="1.5"></circle><circle cx="4" cy="12.5" r="1.5"></circle><circle cx="12" cy="12.5" r="1.5"></circle><path d="M4 5v6"></path><path d="M12 11V6.5a2 2 0 0 0-2-2H7.5"></path></svg>
+                      <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column">
+                        <span style="font-size: 12px">#{{p.num}} {{p.title}}</span>
+                        <span style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--vscode-descriptionForeground)">
+                          {{p.author}}
+                          <span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 50%; {{p.ciDot}}"></span>
+                          {{p.ciLabel}}
+                        </span>
+                      </span>
+                    </a>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <h3 style="margin: 0 0 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">SON COMMIT'LER</h3>
+                <sc-for list="{{card.recent}}" as="c" hint-placeholder-count="4">
+                  <div style="display: flex; gap: 8px; padding: 4px 0; font-size: 12px">
+                    <code style="flex: 0 0 auto; font-family: var(--vscode-editor-font-family, Menlo, Consolas, monospace); font-size: 11px; color: var(--vscode-textLink-foreground)">{{c.hash}}</code>
+                    <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column">
+                      <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{c.msg}}</span>
+                      <span style="font-size: 11px; color: var(--vscode-descriptionForeground)">{{c.author}} · {{c.when}}</span>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                <button style="flex: 1 1 auto; height: 28px; padding: 0 12px; border: 1px solid var(--rr-btn-border); border-radius: 4px; font: inherit; font-size: 12px; cursor: pointer; background: var(--vscode-button-background); color: var(--vscode-button-foreground)">Dosyayı aç</button>
+                <button style="flex: 1 1 auto; height: 28px; padding: 0 12px; border: 1px solid var(--rr-btn-border); border-radius: 4px; font: inherit; font-size: 12px; cursor: pointer; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)">Diff'i gör</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{noSel}}" hint-placeholder-val="{{false}}">
+            <div style="flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 40px 12px; text-align: center; color: var(--vscode-descriptionForeground)">
+              <svg width="32" height="32" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="1"></rect><path d="M8 1.5v13"></path><path d="M1.5 9.5H8"></path><path d="M8 6h6.5"></path></svg>
+              <div style="font-size: 13px; color: var(--vscode-foreground)">Bir dosya seç</div>
+              <div style="font-size: 12px">Haritada bir kutuya tıkla; son commit'leri, açık PR'ları ve diff'i burada gör.</div>
+            </div>
+          </sc-if>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <footer style="height: 22px; flex: 0 0 22px; display: flex; align-items: center; gap: 14px; padding: 0 10px; font-size: 12px; background: var(--vscode-statusBar-background); color: var(--vscode-statusBar-foreground); border-top: 1px solid var(--vscode-statusBar-border)">
+    <span style="display: flex; align-items: center; gap: 4px">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><circle cx="4" cy="3" r="1.6"></circle><circle cx="4" cy="13" r="1.6"></circle><circle cx="12" cy="5" r="1.6"></circle><path d="M4 4.6v6.8"></path><path d="M12 6.6c0 3.2-8 2-8 4.8"></path></svg>
+      main
+    </span>
+    <span>↑2 ↓0</span>
+    <span style="margin-left: auto">RewiewRev: tarama tamam · cache güncel</span>
+    <span>{{ghStatus}}</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light","hc"],"default":"dark","section":"Tema"},"github":{"editor":"boolean","default":true,"section":"Katmanlar"},"$preview":{"width":1280,"height":780}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { period: 1, selected: 'logParser.ts', github: null };
+  }
+
+  renderVals() {
+var RR_THEMES = {
+  dark: {
+    'editor-background': '#1F1F1F', 'editor-foreground': '#CCCCCC', 'foreground': '#CCCCCC', 'descriptionForeground': '#9D9D9D',
+    'sideBar-background': '#181818', 'activityBar-background': '#181818', 'activityBar-foreground': '#D7D7D7',
+    'activityBar-inactiveForeground': '#868686', 'activityBar-activeBorder': '#0078D4',
+    'tab-activeBackground': '#1F1F1F', 'tab-inactiveBackground': '#181818', 'tab-activeBorderTop': '#0078D4',
+    'editorGroupHeader-tabsBackground': '#181818', 'panel-border': '#2B2B2B', 'focusBorder': '#0078D4',
+    'button-background': '#0078D4', 'button-foreground': '#FFFFFF', 'button-secondaryBackground': '#313131', 'button-secondaryForeground': '#CCCCCC',
+    'input-background': '#313131', 'input-border': '#3C3C3C', 'input-placeholderForeground': '#989898',
+    'inputOption-activeBackground': '#2489DB82', 'inputOption-activeBorder': '#2488DB',
+    'list-hoverBackground': '#2A2D2E', 'list-activeSelectionBackground': '#04395E', 'list-activeSelectionForeground': '#FFFFFF',
+    'statusBar-background': '#181818', 'statusBar-foreground': '#CCCCCC', 'statusBar-border': '#2B2B2B',
+    'charts-orange': '#D18616', 'charts-purple': '#B180D7', 'charts-red': '#F14C4C', 'charts-green': '#89D185', 'charts-blue': '#3794FF',
+    'textLink-foreground': '#4DAAFC', 'editorWidget-background': '#202020', 'textCodeBlock-background': '#2B2B2B'
+  },
+  light: {
+    'editor-background': '#FFFFFF', 'editor-foreground': '#3B3B3B', 'foreground': '#3B3B3B', 'descriptionForeground': '#616161',
+    'sideBar-background': '#F8F8F8', 'activityBar-background': '#F8F8F8', 'activityBar-foreground': '#1F1F1F',
+    'activityBar-inactiveForeground': '#616161', 'activityBar-activeBorder': '#005FB8',
+    'tab-activeBackground': '#FFFFFF', 'tab-inactiveBackground': '#F8F8F8', 'tab-activeBorderTop': '#005FB8',
+    'editorGroupHeader-tabsBackground': '#F8F8F8', 'panel-border': '#E5E5E5', 'focusBorder': '#005FB8',
+    'button-background': '#005FB8', 'button-foreground': '#FFFFFF', 'button-secondaryBackground': '#E5E5E5', 'button-secondaryForeground': '#3B3B3B',
+    'input-background': '#FFFFFF', 'input-border': '#CECECE', 'input-placeholderForeground': '#767676',
+    'inputOption-activeBackground': '#BED6ED', 'inputOption-activeBorder': '#005FB8',
+    'list-hoverBackground': '#F2F2F2', 'list-activeSelectionBackground': '#E4E6F1', 'list-activeSelectionForeground': '#000000',
+    'statusBar-background': '#F8F8F8', 'statusBar-foreground': '#3B3B3B', 'statusBar-border': '#E5E5E5',
+    'charts-orange': '#D18616', 'charts-purple': '#652D90', 'charts-red': '#E51400', 'charts-green': '#388A34', 'charts-blue': '#1A85FF',
+    'textLink-foreground': '#005FB8', 'editorWidget-background': '#F8F8F8', 'textCodeBlock-background': '#EFEFEF'
+  },
+  hc: {
+    'editor-background': '#000000', 'editor-foreground': '#FFFFFF', 'foreground': '#FFFFFF', 'descriptionForeground': '#FFFFFF',
+    'sideBar-background': '#000000', 'activityBar-background': '#000000', 'activityBar-foreground': '#FFFFFF',
+    'activityBar-inactiveForeground': '#FFFFFF', 'activityBar-activeBorder': '#F38518',
+    'tab-activeBackground': '#000000', 'tab-inactiveBackground': '#000000', 'tab-activeBorderTop': '#F38518',
+    'editorGroupHeader-tabsBackground': '#000000', 'panel-border': '#6FC3DF', 'focusBorder': '#F38518',
+    'button-background': '#0F4A85', 'button-foreground': '#FFFFFF', 'button-secondaryBackground': '#000000', 'button-secondaryForeground': '#FFFFFF',
+    'input-background': '#000000', 'input-border': '#6FC3DF', 'input-placeholderForeground': '#FFFFFF',
+    'inputOption-activeBackground': '#0F4A85', 'inputOption-activeBorder': '#6FC3DF',
+    'list-hoverBackground': '#000000', 'list-activeSelectionBackground': '#000000', 'list-activeSelectionForeground': '#FFFFFF',
+    'statusBar-background': '#000000', 'statusBar-foreground': '#FFFFFF', 'statusBar-border': '#6FC3DF',
+    'charts-orange': '#D18616', 'charts-purple': '#B180D7', 'charts-red': '#F48771', 'charts-green': '#89D185', 'charts-blue': '#75BEFF',
+    'textLink-foreground': '#21A6FF', 'editorWidget-background': '#0C141F', 'textCodeBlock-background': '#000000'
+  }
+};
+var RR_EXTRA = {
+  dark: { '--rr-box-border': 'var(--vscode-editor-background)', '--rr-onhot': 'var(--vscode-editor-background)', '--rr-btn-border': 'transparent', '--rr-sel-outline': 'transparent' },
+  light: { '--rr-box-border': 'var(--vscode-editor-background)', '--rr-onhot': 'var(--vscode-editor-foreground)', '--rr-btn-border': 'transparent', '--rr-sel-outline': 'transparent' },
+  hc: { '--rr-box-border': '#6FC3DF', '--rr-onhot': '#000000', '--rr-btn-border': '#6FC3DF', '--rr-sel-outline': '#F38518' }
+};
+var RR_SCALE = [14, 30, 46, 78, 96];
+var RR_PERIODS = ['7 gün', '30 gün', 'Tümü'];
+var RR_HEAT = ['Çok az', 'Az', 'Orta', 'Sık', 'Çok sık'];
+var RR_COMMITS = [
+  { hash: 'a3f9c21', msg: 'parser: --numstat çıktısında boş satırları atla', author: '@deniz', when: '2 gün önce' },
+  { hash: '7be04d8', msg: 'RepoModel: dosya başına churn toplamı', author: '@mert', when: '3 gün önce' },
+  { hash: 'c12e9aa', msg: "cache: son işlenen hash'i sakla", author: '@ayse', when: '4 gün önce' },
+  { hash: 'e88b310', msg: 'treemap: klasöre inme ve breadcrumb', author: '@ayse', when: '5 gün önce' },
+  { hash: '19d4f7e', msg: "github: GraphQL ile açık PR'ları çek", author: '@deniz', when: '6 gün önce' },
+  { hash: '5a0c6b2', msg: 'explorer rozetleri: FileDecorationProvider', author: '@mert', when: '1 hafta önce' },
+  { hash: 'b4410fe', msg: 'gitRunner: büyük repolarda akışla oku', author: '@deniz', when: '1 hafta önce' },
+  { hash: '0f7d2a9', msg: 'dosya kartı: diff butonu', author: '@ayse', when: '9 gün önce' },
+  { hash: 'd9e1c55', msg: 'ilk iskelet: yo code', author: '@mert', when: '3 hafta önce' }
+];
+var RR_PRS = [
+  { num: 41, title: 'numstat: binary dosyaları atla', author: '@mert', ci: true, files: ['logParser.ts', 'numstat.ts'] },
+  { num: 43, title: 'Rename takibi', author: '@deniz', ci: false, files: ['logParser.ts', 'RepoModel.ts'] },
+  { num: 44, title: 'Treemap: yakınlaştırma', author: '@ayse', ci: true, files: ['Treemap.tsx'] }
+];
+// [ad, x, y, w, h, satır, ısı[7g,30g,tümü], commit[7g,30g,tümü], son commit'ler]
+var RR_GROUPS = [
+  { label: 'core/', dir: 'core/', open: true, x: 0, y: 0, w: 36, h: 60, files: [
+    ['RepoModel.ts', 0, 0, 62, 100, 412, [5, 4, 4], [14, 31, 58], [1, 2, 0, 6, 8]],
+    ['cache.ts', 62, 0, 38, 60, 168, [2, 3, 3], [3, 9, 17], [2, 1, 8]],
+    ['types.ts', 62, 60, 38, 40, 96, [1, 2, 2], [1, 4, 11], [1, 8]]
+  ] },
+  { label: 'git/', dir: 'git/', open: true, x: 36, y: 0, w: 34, h: 60, files: [
+    ['logParser.ts', 0, 0, 58, 100, 356, [5, 5, 5], [17, 38, 64], [0, 6, 1, 8]],
+    ['gitRunner.ts', 58, 0, 42, 55, 204, [2, 2, 3], [2, 6, 19], [6, 8]],
+    ['numstat.ts', 58, 55, 42, 45, 88, [1, 1, 2], [0, 2, 9], [0, 8]]
+  ] },
+  { label: 'webview/', dir: 'webview/', open: false, x: 70, y: 0, w: 30, h: 100, files: [
+    ['Treemap.tsx', 0, 0, 100, 42, 298, [4, 4, 3], [11, 22, 30], [3, 7, 8]],
+    ['FileCard.tsx', 0, 42, 100, 28, 184, [3, 3, 2], [6, 12, 15], [7, 3]],
+    ['panel.ts', 0, 70, 55, 30, 121, [1, 2, 2], [1, 5, 12], [3, 8]],
+    ['styles.css', 55, 70, 45, 30, 140, [1, 1, 1], [0, 1, 4], [3]]
+  ] },
+  { label: 'github/', dir: 'github/', open: false, x: 0, y: 60, w: 42, h: 40, files: [
+    ['GitHubProvider.ts', 0, 0, 55, 100, 263, [4, 3, 2], [9, 13, 13], [4, 8]],
+    ['graphql.ts', 55, 0, 45, 60, 142, [3, 2, 2], [5, 7, 7], [4]],
+    ['auth.ts', 55, 60, 45, 40, 58, [1, 1, 1], [1, 2, 2], [4]]
+  ] },
+  { label: 'src/ (kök dosyalar)', dir: '', open: true, x: 42, y: 60, w: 28, h: 40, files: [
+    ['extension.ts', 0, 0, 60, 100, 176, [2, 2, 3], [3, 7, 21], [5, 8]],
+    ['decorations.ts', 60, 0, 40, 55, 94, [3, 2, 2], [4, 6, 8], [5]],
+    ['config.ts', 60, 55, 40, 45, 67, [1, 1, 2], [0, 3, 10], [8]]
+  ] }
+];
+
+    var self = this;
+    var theme = RR_THEMES[this.props.theme] ? this.props.theme : 'dark';
+    var p = this.state.period;
+    var gh = this.state.github === null ? (this.props.github ?? true) : this.state.github;
+    var sel = this.state.selected;
+
+    var vars = Object.keys(RR_THEMES[theme]).map(function (k) { return '--vscode-' + k + ':' + RR_THEMES[theme][k]; });
+    Object.keys(RR_EXTRA[theme]).forEach(function (k) { vars.push(k + ':' + RR_EXTRA[theme][k]); });
+    RR_SCALE.forEach(function (pct, i) {
+      vars.push('--rr-c' + (i + 1) + ':color-mix(in srgb, var(--vscode-charts-orange) ' + pct + '%, var(--vscode-editor-background))');
+    });
+    var themeVars = vars.join(';') + ';';
+
+    var all = [];
+    var groups = RR_GROUPS.map(function (g) {
+      return {
+        label: g.label,
+        style: 'left:' + g.x + '%;top:' + g.y + '%;width:' + g.w + '%;height:' + g.h + '%;',
+        files: g.files.map(function (f) {
+          var name = f[0], s = f[6][p], commits = f[7][p];
+          var prs = gh ? RR_PRS.filter(function (pr) { return pr.files.indexOf(name) >= 0; }) : [];
+          var conflict = prs.length >= 2;
+          var selected = sel === name;
+          var area = (g.w * f[3] / 100) * (g.h * f[4] / 100) / 100;
+          var dyn = 'left:' + f[1] + '%;top:' + f[2] + '%;width:' + f[3] + '%;height:' + f[4] + '%;' +
+            'background:var(--rr-c' + s + ');color:' + (s >= 4 ? 'var(--rr-onhot)' : 'var(--vscode-editor-foreground)') + ';';
+          if (conflict) dyn += 'outline:2px dashed var(--vscode-charts-purple);outline-offset:-5px;';
+          if (selected) dyn += 'box-shadow:inset 0 0 0 2px var(--vscode-focusBorder);';
+          var vm = {
+            name: name, lines: f[5], commits: commits, heat: s, dir: g.dir, prs: prs, conflict: conflict, recent: f[8],
+            dyn: dyn,
+            showLines: area >= 6,
+            hasPr: prs.length > 0,
+            prLabel: conflict ? prs.length + ' PR' : String(prs.length),
+            badgeStyle: conflict
+              ? 'background:var(--vscode-charts-purple);color:var(--vscode-editor-background);'
+              : 'background:var(--vscode-editor-background);color:var(--vscode-foreground);border:1px solid var(--vscode-charts-purple);',
+            pressed: selected ? 'true' : 'false',
+            aria: name + ', ' + f[5] + ' satır, ' + commits + ' commit' + (prs.length ? ', ' + prs.length + ' açık PR' : ''),
+            pick: function () { self.setState({ selected: name }); }
+          };
+          all.push(vm);
+          return vm;
+        })
+      };
+    });
+
+    var rowBase = function (selected) {
+      return selected
+        ? 'background:var(--vscode-list-activeSelectionBackground);color:var(--vscode-list-activeSelectionForeground);outline:1px solid var(--rr-sel-outline);outline-offset:-1px;'
+        : 'background:transparent;color:var(--vscode-foreground);';
+    };
+    var explorer = [{ label: 'src', isFolder: true, open: true, closed: false, isFile: false, hasBadge: false, depth: 0 }];
+    var fileRow = function (f, depth) {
+      var badge = '', badgeStyle = '', badgeLabel = '';
+      if (f.conflict) { badge = String(f.prs.length); badgeStyle = 'color:var(--vscode-charts-purple);'; badgeLabel = f.prs.length + ' açık PR'; }
+      else if (f.heat >= 4) { badge = '●'; badgeStyle = 'color:var(--vscode-charts-orange);'; badgeLabel = 'Sık değişiyor'; }
+      return { label: f.name, isFolder: false, open: false, closed: false, isFile: true, hasBadge: badge !== '', badge: badge, badgeStyle: badgeStyle, badgeLabel: badgeLabel, depth: depth, selected: sel === f.name, name: f.name };
+    };
+    groups.forEach(function (g, gi) {
+      var src = RR_GROUPS[gi];
+      if (src.dir === '') return;
+      explorer.push({ label: src.dir.replace('/', ''), isFolder: true, open: src.open, closed: !src.open, isFile: false, hasBadge: false, depth: 1 });
+      if (src.open) g.files.forEach(function (f) { explorer.push(fileRow(f, 2)); });
+    });
+    groups[4].files.slice().sort(function (a, b) { return a.name.localeCompare(b.name); }).forEach(function (f) { explorer.push(fileRow(f, 1)); });
+    explorer = explorer.map(function (r) {
+      return Object.assign({}, r, {
+        style: 'padding-left:' + (8 + r.depth * 12) + 'px;' + rowBase(!!r.selected),
+        current: r.selected ? 'true' : 'false',
+        pick: r.isFile ? function () { self.setState({ selected: r.name }); } : function () {}
+      });
+    });
+
+    var periods = RR_PERIODS.map(function (label, i) {
+      var on = i === p;
+      return {
+        label: label,
+        pressed: on ? 'true' : 'false',
+        style: on
+          ? 'background:var(--vscode-inputOption-activeBackground);border:1px solid var(--vscode-inputOption-activeBorder);color:var(--vscode-foreground);'
+          : 'background:transparent;border:1px solid transparent;color:var(--vscode-descriptionForeground);',
+        pick: function () { self.setState({ period: i }); }
+      };
+    });
+
+    var cur = all.filter(function (f) { return f.name === sel; })[0];
+    var card = {};
+    if (cur) {
+      card = {
+        name: cur.name,
+        path: 'src/' + cur.dir + cur.name,
+        lines: cur.lines,
+        commits: cur.commits,
+        period: RR_PERIODS[p].toLowerCase(),
+        heatLabel: RR_HEAT[cur.heat - 1],
+        meter: [1, 2, 3, 4, 5].map(function (n) {
+          return { style: n <= cur.heat ? 'background:var(--rr-c' + n + ');' : 'background:var(--vscode-textCodeBlock-background);outline:1px solid var(--vscode-panel-border);outline-offset:-1px;' };
+        }),
+        conflict: cur.conflict,
+        prCount: cur.prs.length,
+        hasPrs: cur.prs.length > 0,
+        prs: cur.prs.map(function (pr) {
+          return {
+            num: pr.num, title: pr.title, author: pr.author,
+            ciLabel: pr.ci ? 'CI geçti' : 'CI başarısız',
+            ciDot: pr.ci ? 'background:var(--vscode-charts-green);' : 'background:var(--vscode-charts-red);'
+          };
+        }),
+        recent: cur.recent.slice(0, 5).map(function (i) { return RR_COMMITS[i]; })
+      };
+    }
+
+    return {
+      themeVars: themeVars,
+      groups: groups,
+      explorer: explorer,
+      periods: periods,
+      github: gh,
+      ghPressed: gh ? 'true' : 'false',
+      ghStyle: gh
+        ? 'background:var(--vscode-inputOption-activeBackground);border:1px solid var(--vscode-inputOption-activeBorder);color:var(--vscode-foreground);'
+        : 'background:transparent;border:1px solid var(--vscode-input-border);color:var(--vscode-descriptionForeground);',
+      toggleGitHub: function () { self.setState({ github: !gh }); },
+      ghStatus: gh ? 'GitHub: bağlı · 3 açık PR' : 'GitHub: kapalı',
+      hasSel: !!cur,
+      noSel: !cur,
+      card: card,
+      clearSel: function () { self.setState({ selected: null }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

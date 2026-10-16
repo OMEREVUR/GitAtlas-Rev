@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>RewiewRev zaman makinesi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="display: flex; flex-direction: column; min-height: 780px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif; font-size: 13px; line-height: 1.4; color: var(--vscode-foreground); background: var(--vscode-editor-background); {{themeVars}}">
+  <div role="tablist" style="height: 35px; flex: 0 0 35px; display: flex; background: var(--vscode-editorGroupHeader-tabsBackground); border-bottom: 1px solid var(--vscode-panel-border)">
+    <div role="tab" aria-selected="true" style="display: flex; align-items: center; gap: 6px; padding: 0 14px; background: var(--vscode-tab-activeBackground); border-top: 1px solid var(--vscode-tab-activeBorderTop); border-right: 1px solid var(--vscode-panel-border); margin-bottom: -1px">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true"><circle cx="8" cy="8" r="6.5"></circle><path d="M8 4.5V8l2.5 1.5"></path></svg>
+      RewiewRev: Zaman Makinesi
+    </div>
+  </div>
+
+  <div style="flex: 1 1 auto; display: flex; flex-wrap: wrap; min-height: 0">
+    <section aria-label="Geçmişteki harita" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 14px">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+        <nav aria-label="Görünüm" style="display: flex; gap: 2px; padding: 2px; border: 1px solid var(--vscode-input-border); border-radius: 4px; background: var(--vscode-input-background)">
+          <a href="Main.dc.html" style="height: 24px; display: flex; align-items: center; padding: 0 10px; border-radius: 3px; border: 1px solid transparent; font-size: 12px; text-decoration: none; color: var(--vscode-descriptionForeground)">Harita</a>
+          <a href="Graph.dc.html" style="height: 24px; display: flex; align-items: center; padding: 0 10px; border-radius: 3px; border: 1px solid transparent; font-size: 12px; text-decoration: none; color: var(--vscode-descriptionForeground)">Graph</a>
+          <span aria-current="page" style="height: 24px; display: flex; align-items: center; padding: 0 10px; border-radius: 3px; font-size: 12px; background: var(--vscode-inputOption-activeBackground); border: 1px solid var(--vscode-inputOption-activeBorder); color: var(--vscode-foreground)">Zaman</span>
+        </nav>
+        <span style="margin-left: auto; font-size: 12px; color: var(--vscode-descriptionForeground)">Isı = o tarihten önceki 7 gündeki değişim</span>
+      </div>
+
+      <div style="overflow-x: auto">
+        <div style="position: relative; min-width: 560px; height: 430px; background: var(--rr-box-border)">
+          <sc-for list="{{groups}}" as="g" hint-placeholder-count="5">
+            <div style="position: absolute; box-sizing: border-box; display: flex; flex-direction: column; padding: 1px; {{g.style}}">
+              <div style="height: 20px; flex: 0 0 20px; display: flex; align-items: center; padding: 0 6px; font-size: 11px; font-weight: 600; color: var(--vscode-descriptionForeground); background: var(--vscode-sideBar-background)">{{g.label}}</div>
+              <div style="position: relative; flex: 1 1 auto">
+                <sc-for list="{{g.files}}" as="f" hint-placeholder-count="3">
+                  <div style="position: absolute; box-sizing: border-box; padding: 6px 7px; overflow: hidden; font-size: 12px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; transition: background 0.25s; {{f.dyn}}">{{f.label}}</div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--vscode-panel-border); border-radius: 4px; background: var(--vscode-editorWidget-background)">
+        <div aria-hidden="true" style="height: 44px; display: flex; align-items: flex-end; gap: 2px">
+          <sc-for list="{{bars}}" as="b" hint-placeholder-count="22">
+            <span style="flex: 1 1 0; border-radius: 1px 1px 0 0; {{b.style}}"></span>
+          </sc-for>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <button onClick="{{prev}}" aria-label="Önceki adım" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: none; border: 1px solid var(--vscode-input-border); border-radius: 4px; color: var(--vscode-foreground); cursor: pointer">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M10 3L5 8l5 5"></path></svg>
+          </button>
+          <button onClick="{{togglePlay}}" aria-label="{{playLabel}}" style="width: 32px; height: 28px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--rr-btn-border); border-radius: 4px; cursor: pointer; background: var(--vscode-button-background); color: var(--vscode-button-foreground)">
+            <sc-if value="{{playing}}" hint-placeholder-val="{{false}}">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="4" y="3" width="3" height="10"></rect><rect x="9" y="3" width="3" height="10"></rect></svg>
+            </sc-if>
+            <sc-if value="{{paused}}" hint-placeholder-val="{{true}}">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M5 3l8 5-8 5z"></path></svg>
+            </sc-if>
+          </button>
+          <button onClick="{{next}}" aria-label="Sonraki adım" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: none; border: 1px solid var(--vscode-input-border); border-radius: 4px; color: var(--vscode-foreground); cursor: pointer">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg>
+          </button>
+          <label for="rr-time" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Tarih</label>
+          <input id="rr-time" type="range" min="0" max="7" step="1" value="{{step}}" onChange="{{onSlide}}" aria-valuetext="{{dateLabel}}" style="flex: 1 1 auto; min-width: 0; accent-color: var(--vscode-focusBorder)">
+          <span style="flex: 0 0 auto; min-width: 92px; text-align: right; font-size: 13px; font-weight: 600">{{dateLabel}}</span>
+        </div>
+        <div aria-hidden="true" style="display: flex; justify-content: space-between; padding: 0 100px 0 112px; font-size: 11px; color: var(--vscode-descriptionForeground)">
+          <span>25 Eyl</span><span>1 Eki</span><span>7 Eki</span><span>13 Eki</span><span>16 Eki</span>
+        </div>
+      </div>
+    </section>
+
+    <aside aria-label="Bu tarihte" style="flex: 1 1 280px; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; padding: 14px 16px; background: var(--vscode-editorWidget-background); border-left: 1px solid var(--vscode-panel-border)">
+      <div>
+        <div style="font-size: 11px; color: var(--vscode-descriptionForeground)">Repo şu tarihte</div>
+        <h2 style="margin: 2px 0 0; font-size: 18px; font-weight: 600">{{dateLong}}</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+        <div style="padding: 8px 10px; border-radius: 4px; background: var(--vscode-textCodeBlock-background)">
+          <div style="font-size: 11px; color: var(--vscode-descriptionForeground)">Dosya</div>
+          <div style="font-size: 16px; font-weight: 600">{{fileCount}}</div>
+        </div>
+        <div style="padding: 8px 10px; border-radius: 4px; background: var(--vscode-textCodeBlock-background)">
+          <div style="font-size: 11px; color: var(--vscode-descriptionForeground)">Son 3 günde commit</div>
+          <div style="font-size: 16px; font-weight: 600">{{windowCommits}}</div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h3 style="margin: 0 0 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">EN SICAK</h3>
+        <sc-for list="{{hottest}}" as="h" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px">
+            <span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 2px; {{h.sw}}"></span>
+            <span style="flex: 1 1 auto">{{h.name}}</span>
+            <span style="color: var(--vscode-descriptionForeground)">{{h.heat}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h3 style="margin: 0 0 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground)">DÖNÜM NOKTALARI</h3>
+        <sc-for list="{{marks}}" as="m" hint-placeholder-count="4">
+          <button onClick="{{m.go}}" aria-current="{{m.current}}" style="display: flex; gap: 10px; padding: 6px 8px; border: 0; border-radius: 4px; font: inherit; font-size: 12px; text-align: left; cursor: pointer; {{m.style}}">
+            <span style="flex: 0 0 52px; color: var(--vscode-descriptionForeground)">{{m.date}}</span>
+            <span>{{m.text}}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="margin-top: auto; font-size: 11px; color: var(--vscode-descriptionForeground)">Kesik çerçeveli boş kutular o tarihte henüz var olmayan dosyalar.</div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light","hc"],"default":"dark","section":"Tema"},"$preview":{"width":1280,"height":780}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 5, playing: false };
+  }
+
+  componentWillUnmount() { clearInterval(this.timer); }
+
+  rrTheme(name) {
+    var T = {
+      dark: {'editor-background':'#1F1F1F','editor-foreground':'#CCCCCC','foreground':'#CCCCCC','descriptionForeground':'#9D9D9D','sideBar-background':'#181818','editorGroupHeader-tabsBackground':'#181818','tab-activeBackground':'#1F1F1F','tab-activeBorderTop':'#0078D4','panel-border':'#2B2B2B','focusBorder':'#0078D4','button-background':'#0078D4','button-foreground':'#FFFFFF','input-background':'#313131','input-border':'#3C3C3C','inputOption-activeBackground':'#2489DB82','inputOption-activeBorder':'#2488DB','list-hoverBackground':'#2A2D2E','list-activeSelectionBackground':'#04395E','list-activeSelectionForeground':'#FFFFFF','editorWidget-background':'#202020','textCodeBlock-background':'#2B2B2B','charts-orange':'#D18616'},
+      light: {'editor-background':'#FFFFFF','editor-foreground':'#3B3B3B','foreground':'#3B3B3B','descriptionForeground':'#616161','sideBar-background':'#F8F8F8','editorGroupHeader-tabsBackground':'#F8F8F8','tab-activeBackground':'#FFFFFF','tab-activeBorderTop':'#005FB8','panel-border':'#E5E5E5','focusBorder':'#005FB8','button-background':'#005FB8','button-foreground':'#FFFFFF','input-background':'#FFFFFF','input-border':'#CECECE','inputOption-activeBackground':'#BED6ED','inputOption-activeBorder':'#005FB8','list-hoverBackground':'#F2F2F2','list-activeSelectionBackground':'#E4E6F1','list-activeSelectionForeground':'#000000','editorWidget-background':'#F8F8F8','textCodeBlock-background':'#EFEFEF','charts-orange':'#D18616'},
+      hc: {'editor-background':'#000000','editor-foreground':'#FFFFFF','foreground':'#FFFFFF','descriptionForeground':'#FFFFFF','sideBar-background':'#000000','editorGroupHeader-tabsBackground':'#000000','tab-activeBackground':'#000000','tab-activeBorderTop':'#F38518','panel-border':'#6FC3DF','focusBorder':'#F38518','button-background':'#0F4A85','button-foreground':'#FFFFFF','input-background':'#000000','input-border':'#6FC3DF','inputOption-activeBackground':'#0F4A85','inputOption-activeBorder':'#6FC3DF','list-hoverBackground':'#000000','list-activeSelectionBackground':'#000000','list-activeSelectionForeground':'#FFFFFF','editorWidget-background':'#0C141F','textCodeBlock-background':'#1A1A1A','charts-orange':'#D18616'}
+    };
+    var X = {
+      dark: { '--rr-box-border': 'var(--vscode-editor-background)', '--rr-onhot': 'var(--vscode-editor-background)', '--rr-btn-border': 'transparent', '--rr-sel-outline': 'transparent' },
+      light: { '--rr-box-border': 'var(--vscode-editor-background)', '--rr-onhot': 'var(--vscode-editor-foreground)', '--rr-btn-border': 'transparent', '--rr-sel-outline': 'transparent' },
+      hc: { '--rr-box-border': '#6FC3DF', '--rr-onhot': '#000000', '--rr-btn-border': '#6FC3DF', '--rr-sel-outline': '#F38518' }
+    };
+    var t = T[name] ? name : 'dark';
+    var v = Object.keys(T[t]).map(function (k) { return '--vscode-' + k + ':' + T[t][k]; });
+    Object.keys(X[t]).forEach(function (k) { v.push(k + ':' + X[t][k]); });
+    [14, 30, 46, 78, 96].forEach(function (p, i) { v.push('--rr-c' + (i + 1) + ':color-mix(in srgb, var(--vscode-charts-orange) ' + p + '%, var(--vscode-editor-background))'); });
+    return v.join(';') + ';';
+  }
+
+  renderVals() {
+    var self = this;
+    var s = this.state.step;
+    var DATES = ['25 Eyl', '28 Eyl', '1 Eki', '4 Eki', '7 Eki', '10 Eki', '13 Eki', '16 Eki'];
+    var LONG = ['25 Eylül 2026', '28 Eylül 2026', '1 Ekim 2026', '4 Ekim 2026', '7 Ekim 2026', '10 Ekim 2026', '13 Ekim 2026', '16 Ekim 2026'];
+    var HEAT = ['Çok az', 'Az', 'Orta', 'Sık', 'Çok sık'];
+    var HIST = [5, 3, 1, 0, 4, 6, 2, 3, 5, 1, 0, 2, 7, 4, 3, 6, 2, 1, 4, 8, 5, 3];
+    var G = [
+      { label: 'core/', x: 0, y: 0, w: 36, h: 60, files: [
+        ['RepoModel.ts', 0, 0, 62, 100, [0, 3, 4, 5, 4, 4, 3, 4]], ['cache.ts', 62, 0, 38, 60, [0, 0, 0, 0, 3, 4, 3, 3]], ['types.ts', 62, 60, 38, 40, [0, 2, 3, 2, 2, 1, 1, 2]]] },
+      { label: 'git/', x: 36, y: 0, w: 34, h: 60, files: [
+        ['logParser.ts', 0, 0, 58, 100, [0, 0, 3, 4, 5, 5, 4, 5]], ['gitRunner.ts', 58, 0, 42, 55, [0, 0, 2, 3, 2, 1, 1, 2]], ['numstat.ts', 58, 55, 42, 45, [0, 0, 0, 2, 2, 1, 1, 1]]] },
+      { label: 'webview/', x: 70, y: 0, w: 30, h: 100, files: [
+        ['Treemap.tsx', 0, 0, 100, 42, [0, 0, 0, 3, 4, 5, 4, 3]], ['FileCard.tsx', 0, 42, 100, 28, [0, 0, 0, 0, 2, 4, 3, 2]], ['panel.ts', 0, 70, 55, 30, [3, 2, 2, 2, 1, 1, 1, 1]], ['styles.css', 55, 70, 45, 30, [0, 0, 0, 2, 1, 1, 1, 1]]] },
+      { label: 'github/', x: 0, y: 60, w: 42, h: 40, files: [
+        ['GitHubProvider.ts', 0, 0, 55, 100, [0, 0, 0, 0, 0, 3, 4, 4]], ['graphql.ts', 55, 0, 45, 60, [0, 0, 0, 0, 0, 2, 3, 2]], ['auth.ts', 55, 60, 45, 40, [0, 0, 0, 0, 0, 1, 2, 1]]] },
+      { label: 'src/ (kök dosyalar)', x: 42, y: 60, w: 28, h: 40, files: [
+        ['extension.ts', 0, 0, 60, 100, [4, 3, 2, 2, 2, 2, 3, 2]], ['decorations.ts', 60, 0, 40, 55, [0, 0, 0, 0, 0, 0, 3, 3]], ['config.ts', 60, 55, 40, 45, [2, 1, 1, 1, 1, 1, 1, 1]]] }
+    ];
+    var count = 0, all = [];
+    var groups = G.map(function (g) {
+      return {
+        label: g.label,
+        style: 'left:' + g.x + '%;top:' + g.y + '%;width:' + g.w + '%;height:' + g.h + '%;',
+        files: g.files.map(function (f) {
+          var h = f[5][s];
+          var pos = 'left:' + f[1] + '%;top:' + f[2] + '%;width:' + f[3] + '%;height:' + f[4] + '%;';
+          if (h === 0) return { label: '', dyn: pos + 'background:transparent;outline:1px dashed var(--vscode-panel-border);outline-offset:-4px;' };
+          count++;
+          all.push({ name: f[0], h: h });
+          return {
+            label: f[0],
+            dyn: pos + 'background:var(--rr-c' + h + ');color:' + (h >= 4 ? 'var(--rr-onhot)' : 'var(--vscode-editor-foreground)') + ';border:1px solid var(--rr-box-border);'
+          };
+        })
+      };
+    });
+    all.sort(function (a, b) { return b.h - a.h; });
+    var day = s * 3;
+    var bars = HIST.map(function (v, i) {
+      var inWin = i <= day && i > day - 3;
+      return { style: 'height:' + Math.max(3, v * 5) + 'px;background:' + (inWin ? 'var(--rr-c5)' : (i <= day ? 'var(--rr-c2)' : 'var(--vscode-textCodeBlock-background)')) + ';' };
+    });
+    var win = 0;
+    for (var i = Math.max(0, day - 2); i <= day && i < HIST.length; i++) win += HIST[i];
+    var MARKS = [[0, 'İlk iskelet: yo code'], [3, 'İlk treemap çizildi'], [5, 'GitHub katmanı başladı'], [6, 'Explorer rozetleri merge edildi']];
+    var goTo = function (n) { clearInterval(self.timer); self.setState({ step: n, playing: false }); };
+    return {
+      themeVars: this.rrTheme(this.props.theme),
+      groups: groups, bars: bars,
+      step: s,
+      dateLabel: DATES[s], dateLong: LONG[s],
+      fileCount: count, windowCommits: win,
+      hottest: all.slice(0, 3).map(function (a) { return { name: a.name, heat: HEAT[a.h - 1], sw: 'background:var(--rr-c' + a.h + ');' }; }),
+      marks: MARKS.map(function (m) {
+        var on = m[0] === s;
+        return {
+          date: DATES[m[0]], text: m[1], current: on ? 'true' : 'false',
+          style: on
+            ? 'background:var(--vscode-list-activeSelectionBackground);color:var(--vscode-list-activeSelectionForeground);outline:1px solid var(--rr-sel-outline);outline-offset:-1px;'
+            : 'background:transparent;color:var(--vscode-foreground);',
+          go: function () { goTo(m[0]); }
+        };
+      }),
+      playing: this.state.playing, paused: !this.state.playing,
+      playLabel: this.state.playing ? 'Duraklat' : 'Oynat',
+      onSlide: function (e) { goTo(parseInt(e.target.value, 10) || 0); },
+      prev: function () { goTo(Math.max(0, self.state.step - 1)); },
+      next: function () { goTo(Math.min(7, self.state.step + 1)); },
+      togglePlay: function () {
+        if (self.state.playing) { clearInterval(self.timer); self.setState({ playing: false }); return; }
+        var start = self.state.step >= 7 ? 0 : self.state.step;
+        self.setState({ playing: true, step: start });
+        clearInterval(self.timer);
+        self.timer = setInterval(function () {
+          var n = self.state.step + 1;
+          if (n > 7) { clearInterval(self.timer); self.setState({ playing: false }); }
+          else self.setState({ step: n });
+        }, 900);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

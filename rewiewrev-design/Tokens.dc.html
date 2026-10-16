@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>RewiewRev tema eşlemesi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1280px; height: 780px; box-sizing: border-box; padding: 48px 56px; display: flex; gap: 48px; background: #FFFFFF; color: #1F1F1F; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif; font-size: 13px">
+
+  <section style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+    <div>
+      <h1 style="margin: 0 0 6px; font-size: 26px; font-weight: 650">Panel kendi rengini seçmez</h1>
+      <p style="margin: 0; color: #555555; max-width: 600px">Her parça bir VS Code tema değişkenine bağlı. Webview içinde bu değişkenleri VS Code verir; kullanıcı temasını değiştirince panel de değişir.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 170px minmax(0, 1fr) 92px 92px 92px; align-items: center; column-gap: 12px; font-size: 12px">
+      <div style="padding: 6px 0; font-weight: 600; color: #555555; border-bottom: 1px solid #DDDDDD">Arayüz parçası</div>
+      <div style="padding: 6px 0; font-weight: 600; color: #555555; border-bottom: 1px solid #DDDDDD">CSS değişkeni</div>
+      <div style="padding: 6px 0; font-weight: 600; color: #555555; border-bottom: 1px solid #DDDDDD">Koyu</div>
+      <div style="padding: 6px 0; font-weight: 600; color: #555555; border-bottom: 1px solid #DDDDDD">Açık</div>
+      <div style="padding: 6px 0; font-weight: 600; color: #555555; border-bottom: 1px solid #DDDDDD">Y. kontrast</div>
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
+        <div style="padding: 7px 0; border-bottom: 1px solid #EEEEEE">{{r.part}}</div>
+        <code style="padding: 7px 0; border-bottom: 1px solid #EEEEEE; font-family: Menlo, Consolas, monospace; font-size: 11px; color: #005FB8; overflow-wrap: anywhere">{{r.token}}</code>
+        <div style="padding: 5px 0; border-bottom: 1px solid #EEEEEE; display: flex; align-items: center; gap: 6px">
+          <span aria-hidden="true" style="width: 18px; height: 18px; border-radius: 3px; border: 1px solid #00000026; {{r.dStyle}}"></span>
+          <span style="font-family: Menlo, Consolas, monospace; font-size: 10px; color: #555555">{{r.d}}</span>
+        </div>
+        <div style="padding: 5px 0; border-bottom: 1px solid #EEEEEE; display: flex; align-items: center; gap: 6px">
+          <span aria-hidden="true" style="width: 18px; height: 18px; border-radius: 3px; border: 1px solid #00000026; {{r.lStyle}}"></span>
+          <span style="font-family: Menlo, Consolas, monospace; font-size: 10px; color: #555555">{{r.l}}</span>
+        </div>
+        <div style="padding: 5px 0; border-bottom: 1px solid #EEEEEE; display: flex; align-items: center; gap: 6px">
+          <span aria-hidden="true" style="width: 18px; height: 18px; border-radius: 3px; border: 1px solid #00000026; {{r.hStyle}}"></span>
+          <span style="font-family: Menlo, Consolas, monospace; font-size: 10px; color: #555555">{{r.h}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="flex: 0 0 420px; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font-size: 16px; font-weight: 650">Churn skalası temadan türetilir</h2>
+      <p style="margin: 0; color: #555555">Sabit bir palet yok: turuncu, editör zeminiyle 5 oranda karıştırılır. Tema değişince skala da kendiliğinden uyar.</p>
+      <pre style="margin: 0; padding: 12px 14px; border-radius: 6px; background: #F3F3F3; font-family: Menlo, Consolas, monospace; font-size: 11px; line-height: 1.6; white-space: pre-wrap; color: #1F1F1F">--rr-c3: color-mix(in srgb,
+  var(--vscode-charts-orange) 46%,
+  var(--vscode-editor-background));
+/* c1…c5 = %14 · %30 · %46 · %78 · %96 */</pre>
+      <sc-for list="{{scales}}" as="s" hint-placeholder-count="3">
+        <div style="display: flex; align-items: center; gap: 10px">
+          <span style="width: 84px; font-size: 12px; color: #555555">{{s.name}}</span>
+          <span aria-hidden="true" style="flex: 1 1 auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); height: 22px; border-radius: 3px; overflow: hidden; border: 1px solid #00000026">
+            <sc-for list="{{s.steps}}" as="st" hint-placeholder-count="5">
+              <span style="{{st}}"></span>
+            </sc-for>
+          </span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font-size: 16px; font-weight: 650">Kurallar</h2>
+      <ol style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; color: #333333">
+        <li>Webview CSS'inde sabit renk yok; her renk bir <code style="font-family: Menlo, Consolas, monospace; font-size: 11px">--vscode-*</code> değişkeni.</li>
+        <li>Her bilgi tek kanalda: boyut = satır, dolgu = churn, kesik mor çerçeve = PR çakışması, düz mavi çerçeve = seçim.</li>
+        <li>Yüksek kontrastta kutular arası çizgi ve butonlar <code style="font-family: Menlo, Consolas, monospace; font-size: 11px">contrastBorder</code> ile çizilir.</li>
+        <li>Tema türü için <code style="font-family: Menlo, Consolas, monospace; font-size: 11px">body.vscode-dark / -light / -high-contrast</code> sınıfı okunur; sadece metin rengini çevirmek için.</li>
+        <li>Marka rengi panelde değil; ikon, Marketplace sayfası ve README'de.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":780}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var rows = [
+      ['Panel zemini', '--vscode-editor-background', '#1F1F1F', '#FFFFFF', '#000000'],
+      ['Ana metin', '--vscode-foreground', '#CCCCCC', '#3B3B3B', '#FFFFFF'],
+      ['İkincil metin', '--vscode-descriptionForeground', '#9D9D9D', '#616161', '#FFFFFF'],
+      ['Kenarlıklar', '--vscode-panel-border', '#2B2B2B', '#E5E5E5', '#6FC3DF'],
+      ['Seçim / odak', '--vscode-focusBorder', '#0078D4', '#005FB8', '#F38518'],
+      ['Birincil buton', '--vscode-button-background', '#0078D4', '#005FB8', '#0F4A85'],
+      ['Açık filtre / katman', '--vscode-inputOption-activeBackground', '#2489DB82', '#BED6ED', '#0F4A85'],
+      ['Dosya kartı zemini', '--vscode-editorWidget-background', '#202020', '#F8F8F8', '#0C141F'],
+      ['Churn tabanı', '--vscode-charts-orange', '#D18616', '#D18616', '#D18616'],
+      ['PR çakışması', '--vscode-charts-purple', '#B180D7', '#652D90', '#B180D7'],
+      ['CI geçti', '--vscode-charts-green', '#89D185', '#388A34', '#89D185'],
+      ['CI başarısız', '--vscode-charts-red', '#F14C4C', '#E51400', '#F48771']
+    ].map(function (r) {
+      return { part: r[0], token: r[1], d: r[2], l: r[3], h: r[4], dStyle: 'background:' + r[2] + ';', lStyle: 'background:' + r[3] + ';', hStyle: 'background:' + r[4] + ';' };
+    });
+    var pcts = [14, 30, 46, 78, 96];
+    var mk = function (bg) {
+      return pcts.map(function (p) { return 'background:color-mix(in srgb, #D18616 ' + p + '%, ' + bg + ');'; });
+    };
+    return {
+      rows: rows,
+      scales: [
+        { name: 'Koyu', steps: mk('#1F1F1F') },
+        { name: 'Açık', steps: mk('#FFFFFF') },
+        { name: 'Y. kontrast', steps: mk('#000000') }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

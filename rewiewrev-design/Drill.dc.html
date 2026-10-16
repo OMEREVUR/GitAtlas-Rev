@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>RewiewRev klasör içi ve tooltip</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="display: flex; flex-direction: column; min-height: 780px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif; font-size: 13px; line-height: 1.4; color: var(--vscode-foreground); background: var(--vscode-editor-background); {{themeVars}}">
+  <div role="tablist" style="height: 35px; flex: 0 0 35px; display: flex; background: var(--vscode-editorGroupHeader-tabsBackground); border-bottom: 1px solid var(--vscode-panel-border)">
+    <div role="tab" aria-selected="true" style="display: flex; align-items: center; gap: 6px; padding: 0 14px; background: var(--vscode-tab-activeBackground); border-top: 1px solid var(--vscode-tab-activeBorderTop); border-right: 1px solid var(--vscode-panel-border); margin-bottom: -1px">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="1"></rect><path d="M8 1.5v13"></path><path d="M1.5 9.5H8"></path><path d="M8 6h6.5"></path></svg>
+      RewiewRev: Harita
+    </div>
+  </div>
+
+  <section aria-label="src/git klasörünün haritası" style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 14px">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+      <div role="group" aria-label="Zaman aralığı" style="display: flex; gap: 2px; padding: 2px; border: 1px solid var(--vscode-input-border); border-radius: 4px; background: var(--vscode-input-background)">
+        <button aria-pressed="false" style="height: 24px; padding: 0 10px; border-radius: 3px; font: inherit; font-size: 12px; cursor: pointer; background: transparent; border: 1px solid transparent; color: var(--vscode-descriptionForeground)">7 gün</button>
+        <button aria-pressed="true" style="height: 24px; padding: 0 10px; border-radius: 3px; font: inherit; font-size: 12px; cursor: pointer; background: var(--vscode-inputOption-activeBackground); border: 1px solid var(--vscode-inputOption-activeBorder); color: var(--vscode-foreground)">30 gün</button>
+        <button aria-pressed="false" style="height: 24px; padding: 0 10px; border-radius: 3px; font: inherit; font-size: 12px; cursor: pointer; background: transparent; border: 1px solid transparent; color: var(--vscode-descriptionForeground)">Tümü</button>
+      </div>
+    </div>
+
+    <nav aria-label="Konum" style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--vscode-descriptionForeground)">
+      <a href="Main.dc.html" aria-label="Üst klasöre çık: src" style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: var(--vscode-foreground)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M10 3L5 8l5 5"></path></svg>
+      </a>
+      <a href="Main.dc.html" style="color: var(--vscode-textLink-foreground); text-decoration: none">rewiewrev</a>
+      <span aria-hidden="true">›</span>
+      <a href="Main.dc.html" style="color: var(--vscode-textLink-foreground); text-decoration: none">src</a>
+      <span aria-hidden="true">›</span>
+      <span style="color: var(--vscode-foreground); font-weight: 600">git</span>
+      <span style="margin-left: auto">6 dosya · Backspace ile üst klasöre çık</span>
+    </nav>
+
+    <div style="overflow-x: auto">
+      <div style="position: relative; min-width: 560px; height: 560px; background: var(--rr-box-border)">
+        <sc-for list="{{files}}" as="f" hint-placeholder-count="6">
+          <button onMouseEnter="{{f.hover}}" onFocus="{{f.hover}}" aria-label="{{f.aria}}" style="position: absolute; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 8px 10px; border: 1px solid var(--rr-box-border); font: inherit; text-align: left; overflow: hidden; cursor: pointer; {{f.dyn}}">
+            <span style="max-width: 100%; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{f.name}}</span>
+              <sc-if value="{{f.big}}" hint-placeholder-val="{{true}}">
+                <span style="font-size: 11px; opacity: 0.85">{{f.lines}} satır · {{f.commits}} commit</span>
+              </sc-if>
+            </span>
+            <sc-if value="{{f.hasPr}}" hint-placeholder-val="{{false}}">
+              <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 9px; font-size: 11px; font-weight: 700; {{f.badgeStyle}}">{{f.prLabel}}</span>
+            </sc-if>
+          </button>
+        </sc-for>
+
+        <sc-if value="{{hasTip}}" hint-placeholder-val="{{true}}">
+          <div role="tooltip" style="position: absolute; z-index: 2; width: 300px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 4px; pointer-events: none; background: var(--vscode-editorHoverWidget-background); border: 1px solid var(--vscode-editorHoverWidget-border); box-shadow: 0 2px 8px var(--vscode-widget-shadow); color: var(--vscode-foreground); {{tipStyle}}">
+            <div>
+              <div style="font-size: 13px; font-weight: 600">{{tip.name}}</div>
+              <div style="font-size: 11px; color: var(--vscode-descriptionForeground)">{{tip.path}}</div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; font-size: 11px">
+              <div><div style="color: var(--vscode-descriptionForeground)">Satır</div><div style="font-size: 13px; font-weight: 600">{{tip.lines}}</div></div>
+              <div><div style="color: var(--vscode-descriptionForeground)">Commit · 30g</div><div style="font-size: 13px; font-weight: 600">{{tip.commits}}</div></div>
+              <div><div style="color: var(--vscode-descriptionForeground)">Sıklık</div><div style="font-size: 13px; font-weight: 600">{{tip.heat}}</div></div>
+            </div>
+            <div style="font-size: 12px; padding-top: 6px; border-top: 1px solid var(--vscode-editorHoverWidget-border)">
+              <span style="color: var(--vscode-descriptionForeground)">Son:</span>
+              <code style="font-family: var(--vscode-editor-font-family, Menlo, Consolas, monospace); font-size: 11px; color: var(--vscode-textLink-foreground)">{{tip.hash}}</code>
+              {{tip.last}}
+            </div>
+            <div style="font-size: 12px"><span style="color: var(--vscode-descriptionForeground)">Yazarlar:</span> {{tip.authors}}</div>
+            <sc-if value="{{tip.hasPr}}" hint-placeholder-val="{{false}}">
+              <div style="font-size: 12px"><span style="color: var(--vscode-descriptionForeground)">Açık PR:</span> {{tip.prs}}</div>
+            </sc-if>
+            <div style="font-size: 11px; color: var(--vscode-descriptionForeground)">Tıkla: dosya kartı · Çift tıkla: dosyayı aç</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light","hc"],"default":"dark","section":"Tema"},"$preview":{"width":1280,"height":780}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { hover: 'numstat.ts' };
+  }
+
+  rrTheme(name) {
+    var T = {
+      dark: {'editor-background':'#1F1F1F','editor-foreground':'#CCCCCC','foreground':'#CCCCCC','descriptionForeground':'#9D9D9D','sideBar-background':'#181818','editorGroupHeader-tabsBackground':'#181818','tab-activeBackground':'#1F1F1F','tab-activeBorderTop':'#0078D4','panel-border':'#2B2B2B','focusBorder':'#0078D4','input-background':'#313131','input-border':'#3C3C3C','inputOption-activeBackground':'#2489DB82','inputOption-activeBorder':'#2488DB','editorHoverWidget-background':'#202020','editorHoverWidget-border':'#454545','widget-shadow':'#0000005C','textLink-foreground':'#4DAAFC','charts-orange':'#D18616','charts-purple':'#B180D7'},
+      light: {'editor-background':'#FFFFFF','editor-foreground':'#3B3B3B','foreground':'#3B3B3B','descriptionForeground':'#616161','sideBar-background':'#F8F8F8','editorGroupHeader-tabsBackground':'#F8F8F8','tab-activeBackground':'#FFFFFF','tab-activeBorderTop':'#005FB8','panel-border':'#E5E5E5','focusBorder':'#005FB8','input-background':'#FFFFFF','input-border':'#CECECE','inputOption-activeBackground':'#BED6ED','inputOption-activeBorder':'#005FB8','editorHoverWidget-background':'#F8F8F8','editorHoverWidget-border':'#C8C8C8','widget-shadow':'#00000029','textLink-foreground':'#005FB8','charts-orange':'#D18616','charts-purple':'#652D90'},
+      hc: {'editor-background':'#000000','editor-foreground':'#FFFFFF','foreground':'#FFFFFF','descriptionForeground':'#FFFFFF','sideBar-background':'#000000','editorGroupHeader-tabsBackground':'#000000','tab-activeBackground':'#000000','tab-activeBorderTop':'#F38518','panel-border':'#6FC3DF','focusBorder':'#F38518','input-background':'#000000','input-border':'#6FC3DF','inputOption-activeBackground':'#0F4A85','inputOption-activeBorder':'#6FC3DF','editorHoverWidget-background':'#0C141F','editorHoverWidget-border':'#6FC3DF','widget-shadow':'#00000000','textLink-foreground':'#21A6FF','charts-orange':'#D18616','charts-purple':'#B180D7'}
+    };
+    var X = {
+      dark: { '--rr-box-border': 'var(--vscode-editor-background)', '--rr-onhot': 'var(--vscode-editor-background)' },
+      light: { '--rr-box-border': 'var(--vscode-editor-background)', '--rr-onhot': 'var(--vscode-editor-foreground)' },
+      hc: { '--rr-box-border': '#6FC3DF', '--rr-onhot': '#000000' }
+    };
+    var t = T[name] ? name : 'dark';
+    var v = Object.keys(T[t]).map(function (k) { return '--vscode-' + k + ':' + T[t][k]; });
+    Object.keys(X[t]).forEach(function (k) { v.push(k + ':' + X[t][k]); });
+    [14, 30, 46, 78, 96].forEach(function (p, i) { v.push('--rr-c' + (i + 1) + ':color-mix(in srgb, var(--vscode-charts-orange) ' + p + '%, var(--vscode-editor-background))'); });
+    return v.join(';') + ';';
+  }
+
+  renderVals() {
+    var self = this;
+    var HEAT = ['Çok az', 'Az', 'Orta', 'Sık', 'Çok sık'];
+    // ad, x, y, w, h, satır, ısı, commit, son commit, yazarlar, PR'lar
+    var F = [
+      ['logParser.ts', 0, 0, 45, 100, 356, 5, 38, ['a3f9c21', '@deniz · 2 gün önce'], '@deniz, @mert', ['#41', '#43']],
+      ['gitRunner.ts', 45, 0, 30, 58, 204, 2, 6, ['b4410fe', '@deniz · 1 hafta önce'], '@deniz', []],
+      ['blame.ts', 75, 0, 25, 58, 142, 3, 9, ['3e90a1d', '@mert · 4 gün önce'], '@mert, @ayse', []],
+      ['refs.ts', 45, 58, 25, 42, 118, 2, 5, ['77ab2c0', '@deniz · 6 gün önce'], '@deniz', []],
+      ['numstat.ts', 70, 58, 18, 42, 88, 1, 2, ['a3f9c21', '@deniz · 2 gün önce'], '@mert, @deniz', ['#41']],
+      ['index.ts', 88, 58, 12, 42, 24, 1, 1, ['d9e1c55', '@mert · 3 hafta önce'], '@mert', []]
+    ];
+    var hover = this.state.hover;
+    var tip = null, tipStyle = '';
+    var files = F.map(function (f) {
+      var conflict = f[10].length >= 2;
+      var isHover = hover === f[0];
+      var dyn = 'left:' + f[1] + '%;top:' + f[2] + '%;width:' + f[3] + '%;height:' + f[4] + '%;' +
+        'background:var(--rr-c' + f[6] + ');color:' + (f[6] >= 4 ? 'var(--rr-onhot)' : 'var(--vscode-editor-foreground)') + ';';
+      if (conflict) dyn += 'outline:2px dashed var(--vscode-charts-purple);outline-offset:-5px;';
+      if (isHover) dyn += 'box-shadow:inset 0 0 0 1px var(--vscode-focusBorder);';
+      if (isHover) {
+        tip = {
+          name: f[0], path: 'src/git/' + f[0], lines: f[5], commits: f[7], heat: HEAT[f[6] - 1],
+          hash: f[8][0], last: f[8][1], authors: f[9], hasPr: f[10].length > 0,
+          prs: f[10].join(', ') + (conflict ? ' · çakışma riski' : '')
+        };
+        var cx = f[1] + f[3] / 2;
+        var left = 'left:clamp(8px, calc(' + cx + '% - 150px), calc(100% - 308px));';
+        tipStyle = f[4] >= 80
+          ? left + 'top:35%;'
+          : f[2] + f[4] > 70
+          ? left + 'bottom:calc(' + (100 - f[2]) + '% + 8px);'
+          : left + 'top:calc(' + (f[2] + f[4]) + '% + 8px);';
+      }
+      return {
+        name: f[0], lines: f[5], commits: f[7], dyn: dyn,
+        big: f[3] * f[4] / 100 >= 8,
+        hasPr: f[10].length > 0,
+        prLabel: conflict ? f[10].length + ' PR' : f[10].length + '',
+        badgeStyle: conflict
+          ? 'background:var(--vscode-charts-purple);color:var(--vscode-editor-background);'
+          : 'background:var(--vscode-editor-background);color:var(--vscode-foreground);border:1px solid var(--vscode-charts-purple);',
+        aria: f[0] + ', ' + f[5] + ' satır, ' + f[7] + ' commit',
+        hover: function () { self.setState({ hover: f[0] }); }
+      };
+    });
+    return {
+      themeVars: this.rrTheme(this.props.theme),
+      files: files,
+      hasTip: !!tip,
+      tip: tip || {},
+      tipStyle: tipStyle
+    };
+  }
+}
+</script>
+</body>
+</html>

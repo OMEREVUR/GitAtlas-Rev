@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RewiewRev tasarımları</title>
+<style>
+  :root { --bg: #1F1F1F; --fg: #CCCCCC; --muted: #9D9D9D; --line: #2B2B2B; --link: #4DAAFC; --card: #252526; }
+  @media (prefers-color-scheme: light) { :root { --bg: #FFFFFF; --fg: #3B3B3B; --muted: #616161; --line: #E5E5E5; --link: #005FB8; --card: #F8F8F8; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { margin: 0 0 4px; font-size: 24px; }
+  h2 { margin: 28px 0 8px; font-size: 13px; letter-spacing: .04em; color: var(--muted); text-transform: uppercase; }
+  p { margin: 0; color: var(--muted); }
+  ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  li { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  li strong { flex: 1 1 320px; font-weight: 600; }
+  li span { color: var(--muted); font-size: 13px; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { font-family: Menlo, Consolas, monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>RewiewRev tasarımları</h1>
+  <p>Her sayfa tıklanabilir. Tema için adresin sonuna <code>?theme=light</code> ya da <code>?theme=hc</code> eklenebilir. Ayrıntılar <code>README.md</code> dosyasında.</p>
+
+  <h2>v1 · MVP</h2>
+  <ul>
+    <li><strong><a href="Main.dc.html">Ana panel: treemap + dosya kartı + Explorer</a></strong><span><a href="Main.dc.html?theme=light">açık</a> · <a href="Main.dc.html?theme=hc">yüksek kontrast</a></span></li>
+    <li><strong><a href="Drill.dc.html">Klasöre inilmiş hâl + hover tooltip</a></strong><span><a href="Drill.dc.html?theme=light">açık</a> · <a href="Drill.dc.html?theme=hc">yüksek kontrast</a></span></li>
+    <li><strong><a href="States.dc.html">Durum ekranları: tarama, repo yok, boş repo, git yok</a></strong><span><a href="States.dc.html?theme=light">açık</a> · <a href="States.dc.html?theme=hc">yüksek kontrast</a></span></li>
+    <li><strong><a href="Badges.dc.html">Explorer rozeti, yakın plan</a></strong><span><a href="Badges.dc.html?theme=light">açık</a> · <a href="Badges.dc.html?theme=hc">yüksek kontrast</a></span></li>
+    <li><strong><a href="Settings.dc.html">Ayarlar ve hariç tutma listesi</a></strong><span><a href="Settings.dc.html?theme=light">açık</a> · <a href="Settings.dc.html?theme=hc">yüksek kontrast</a></span></li>
+  </ul>
+
+  <h2>v2 · Graph</h2>
+  <ul>
+    <li><strong><a href="Graph.dc.html">Commit graph + branch paneli + mini harita</a></strong><span><a href="Graph.dc.html?theme=light">açık</a> · <a href="Graph.dc.html?theme=hc">yüksek kontrast</a></span></li>
+  </ul>
+
+  <h2>v3 · GitHub katmanı</h2>
+  <ul>
+    <li><strong><a href="GitHub.dc.html">Bağlanma akışı, oturum düştü, GitHub dışı remote, istek limiti</a></strong><span><a href="GitHub.dc.html?theme=light">açık</a> · <a href="GitHub.dc.html?theme=hc">yüksek kontrast</a></span></li>
+  </ul>
+
+  <h2>v4</h2>
+  <ul>
+    <li><strong><a href="TimeMachine.dc.html">Zaman makinesi</a></strong><span><a href="TimeMachine.dc.html?theme=light">açık</a> · <a href="TimeMachine.dc.html?theme=hc">yüksek kontrast</a></span></li>
+    <li><strong><a href="Contributors.dc.html">Katkı paneli</a></strong><span><a href="Contributors.dc.html?theme=light">açık</a> · <a href="Contributors.dc.html?theme=hc">yüksek kontrast</a></span></li>
+  </ul>
+
+  <h2>Referans</h2>
+  <ul>
+    <li><strong><a href="Tokens.dc.html">Tema eşlemesi: hangi parça hangi VS Code değişkeni</a></strong><span>renk kuralları</span></li>
+  </ul>
+</main>
+</body>
+</html>
