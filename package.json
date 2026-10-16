@@ -71,6 +71,66 @@
         "title": "GitHub verisini yenile",
         "category": "RewiewRev",
         "icon": "$(sync)"
+      },
+      {
+        "command": "rewiewrev.git.fetch",
+        "title": "Getir (fetch)",
+        "category": "RewiewRev",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "rewiewrev.git.pull",
+        "title": "Çek (pull)",
+        "category": "RewiewRev",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "rewiewrev.git.push",
+        "title": "Gönder (push)",
+        "category": "RewiewRev",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "rewiewrev.git.commit",
+        "title": "Commit oluştur",
+        "category": "RewiewRev",
+        "icon": "$(check)"
+      },
+      {
+        "command": "rewiewrev.branch.checkout",
+        "title": "Bu branch'e geç",
+        "category": "RewiewRev",
+        "icon": "$(check)"
+      },
+      {
+        "command": "rewiewrev.branch.create",
+        "title": "Yeni branch…",
+        "category": "RewiewRev",
+        "icon": "$(git-branch-create)"
+      },
+      {
+        "command": "rewiewrev.branch.merge",
+        "title": "Mevcut branch'e birleştir (merge)",
+        "category": "RewiewRev",
+        "icon": "$(git-merge)"
+      },
+      {
+        "command": "rewiewrev.branch.rename",
+        "title": "Yeniden adlandır…",
+        "category": "RewiewRev",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "rewiewrev.branch.delete",
+        "title": "Sil…",
+        "category": "RewiewRev",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "rewiewrev.showGitOutput",
+        "title": "Git çıktısını göster",
+        "category": "RewiewRev",
+        "icon": "$(output)"
       }
     ],
     "menus": {
@@ -89,6 +149,56 @@
           "command": "rewiewrev.refreshBranches",
           "when": "view == rewiewrev.branches",
           "group": "navigation"
+        },
+        {
+          "command": "rewiewrev.branch.create",
+          "when": "view == rewiewrev.branches",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "rewiewrev.branch.checkout",
+          "when": "view == rewiewrev.branches && viewItem =~ /^branch-(local|remote)$/",
+          "group": "1_branch@1"
+        },
+        {
+          "command": "rewiewrev.branch.create",
+          "when": "view == rewiewrev.branches && viewItem =~ /^branch-/",
+          "group": "1_branch@2"
+        },
+        {
+          "command": "rewiewrev.branch.merge",
+          "when": "view == rewiewrev.branches && viewItem =~ /^branch-(local|remote)$/",
+          "group": "2_change@1"
+        },
+        {
+          "command": "rewiewrev.branch.rename",
+          "when": "view == rewiewrev.branches && viewItem =~ /^branch-local/",
+          "group": "2_change@2"
+        },
+        {
+          "command": "rewiewrev.branch.delete",
+          "when": "view == rewiewrev.branches && viewItem == branch-local",
+          "group": "3_danger@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "rewiewrev.branch.checkout",
+          "when": "false"
+        },
+        {
+          "command": "rewiewrev.branch.merge",
+          "when": "false"
+        },
+        {
+          "command": "rewiewrev.branch.rename",
+          "when": "false"
+        },
+        {
+          "command": "rewiewrev.branch.delete",
+          "when": "false"
         }
       ]
     },
@@ -161,6 +271,21 @@
           "type": "string",
           "default": "",
           "markdownDescription": "Git yolu. Boş bırakılırsa VS Code'un `git.path` ayarı, o da boşsa PATH'teki `git` kullanılır."
+        },
+        "rewiewrev.git.pullStrategy": {
+          "type": "string",
+          "enum": [
+            "ask",
+            "merge",
+            "rebase"
+          ],
+          "enumItemLabels": [
+            "Sor",
+            "Merge",
+            "Rebase"
+          ],
+          "default": "ask",
+          "markdownDescription": "Pull fast-forward ile yapılamadığında ne yapılacağı. Varsayılan: her seferinde sor."
         }
       }
     }

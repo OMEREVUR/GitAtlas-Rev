@@ -269,3 +269,112 @@ export interface ContribData {
   /** En sıcak dosyalar için "en iyi kim bilir". */
   experts: FileExpert[];
 }
+
+// ---- v5: değişiklikler ve git işlemleri ----
+
+export type ChangeKind = 'modified' | 'added' | 'deleted' | 'renamed' | 'copied' | 'typechange' | 'untracked';
+
+export interface LineStat {
+  added: number;
+  deleted: number;
+}
+
+export interface WorkingFile {
+  /** Repo köküne göre, "/" ayraçlı (yeniden adlandırmada yeni ad). */
+  path: string;
+  oldPath?: string;
+  /** Index'teki (commit'e girecek) değişiklik; yoksa undefined. */
+  staged?: ChangeKind;
+  /** Çalışma ağacındaki (henüz eklenmemiş) değişiklik; untracked dosyada 'untracked'. */
+  unstaged?: ChangeKind;
+  /** Birleştirme çakışması var mı? */
+  conflicted: boolean;
+  /** Satır istatistikleri (binary'de yok). */
+  stagedStat?: LineStat;
+  unstagedStat?: LineStat;
+}
+
+export type RepoOperation = 'merge' | 'rebase' | 'cherryPick' | 'revert';
+
+export interface WorkingTreeStatus {
+  /** Checkout edilmiş branch; detached HEAD'de yok. */
+  branch?: string;
+  /** HEAD commit'i; boş repoda yok. */
+  head?: string;
+  /** 'origin/main' */
+  upstream?: string;
+  ahead: number;
+  behind: number;
+  files: WorkingFile[];
+  /** Devam eden merge/rebase/cherry-pick/revert. */
+  operation?: RepoOperation;
+  stashCount: number;
+  lastCommit?: {
+    hash: string;
+    shortHash: string;
+    message: string;
+    /** Upstream'de var mı (geri alma/amend uyarısı için). */
+    pushed: boolean;
+  };
+}
+
+export interface StashEntry {
+  /** stash@{index} */
+  index: number;
+  message: string;
+  /** ms */
+  date: number;
+  /** Stash'in alındığı branch. */
+  branch?: string;
+}
+
+export type PullStrategy = 'ff' | 'merge' | 'rebase';
+
+/** Webview'dan istenen bir git işlemi. Riskli olanları eklenti modal diyalogla onaylatır. */
+export type GitOpRequest =
+  | { kind: 'stage'; paths: string[] }
+  | { kind: 'stageAll' }
+  | { kind: 'unstage'; paths: string[] }
+  | { kind: 'unstageAll' }
+  /** Çalışma ağacındaki değişikliği geri al (untracked dosyayı sil). Onaylı. */
+  | { kind: 'discard'; paths: string[] }
+  | { kind: 'commit'; message: string; amend: boolean; push: boolean }
+  /** git reset --soft HEAD~1 (değişiklikler index'te kalır). Push edilmişse onaylı. */
+  | { kind: 'undoLastCommit' }
+  | { kind: 'fetch' }
+  /** strategy yoksa önce fast-forward denenir, olmazsa kullanıcıya sorulur. */
+  | { kind: 'pull'; strategy?: PullStrategy }
+  /** force: --force-with-lease (onaylı). Upstream yoksa -u origin <branch>. */
+  | { kind: 'push'; force?: boolean }
+  /** Commit edilmemiş değişiklik varsa "sakla ve geç" sorulur. */
+  | { kind: 'checkout'; branch: string }
+  | { kind: 'createBranch'; name: string; from?: string; checkout: boolean }
+  | { kind: 'mergeBranch'; branch: string }
+  | { kind: 'renameBranch'; from: string; to: string }
+  /** Onaylı; birleşmemişse ikinci onayla -D. */
+  | { kind: 'deleteBranch'; name: string }
+  | { kind: 'stashSave'; message?: string; includeUntracked: boolean }
+  | { kind: 'stashApply'; index: number; pop: boolean }
+  /** Onaylı. */
+  | { kind: 'stashDrop'; index: number }
+  | { kind: 'markResolved'; paths: string[] }
+  | { kind: 'continueOperation' }
+  /** Onaylı. */
+  | { kind: 'abortOperation' };
+
+export type GitOpKind = GitOpRequest['kind'];
+
+export interface OpResult {
+  /** İsteği yapan webview'ın verdiği kimlik. */
+  id: string;
+  kind: GitOpKind;
+  ok: boolean;
+  /** Kullanıcı onay diyaloğunda vazgeçti. */
+  cancelled?: boolean;
+  /** Çalıştırılan komutlar ("git push -u origin x"), satır satır. */
+  commands: string[];
+  /** Kısa Türkçe sonuç ya da hata açıklaması (ne yapılacağıyla birlikte). */
+  message: string;
+  /** Ham git çıktısı (hata ayrıntısı, hook çıktısı). */
+  detail?: string;
+}
