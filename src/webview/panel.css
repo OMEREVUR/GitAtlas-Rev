@@ -1,0 +1,451 @@
+/* Dosya kartı, son commit'ler akışı ve durum ekranları. Renkler yalnızca --vscode-* ve --rr-*. */
+
+/* ---------- ortak ---------- */
+.rr-p-heading {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-p-muted {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-p-hash,
+.rr-p-code {
+  font-family: var(--rr-mono);
+  font-size: 11px;
+}
+.rr-p-hash {
+  flex: 0 0 auto;
+  color: var(--vscode-textLink-foreground);
+}
+.rr-p-msg {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rr-p-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.rr-p-btn {
+  height: 28px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--rr-btn-border);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.rr-p-btn-primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+.rr-p-btn-primary:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+.rr-p-btn-secondary {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+.rr-p-btn-secondary:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+.rr-p-btn:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+.rr-p-btn-small {
+  height: 22px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+.rr-p-icon-btn {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+}
+.rr-p-icon-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+
+/* ---------- dosya kartı ---------- */
+.rr-p-card {
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: auto;
+  background: var(--vscode-editorWidget-background);
+  border-left: 1px solid var(--vscode-panel-border);
+}
+.rr-p-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 16px;
+}
+.rr-p-card-empty {
+  min-height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 12px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-p-card-empty-icon.codicon {
+  font-size: 32px;
+}
+.rr-p-card-empty-title {
+  font-size: 13px;
+  color: var(--vscode-foreground);
+}
+.rr-p-card-empty-text {
+  font-size: 12px;
+  max-width: 260px;
+}
+.rr-p-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.rr-p-card-titles {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.rr-p-card-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  overflow-wrap: anywhere;
+}
+.rr-p-card-path {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  overflow-wrap: anywhere;
+}
+
+.rr-p-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.rr-p-stat {
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: var(--vscode-textCodeBlock-background);
+  border: 1px solid var(--rr-btn-border);
+}
+.rr-p-stat-label {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-p-stat-value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.rr-p-heat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rr-p-heat-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-p-heat-label {
+  color: var(--vscode-foreground);
+  font-weight: 600;
+}
+.rr-p-meter {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
+}
+.rr-p-meter-seg {
+  height: 6px;
+  border-radius: 1px;
+  background: var(--vscode-textCodeBlock-background);
+  outline: 1px solid var(--vscode-panel-border);
+  outline-offset: -1px;
+}
+.rr-p-meter-seg.is-on {
+  outline-color: var(--rr-box-border);
+}
+
+.rr-p-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 4px;
+  margin: 0;
+  font-size: 12px;
+}
+.rr-p-fact-label {
+  color: var(--vscode-descriptionForeground);
+}
+.rr-p-fact-value {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rr-p-add,
+.rr-p-del {
+  font-family: var(--rr-mono);
+  font-size: 11px;
+  margin-right: 8px;
+}
+.rr-p-add {
+  color: var(--vscode-gitDecoration-addedResourceForeground, var(--vscode-charts-green));
+}
+.rr-p-del {
+  color: var(--vscode-gitDecoration-deletedResourceForeground, var(--vscode-charts-red));
+}
+
+.rr-p-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rr-p-recent {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rr-p-recent-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.rr-p-recent-row .rr-p-hash {
+  align-self: flex-start;
+  line-height: 18px;
+}
+.rr-p-recent-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rr-p-oldname {
+  font-style: italic;
+}
+
+.rr-p-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rr-p-actions .rr-p-btn {
+  flex: 1 1 auto;
+}
+
+/* ---------- son commit'ler akışı ---------- */
+.rr-p-feed {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.rr-p-feed-heading {
+  flex: 0 0 auto;
+  height: 22px;
+  line-height: 22px;
+  padding: 0 12px;
+}
+.rr-p-feed-empty {
+  padding: 8px 12px;
+}
+.rr-p-feed-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rr-p-feed-row {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 12px;
+  border: 1px solid transparent;
+  background: none;
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+}
+.rr-p-feed-row:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.rr-p-feed-row[aria-pressed='true'] {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+  border-color: var(--rr-sel-outline);
+}
+.rr-p-feed-row[aria-pressed='true'] .rr-p-meta,
+.rr-p-feed-row[aria-pressed='true'] .rr-p-hash {
+  color: inherit;
+}
+.rr-p-feed-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 22px;
+}
+.rr-p-feed-top .rr-p-msg {
+  flex: 1 1 auto;
+}
+.rr-p-feed-row .rr-p-meta {
+  max-width: 100%;
+  line-height: 16px;
+  padding-bottom: 2px;
+}
+.rr-p-tag {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 10px;
+  line-height: 15px;
+  border: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-badge-background, var(--vscode-textCodeBlock-background));
+  color: var(--vscode-badge-foreground, var(--vscode-foreground));
+}
+
+/* ---------- durum ekranları ---------- */
+.rr-p-state {
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+  overflow: auto;
+}
+.rr-p-state-center {
+  box-sizing: border-box;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 16px;
+  text-align: center;
+}
+.rr-p-state-icon.codicon {
+  font-size: 40px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-p-state-icon.is-danger {
+  color: var(--vscode-errorForeground, var(--vscode-charts-red));
+}
+.rr-p-state-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.rr-p-state-text {
+  margin: 0;
+  max-width: 400px;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  overflow-wrap: anywhere;
+}
+.rr-p-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.rr-p-state-loading {
+  position: absolute;
+  inset: 0;
+  min-height: 220px;
+}
+.rr-p-skeleton {
+  position: absolute;
+  inset: 14px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  opacity: 0.5;
+}
+.rr-p-skeleton-box {
+  background: var(--vscode-textCodeBlock-background);
+}
+.rr-p-skeleton-0 { grid-column: span 2; grid-row: span 2; }
+.rr-p-skeleton-1 { grid-column: span 2; }
+.rr-p-skeleton-2 { grid-column: span 2; grid-row: span 3; }
+.rr-p-skeleton-5 { grid-column: span 3; }
+.rr-p-state-dialog {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(360px, calc(100% - 32px));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: 6px;
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--vscode-panel-border));
+  box-shadow: 0 4px 16px var(--vscode-widget-shadow);
+}
+.rr-p-state-dialog-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.rr-p-progress {
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--vscode-textCodeBlock-background);
+}
+.rr-p-progress-fill {
+  width: 0;
+  height: 100%;
+  background: var(--vscode-progressBar-background);
+  transition: width 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rr-p-progress-fill {
+    transition: none;
+  }
+}

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RewiewRev — panel önizlemesi</title>
+  <link rel="stylesheet" href="themes.css">
+  <link rel="stylesheet" href="../node_modules/@vscode/codicons/dist/codicon.css">
+  <link rel="stylesheet" href="out/panel.entry.css">
+  <style>
+    /* Yalnızca önizleme düzeni. */
+    body { display: flex; flex-direction: column; height: 100vh; }
+    .dev-bar { flex: 0 0 auto; display: flex; gap: 6px; align-items: center; padding: 6px 12px; font-size: 12px; border-bottom: 1px solid var(--vscode-panel-border); }
+    .dev-bar button[aria-pressed='true'] { background: var(--vscode-inputOption-activeBackground); }
+    #app { flex: 1 1 auto; min-height: 0; display: flex; }
+    #feed { flex: 0 0 300px; border-right: 1px solid var(--vscode-panel-border); }
+    #card { flex: 0 0 320px; }
+    .dev-log-wrap { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; padding: 8px 12px; }
+    #log { flex: 1 1 auto; overflow: auto; font-family: var(--vscode-editor-font-family); font-size: 11px; color: var(--vscode-descriptionForeground); }
+    .dev-state { flex: 1 1 auto; background: var(--vscode-editor-background); }
+    .dev-state-log { flex: 0 0 90px; border-top: 1px solid var(--vscode-panel-border); padding: 6px 12px; overflow: auto; }
+  </style>
+</head>
+<body class="vscode-dark">
+  <div class="dev-bar">
+    <span>Aralık:</span>
+    <button type="button" id="range-7d">7g</button>
+    <button type="button" id="range-30d">30g</button>
+    <button type="button" id="range-all">tümü</button>
+    <label>Dosya: <select id="picker"><option value="">(seçili değil)</option></select></label>
+  </div>
+  <div id="app">
+    <div id="feed"></div>
+    <aside id="card" aria-label="Dosya kartı"></aside>
+    <div class="dev-log-wrap">
+      <h3 class="rr-p-heading">POST GÜNLÜĞÜ</h3>
+      <div id="log"></div>
+    </div>
+  </div>
+  <script src="out/panel.entry.js"></script>
+</body>
+</html>

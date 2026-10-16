@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RewiewRev — treemap önizlemesi</title>
+  <link rel="stylesheet" href="themes.css">
+  <link rel="stylesheet" href="../node_modules/@vscode/codicons/dist/codicon.css">
+  <link rel="stylesheet" href="out/treemap.entry.css">
+  <style>
+    /* Yalnızca önizleme düzeni. */
+    .dev-page { height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 14px; }
+    .dev-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .dev-log { margin-left: auto; font-size: 11px; color: var(--vscode-descriptionForeground); font-family: var(--rr-mono); }
+    #map { flex: 1 1 auto; min-height: 0; }
+  </style>
+</head>
+<body class="vscode-dark">
+  <div class="dev-page">
+    <div class="dev-top">
+      <div id="range"></div>
+      <span id="log" class="dev-log" aria-live="polite"></span>
+    </div>
+    <section id="map" aria-label="Repo haritası"></section>
+  </div>
+  <script src="out/treemap.entry.js"></script>
+</body>
+</html>
