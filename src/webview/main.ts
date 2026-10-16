@@ -14,6 +14,7 @@ import type {
   ContribData,
   FileStat,
   GitHubData,
+  GitHubOpKind,
   GitOpKind,
   GitOpRequest,
   GitRef,
@@ -111,7 +112,7 @@ let playTimer: ReturnType<typeof setInterval> | undefined;
 let wt: WorkingTreeStatus | undefined;
 let stashes: StashEntry[] = [];
 let statusRequested = false;
-let running: { id: string; kind: GitOpKind; commands: string[] } | undefined;
+let running: { id: string; kind: GitOpKind | GitHubOpKind; commands: string[] } | undefined;
 let lastResult: OpResult | undefined;
 let opSeq = 0;
 
@@ -273,6 +274,10 @@ function ensureStatus(): void {
   if (statusRequested) return;
   statusRequested = true;
   post({ type: 'loadStatus' });
+}
+
+function isGitOpKind(k: GitOpKind | GitHubOpKind): k is GitOpKind {
+  return k !== 'createPr' && k !== 'mergePr' && k !== 'checkoutPr';
 }
 
 function runOp(op: GitOpRequest): void {
@@ -570,8 +575,8 @@ function render(): void {
     noticeHost.hidden = true;
   } else {
     noticeHost.hidden = false;
-    renderOpNotice(noticeHost, { running: running ? { kind: running.kind, commands: running.commands } : undefined, last: lastResult }, post);
-    renderSyncBar(syncHost, { status: wt, busy: running !== undefined, busyKind: running?.kind, onOp: runOp });
+    renderOpNotice(noticeHost, { running: running && isGitOpKind(running.kind) ? { kind: running.kind, commands: running.commands } : undefined, last: lastResult }, post);
+    renderSyncBar(syncHost, { status: wt, busy: running !== undefined, busyKind: running && isGitOpKind(running.kind) ? running.kind : undefined, onOp: runOp });
   }
   const changeCount = wt?.files.length ?? 0;
   tabButtons.changes.textContent = changeCount > 0 ? `Değişiklikler (${changeCount})` : 'Değişiklikler';

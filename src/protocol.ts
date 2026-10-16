@@ -1,5 +1,5 @@
 // SÖZLEŞME — webview ↔ eklenti mesajları. Değişiklik yalnızca bilinçli bir kararla yapılır.
-import type { CommitSummary, ContribData, FileStat, GitHubData, GitOpKind, GitOpRequest, GraphData, OpResult, StashEntry, TimeRange, TimelineData, WorkingTreeStatus } from './types';
+import type { CommitSummary, ContribData, FileStat, GitHubData, GitHubOpKind, GitHubOpRequest, GitOpKind, GitOpRequest, GraphData, OpResult, PrDraft, PrPanelData, StashEntry, TimeRange, TimelineData, WorkingTreeStatus } from './types';
 
 /** Panelde gösterilen hata durumları (tasarım: States.dc.html). */
 export type ErrorCode = 'noWorkspace' | 'noRepo' | 'noCommits' | 'noGit' | 'unknown';
@@ -37,8 +37,12 @@ export type ExtensionToWebview =
   // v5
   | { type: 'status'; status: WorkingTreeStatus }
   | { type: 'stashes'; stashes: StashEntry[] }
-  | { type: 'opStarted'; id: string; kind: GitOpKind; commands: string[] }
-  | { type: 'opResult'; result: OpResult };
+  | { type: 'opStarted'; id: string; kind: GitOpKind | GitHubOpKind; commands: string[] }
+  | { type: 'opResult'; result: OpResult }
+  // v5 (2. tur)
+  /** data undefined: GitHub bağlı değil; error: veri alınamadı. */
+  | { type: 'prPanel'; data: PrPanelData | undefined; error?: string }
+  | { type: 'prDraft'; draft: PrDraft | undefined; error?: string };
 
 export type WebviewToExtension =
   | { type: 'ready' }
@@ -68,4 +72,9 @@ export type WebviewToExtension =
   /** Değişikliğin diff'i: staged → HEAD ↔ index, değilse index ↔ çalışma ağacı. */
   | { type: 'openChange'; path: string; staged: boolean }
   /** "RewiewRev Git" çıktı kanalını göster. */
-  | { type: 'showOutput' };
+  | { type: 'showOutput' }
+  // v5 (2. tur)
+  | { type: 'loadPrPanel' }
+  /** Mevcut branch için PR taslağı; base yoksa repo varsayılan branch'i. */
+  | { type: 'loadPrDraft'; base?: string }
+  | { type: 'githubOp'; id: string; op: GitHubOpRequest };

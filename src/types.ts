@@ -367,7 +367,7 @@ export type GitOpKind = GitOpRequest['kind'];
 export interface OpResult {
   /** İsteği yapan webview'ın verdiği kimlik. */
   id: string;
-  kind: GitOpKind;
+  kind: GitOpKind | GitHubOpKind;
   ok: boolean;
   /** Kullanıcı onay diyaloğunda vazgeçti. */
   cancelled?: boolean;
@@ -378,3 +378,68 @@ export interface OpResult {
   /** Ham git çıktısı (hata ayrıntısı, hook çıktısı). */
   detail?: string;
 }
+
+// ---- v5 (2. tur): GitHub PR işlemleri ----
+
+export type ReviewDecision = 'approved' | 'changesRequested' | 'reviewRequired' | 'none';
+export type Mergeable = 'mergeable' | 'conflicting' | 'unknown';
+export type MergeMethod = 'merge' | 'squash' | 'rebase';
+
+export interface PrCheck {
+  name: string;
+  state: CiState;
+  /** Ayrıntı sayfası (https://github.com/…). */
+  url?: string;
+}
+
+export interface PullRequestDetail extends PullRequest {
+  body: string;
+  mergeable: Mergeable;
+  reviewDecision: ReviewDecision;
+  /** Görüntüleyen kullanıcıdan review istenmiş mi? */
+  reviewRequested: boolean;
+  /** Fork'tan açılmış PR. */
+  isCrossRepository: boolean;
+  additions: number;
+  deletions: number;
+  changedFiles: number;
+  checks: PrCheck[];
+}
+
+export interface PrPanelData {
+  /** Bağlı GitHub kullanıcısının login'i. */
+  viewer: string;
+  defaultBranch: string;
+  /** Repoda izin verilen birleştirme yöntemleri. */
+  mergeMethods: MergeMethod[];
+  /** Checkout edilmiş branch'in açık PR'ı. */
+  currentBranchPr?: PullRequestDetail;
+  /** Kullanıcının açtığı açık PR'lar. */
+  mine: PullRequestDetail[];
+  /** Kullanıcıdan review istenen açık PR'lar. */
+  reviewRequested: PullRequestDetail[];
+  /** ms */
+  fetchedAt: number;
+}
+
+export interface PrDraft {
+  head: string;
+  base: string;
+  /** Commit'lerden önerilen başlık ve açıklama. */
+  title: string;
+  body: string;
+  /** base..head arasındaki commit sayısı. */
+  commits: number;
+  /** Branch henüz gönderilmemiş ya da gönderilmemiş commit'i var → PR'dan önce push gerekir. */
+  needsPush: boolean;
+}
+
+export type GitHubOpRequest =
+  /** Gerekirse önce push (onaylı). */
+  | { kind: 'createPr'; title: string; body: string; base: string; draft: boolean }
+  /** Onaylı. deleteBranch: uzak branch'i sil. */
+  | { kind: 'mergePr'; number: number; method: MergeMethod; deleteBranch: boolean }
+  /** PR'ın branch'ini yerelde checkout et (fork'ta pr/<n>). */
+  | { kind: 'checkoutPr'; number: number };
+
+export type GitHubOpKind = GitHubOpRequest['kind'];
