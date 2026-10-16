@@ -69,15 +69,18 @@ export function mapError(err: unknown): { code: ErrorCode; message: string; shor
 
 class NoWorkspaceError extends Error {}
 
-export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscode.Disposable {
+export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscode.WebviewPanelSerializer, vscode.Disposable {
   static readonly viewType = 'rewiewrev.panel';
+  /** Düzenleyici alanındaki sekme ("RewiewRev: Harita"). */
+  static readonly editorViewType = 'rewiewrev.editor';
 
   private readonly rootEmitter = new vscode.EventEmitter<string>();
   readonly onDidResolveRoot: vscode.Event<string> = this.rootEmitter.event;
 
-  private view: vscode.WebviewView | undefined;
+  /** Açık webview'lar (yan panel ve/veya düzenleyici sekmesi); hepsi aynı modeli alır. */
+  private readonly webviews = new Map<vscode.Webview, vscode.Disposable[]>();
+  private editorPanel: vscode.WebviewPanel | undefined;
   private readonly disposables: vscode.Disposable[] = [];
-  private viewDisposables: vscode.Disposable[] = [];
 
   private root: string | undefined;
   private snapshot: RepoSnapshot | undefined;
@@ -106,19 +109,50 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   }
 
   resolveWebviewView(view: vscode.WebviewView): void {
-    this.viewDisposables.forEach((d) => d.dispose());
-    this.view = view;
+    this.attach(view.webview, view.onDidDispose);
+  }
+
+  /** Haritayı düzenleyici alanında bir sekmede açar; zaten açıksa öne getirir. */
+  openInEditor(): void {
+    if (this.editorPanel) {
+      this.editorPanel.reveal();
+      return;
+    }
+    const panel = vscode.window.createWebviewPanel(
+      RewiewRevPanelProvider.editorViewType,
+      'RewiewRev: Harita',
+      vscode.ViewColumn.Active,
+      { retainContextWhenHidden: true },
+    );
+    this.adoptEditorPanel(panel);
+  }
+
+  /** Pencere yeniden yüklendiğinde açık kalan sekmeyi geri getirir. */
+  async deserializeWebviewPanel(panel: vscode.WebviewPanel): Promise<void> {
+    this.adoptEditorPanel(panel);
+  }
+
+  private adoptEditorPanel(panel: vscode.WebviewPanel): void {
+    this.editorPanel = panel;
+    panel.iconPath = vscode.Uri.joinPath(this.extensionUri, 'media', 'icon.svg');
+    panel.onDidDispose(() => {
+      if (this.editorPanel === panel) this.editorPanel = undefined;
+    });
+    this.attach(panel.webview, panel.onDidDispose);
+  }
+
+  private attach(webview: vscode.Webview, onDidDispose: vscode.Event<void>): void {
     const dist = vscode.Uri.joinPath(this.extensionUri, 'dist');
-    view.webview.options = { enableScripts: true, localResourceRoots: [dist] };
-    view.webview.html = this.renderHtml(view.webview);
-    this.viewDisposables = [
-      view.webview.onDidReceiveMessage((raw: unknown) => void this.onMessage(raw)),
-      view.onDidDispose(() => {
-        if (this.view === view) this.view = undefined;
-        this.viewDisposables.forEach((d) => d.dispose());
-        this.viewDisposables = [];
+    webview.options = { enableScripts: true, localResourceRoots: [dist] };
+    webview.html = this.renderHtml(webview);
+    this.webviews.get(webview)?.forEach((d) => d.dispose());
+    this.webviews.set(webview, [
+      webview.onDidReceiveMessage((raw: unknown) => void this.onMessage(raw, webview)),
+      onDidDispose(() => {
+        this.webviews.get(webview)?.forEach((d) => d.dispose());
+        this.webviews.delete(webview);
       }),
-    ];
+    ]);
   }
 
   /** Tarar ve her şeyi günceller. Devam eden tarama varsa bitince bir kez daha çalışır (paralel tarama yok). */
@@ -143,9 +177,10 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
 
   dispose(): void {
     this.disposed = true;
-    this.viewDisposables.forEach((d) => d.dispose());
+    this.webviews.forEach((ds) => ds.forEach((d) => d.dispose()));
+    this.webviews.clear();
+    this.editorPanel?.dispose();
     this.disposables.forEach((d) => d.dispose());
-    this.view = undefined;
   }
 
   // ---- tarama ----
@@ -228,16 +263,16 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
 
   private post(msg: ExtensionToWebview): void {
     this.lastState = msg;
-    void this.view?.webview.postMessage(msg);
+    for (const webview of this.webviews.keys()) void webview.postMessage(msg);
   }
 
-  private async onMessage(raw: unknown): Promise<void> {
+  private async onMessage(raw: unknown, from: vscode.Webview): Promise<void> {
     const msg = parseWebviewMessage(raw);
     if (!msg) return;
     try {
       switch (msg.type) {
         case 'ready':
-          if (this.lastState) void this.view?.webview.postMessage(this.lastState);
+          if (this.lastState) void from.postMessage(this.lastState);
           if (!this.started) void this.reload();
           break;
         case 'setRange':

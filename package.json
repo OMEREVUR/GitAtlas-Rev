@@ -15,7 +15,8 @@
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onWebviewPanel:rewiewrev.editor"
   ],
   "contributes": {
     "viewsContainers": {
@@ -42,12 +43,23 @@
         "title": "Yenile",
         "category": "RewiewRev",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "rewiewrev.openInEditor",
+        "title": "Haritayı düzenleyicide aç",
+        "category": "RewiewRev",
+        "icon": "$(open-preview)"
       }
     ],
     "menus": {
       "view/title": [
         {
           "command": "rewiewrev.refresh",
+          "when": "view == rewiewrev.panel",
+          "group": "navigation"
+        },
+        {
+          "command": "rewiewrev.openInEditor",
           "when": "view == rewiewrev.panel",
           "group": "navigation"
         }

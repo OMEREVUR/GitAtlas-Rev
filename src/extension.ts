@@ -19,7 +19,9 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerWebviewViewProvider(RewiewRevPanelProvider.viewType, panel, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
+    vscode.window.registerWebviewPanelSerializer(RewiewRevPanelProvider.editorViewType, panel),
     vscode.commands.registerCommand('rewiewrev.refresh', () => panel.reload()),
+    vscode.commands.registerCommand('rewiewrev.openInEditor', () => panel.openInEditor()),
   );
 
   // HEAD veya ref'ler değişince (commit, checkout, pull, reset) otomatik yenile.

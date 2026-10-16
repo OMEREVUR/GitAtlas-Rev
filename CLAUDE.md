@@ -7,7 +7,7 @@
 - Ad yazımı "RewiewRev", paket adı "rewiewrev". Düzeltilmez, değiştirilmez.
 
 ## Sürüm durumu
-- Şu an **v1 (MVP)**: treemap (klasöre inme ile), zaman filtresi 7g/30g/tümü, dosya kartı, son commit'ler akışı, Explorer rozeti, globalStorage cache, ignore ayarı, durum ekranları, durum çubuğu.
+- Şu an **v1 (MVP)**: yan panel + düzenleyici sekmesi (komut "RewiewRev: Haritayı düzenleyicide aç"; ikisi aynı provider'dan beslenir), treemap (klasöre inme ile), zaman filtresi 7g/30g/tümü, dosya kartı, son commit'ler akışı, Explorer rozeti, globalStorage cache, ignore ayarı, durum ekranları, durum çubuğu.
 - v2: commit graph + branch paneli. v3: GitHub katmanı (PR çakışma uyarısı). v4: zaman makinesi + katkı paneli.
 - Kapsam dışı iş yapılmaz. Tipler ileriye uygun tutulur (ör. commit'lerde `parents`).
 
