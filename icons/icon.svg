@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>RewiewRev</title>
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="#1B1C20"/>
+  <rect x="4.5" y="4.5" width="119" height="119" rx="25.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.10"/>
+  <rect x="22" y="22" width="44" height="50" rx="5" fill="#F0A030"/>
+  <rect x="70" y="22" width="36" height="28" rx="5" fill="#B0701E"/>
+  <rect x="70" y="54" width="36" height="18" rx="5" fill="#5E4426"/>
+  <rect x="22" y="76" width="26" height="30" rx="5" fill="#7E5822"/>
+  <rect x="52" y="76" width="22" height="30" rx="5" fill="#3F3229"/>
+  <rect x="53.75" y="77.75" width="18.5" height="26.5" rx="3.5" fill="none" stroke="#C08CF0" stroke-width="3.5" stroke-dasharray="5 3"/>
+  <rect x="78" y="76" width="28" height="30" rx="5" fill="#B0701E"/>
+</svg>

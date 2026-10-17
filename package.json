@@ -4,6 +4,7 @@
   "description": "Repoyu tek bakışta okutan harita: dosyalar satır sayısına göre boyutlanır, değişim sıklığına göre renklenir.",
   "version": "0.1.0",
   "publisher": "rewiewrev",
+  "icon": "icons/icon.png",
   "license": "UNLICENSED",
   "private": true,
   "engines": {
