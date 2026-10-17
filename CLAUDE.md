@@ -11,11 +11,11 @@
 - **v2 tamam** (Ekim 2026, kullanıcı F5 ile denedi): webview'da "Harita | Graph" sekmeleri; commit graph (şerit yerleşimi eklentide `layoutGraph`, `--topo-order`, 500'lük sayfalar, kaydırınca daha eskisi), graph filtreleri (branch, yazar, arama: mesaj/dosya/hash, graph'ın kendi tarih aralığı, "Sade liste"), seçim ayrıntısı + mini harita; yan çubukta yerel TreeView "Branch'ler" (lokal/remote, ahead/behind, bayat = 30 gün); seçilen commit/branch'in dosyaları haritada yanar, haritanın üstünde seçim çubuğu.
 - **v3 tamam** (Ekim 2026, kullanıcı F5 ile denedi; kullanıcının isteğiyle geri bildirim kapısı atlandı): GitHub katmanı — VS Code GitHub oturumu (`getSession('github', ['repo'])`), tek GraphQL sorgusu (açık PR'lar + dosyaları + CI, branch CI, rate limit), globalStorage cache, yalnızca panel görünürken yenileme, limit azalınca aralık ×5; haritada PR rozeti ve 2+ PR'da mor kesikli çakışma çerçevesi (eski veride gri), dosya kartında "AÇIK PR'LAR", graph'ta ve Branch'ler ağacında PR/CI, Explorer'da PR sayısı rozeti, durum bandı (kapalı/bağlanıyor/bağlı/limit/eski veri/GitHub değil/hata). `RemoteProvider` arayüzü raporla aynı (GitLab ileride).
 - **v4 tamam** (Ekim 2026, kullanıcı F5 ile denedi): "Zaman" sekmesi (kaydırıcı + oynat; yerleşim sabit, ısı = tarihten önceki 7 gün, henüz olmayan dosyalar kesik çerçeveli, histogram, dönüm noktaları) ve "Katkı" sekmesi (modül sahipliği + "tek kişiye bağlı" ≥%80 — tek yazarlı repoda gizli —, haftalık ritim, dosya uzmanı, yazarlar; `.mailmap` için log `%aN/%aE` kullanır, cache sürümü 2).
-- Ayarlar: `gitatlas-revrev.ignore`, `defaultRange`, `graph.initialCommits`, `explorer.badges` (hot/all/off), `github.enabled`, `github.refreshInterval`, `git.path`. README'de gizlilik notu var.
 - **v5 tamam** (Ekim 2026, kullanıcının isteğiyle rapor dışı ek — GitAtlas-Rev artık repoya da yazar): "Değişiklikler" sekmesi (onay kutularıyla seçerek/tümünü add, diff, geri al; commit kutusu: tür çipleri, 50/72 sayacı, amend, commit ve gönder, son commit'i geri al; stash; çakışma bandı: Çözüldü/Devam et/İptal et), her sekmede eşitleme çubuğu (Getir/Çek/Gönder; pull önce --ff-only, olmazsa sor; yeni branch'te -u), Branch'ler ağacında sağ tık (geç, yeni, birleştir, yeniden adlandır, sil), PULL REQUEST'LER bölümü (bu branch'ten PR aç — gerekirse önce push —, mevcut PR kartı: review/çakışma/check'ler/birleştir (merge/squash/rebase, uzak branch'i sil), Benim PR'larım, Review bekleyenler, checkout), işlem bildirimi + "GitAtlas-Rev Git" çıktı kanalı, haritada commit edilmemiş dosya rozeti.
   - Güvenlik kuralları: riskli işlemler (geri al, sil, zorla gönder, gönderilmiş commit'i değiştir, stash sil, işlemi iptal, PR birleştir) eklentide modal onaylı; --no-verify yok; aynı anda tek yazma işlemi (OpQueue; GitHub işlemleri aynı kuyrukta, iç adımlar runUnqueued); git asla terminal/editör beklemez (GIT_TERMINAL_PROMPT=0, GIT_EDITOR=true); auth hatasında bir kez GitHub oturumuyla askpass + `-c credential.helper=`; token log/commands/detail'de yok (redactSecrets). Mesajlarda ref adlarına Türkçe ek eklenmez ("Geçildi: x").
-- **v6 / 0.2.0 tamam** (Ekim 2026): İngilizce arayüz. Dil `gitatlas-revrev.language` (auto/en/tr; auto = VS Code dili 'tr' ise Türkçe, değilse İngilizce). Menü/komut/ayar adları `package.nls.json` (en) + `package.nls.tr.json`. README.md İngilizce, README.tr.md Türkçe, CHANGELOG.md. Dil değişince eklenti pencereyi yeniden yüklemeyi önerir. Build'ler `extension-versions/` (git dışı).
-- Sıradaki (raporda kalanlar): gerçek kullanıcı geri bildirimi, Marketplace yayını, demo GIF, rakiplerin güncel hâlinin kontrolü. v3: GitHub katmanı (PR çakışma uyarısı). v4: zaman makinesi + katkı paneli.
+- **v6 / 0.2.0 tamam** (Ekim 2026): İngilizce arayüz. Dil `gitatlas-revrev.language` (auto/en/tr; auto = VS Code dili 'tr' ise Türkçe, değilse İngilizce). Menü/komut/ayar adları `package.nls.json` (en) + `package.nls.tr.json`. README.md İngilizce, README.tr.md Türkçe, CHANGELOG.md. Dil değişince eklenti pencereyi yeniden yüklemeyi önerir. Build'ler `Extension-Versions/` (git dışı; `gitatlas-rev-<sürüm>.vsix`).
+- Ayarlar (hepsi `gitatlas-revrev.` önekli): `language` (auto/en/tr), `ignore`, `defaultRange`, `graph.initialCommits`, `explorer.badges` (hot/all/off), `github.enabled`, `github.refreshInterval`, `git.pullStrategy` (ask/merge/rebase), `git.path`. README'lerde ayar tablosu ve gizlilik notu var; ayar eklenince ikisi (README.md, README.tr.md) ve `package.nls*.json` birlikte güncellenir.
+- Sıradaki: Marketplace yayını (0.1.0 yüklendi, 0.2.0 güncellemesi `Omer-Cayir` yayıncısından), gerçek kullanıcı geri bildirimi, README'ye ekran görüntüsü/demo GIF, rakiplerin güncel hâlinin kontrolü.
 - Kapsam dışı iş yapılmaz. Tipler ileriye uygun tutulur (ör. commit'lerde `parents`).
 
 ## Teknoloji kararları (tartışmaya kapalı)
@@ -29,6 +29,7 @@
 ## Komutlar
 - Kurulum: `npm install`
 - Build: `npm run build` (`--production` ile minify: `npm run vscode:prepublish`)
+- Paketleme (VSIX): `npx @vscode/vsce package --no-dependencies --allow-missing-repository --skip-license -o Extension-Versions/gitatlas-rev-<sürüm>.vsix` (prepublish'i kendisi çalıştırır). Pakete girenler `.vscodeignore` beyaz listesinde. `package.json`'da `repository` olmadığı için README.md'de göreli link olamaz (vsce reddeder).
 - Dev sayfalarıyla build: `npm run build:dev` (`dev/*.entry.ts` → `dev/out/*.js`)
 - İzleme: `npm run watch`
 - Tip kontrolü: `npm run typecheck` (= `npx tsc --noEmit`)
@@ -44,13 +45,13 @@
 - `src/types.ts`, `src/protocol.ts` — sözleşme.
 - `src/git/` — v5: `status.ts` (porcelain v2 durum, stash listesi), `opCommands.ts` (saf: işlem → git argümanları, webview önizlemesi de kullanır), `prCheckout.ts` (saf), `askpass.ts`; git komutları, `git log --numstat` ayrıştırma, satır sayımı, `refs.ts` (for-each-ref + ahead/behind), `graphLog.ts` (graph log argümanları).
 - `src/model/` — snapshot'tan `FileStat` üretme, glob eşleme, cache, `loadSnapshot` servisi; `graphLayout.ts` + `graphSelect.ts` (saf, webview de import eder), `graphService.ts` (`loadGraph`); v4: `timeline.ts` (`buildTimeline`, `timelineFrame`, `timelineSteps`) ve `contrib.ts` (`computeContrib`), ikisi de saf.
-- `src/panel/` — `WebviewViewProvider` + düzenleyici sekmesi, HTML/CSP, mesaj işleme, diff içerik sağlayıcı, durum çubuğu, `branchTree.ts` (Branch'ler TreeView).
+- `src/panel/` — `panelProvider.ts` (`WebviewViewProvider` + düzenleyici sekmesi, HTML/CSP, mesaj işleme), `gitContentProvider.ts` (diff içerik sağlayıcı), `statusBar.ts`, `branchTree.ts` (Branch'ler TreeView + sağ tık komutları), v5: `opsUi.ts` (onay/seçim diyalogları), `workingTreeWatcher.ts`.
 - `src/decorations/` — Explorer rozeti (`FileDecorationProvider`; ısı modları + PR sayısı).
-- `src/ops/` — v5: `opQueue.ts`, `gitOpsService.ts` (git işlemleri, onaylar, Türkçe sonuçlar; vscode'suz, gerçek git'e karşı testli), `githubOpsService.ts` (PR aç/birleştir/checkout), `prDraft.ts`.
+- `src/ops/` — v5: `opQueue.ts`, `gitOpsService.ts` (git işlemleri, onaylar, tr/en sonuçlar; vscode'suz, gerçek git'e karşı testli), `githubOpsService.ts` (PR aç/birleştir/checkout), `prDraft.ts`.
 - `src/github/` — `prApi.ts` (PR paneli sorgusu, PR oluştur/birleştir, uzak branch sil), `remote.ts` (origin → owner/repo), `graphql.ts` (sorgu + ayrıştırma, fetch enjekte), `provider.ts` (`RemoteProvider`, `GitHubProvider`; vscode'suz), `githubLayer.ts` (oturum, durum makinesi, cache, yenileme).
 - `src/i18n/` — `index.ts` (dil durumu, `defineText`, `resolveLang`, `plural`), alan sözlükleri: `main` (main.ts + extension.ts), `map`, `graph`, `changes`, `ops`, `github`, `panel`.
 - `src/config.ts` — ayarlar (`gitatlas-revrev.ignore` + varsayılan hariçler).
-- `src/webview/` — webview: `main.ts` (düzen + durum), `layout.css`, `treemap.ts`, `rangeFilter.ts`, `fileCard.ts`, `commitFeed.ts`, `states.ts`, `heat.ts` (ortak ısı seviyesi), `format.ts` (Türkçe biçimleyiciler), `base.css` (`--rr-*` tokenları); v2: `graphView.ts` + `graph.css`, `graphToolbar.ts`, `commitDetail.ts`; treemap'in `compact` modu mini harita içindir; v3: `githubBanner.ts` (+ `conflictFiles`), treemap `prCounts/prStale`; v4: `timeMachine.ts` (+ treemap `missing`), `contributors.ts`.
+- `src/webview/` — webview: `main.ts` (düzen + durum), `layout.css`, `treemap.ts`, `rangeFilter.ts`, `fileCard.ts`, `commitFeed.ts`, `states.ts`, `heat.ts` (ortak ısı seviyesi), `format.ts` (dile göre sayı/tarih/göreli zaman, `rangeShort`/`rangeLong`), `heatColor.ts` (`--rr-orange`'ı temaya göre kontrastı yeten adaydan seçer), `base.css` (`--rr-*` tokenları); v2: `graphView.ts` + `graph.css`, `graphToolbar.ts`, `commitDetail.ts`; treemap'in `compact` modu mini harita içindir; v3: `githubBanner.ts` (+ `conflictFiles`), treemap `prCounts/prStale`; v4: `timeMachine.ts` (+ treemap `missing`), `contributors.ts`; v5: `changes.ts`, `commitBox.ts`, `syncBar.ts`, `opNotice.ts`, `stashList.ts`, `prPanel.ts`.
 - `test/` — vitest testleri. `scripts/` — fixture, deneme ve önizleme scriptleri. `dev/` — önizleme sayfaları (`themes.css` sahte `--vscode-*` değişkenleri; eklentiye girmez). `dev/out/`, `dev/screenshots/` git'e girmez.
 
 ## Sözleşme kuralı
@@ -64,7 +65,7 @@
 - Tıklanan her şey gerçek `<button>`/`<a>`; renk tek başına bilgi taşımaz.
 
 ## Doğrulama kuralı
-- "Derleniyor" yetmez. Gerekenler: testler + fixture reposunda gerçek çalıştırma + webview'ın ekran görüntüsüne bakmak (açık ve koyu tema).
+- "Derleniyor" yetmez. Gerekenler: testler + fixture reposunda gerçek çalıştırma + webview'ın ekran görüntüsüne bakmak (açık ve koyu tema; metin değiştiyse Türkçe ve İngilizce: `npm run preview -- <repo> --lang en`).
 
 ## Commit mesajları
 - Conventional commits: `feat:`, `fix:`, `chore:`, `test:`, `docs:`.
@@ -111,3 +112,9 @@ Büyük işler aynı makinedeki birkaç Claude Code oturumuna bölünür. Bir ot
 - Webview CSP: script yalnızca nonce'lu; `style-src` içinde `'unsafe-inline'` açık. SVG'de renk `style`/sınıfla verilir (presentation attribute'ta `var()` çalışmaz). Kullanıcı verisi (commit mesajı) `textContent` ile basılır.
 - `vscode` import eden dosyalardaki saf fonksiyonlar vitest'te `vi.mock('vscode', …)` ile, scriptlerde `scripts/run-ts.mjs`'in `vscode` taklidiyle çalışır.
 - Webview görünümleri düzenleyici alanına sürüklenemez; düzenleyici sekmesi ayrı bir `WebviewPanel` olarak aynı provider'a bağlanır (`attach`).
+
+**v6'dan öğrenilenler**
+- `/clear` ve `/compact` başka bir oturuma mesajla gönderilemez (düz metin olarak gider); bağlamı yalnızca o oturumun kullanıcısı temizler.
+- Bir oturuma mesaj gönderildiği anda gelen "idle" bildirimi eski olabilir; işçinin gerçekten bitirdiğini "bitti" mesajı gösterir.
+- Eski bir sürümü build etmek için `git worktree add <scratch> <commit>`, `node_modules` için junction (`mklink /J`), build'den sonra junction `rmdir` ile kaldırılır (içini silmemek için `rm -rf` kullanılmaz), sonra `git worktree remove`.
+- Aynı komut/görünüm/ayar kimliklerini kullanan iki eklenti (ör. kurulu eski VSIX + F5) birlikte yüklenince "already registered" hatası verir; aynı anda yalnızca biri açık olmalı.

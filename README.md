@@ -68,4 +68,6 @@ npm test             # vitest
 npm run typecheck
 ```
 
+To build a VSIX: `npx @vscode/vsce package --no-dependencies`.
+
 Press **F5** in VS Code to open the Extension Development Host. See `CLAUDE.md` for details and other commands.

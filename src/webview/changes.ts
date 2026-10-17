@@ -39,7 +39,7 @@ function opText(op: RepoOperation): string {
   return map[op];
 }
 
-/** Harf + Türkçe ad (treemap rozetinde de kullanılır). */
+/** Harf + etkin dildeki ad (treemap rozetinde de kullanılır). */
 export function changeLetter(kind: ChangeKind | 'conflicted'): string {
   return KIND_LETTER[kind];
 }

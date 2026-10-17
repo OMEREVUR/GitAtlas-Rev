@@ -373,7 +373,7 @@ export interface OpResult {
   cancelled?: boolean;
   /** Çalıştırılan komutlar ("git push -u origin x"), satır satır. */
   commands: string[];
-  /** Kısa Türkçe sonuç ya da hata açıklaması (ne yapılacağıyla birlikte). */
+  /** Etkin dilde (tr/en) kısa sonuç ya da hata açıklaması (ne yapılacağıyla birlikte). */
   message: string;
   /** Ham git çıktısı (hata ayrıntısı, hook çıktısı). */
   detail?: string;

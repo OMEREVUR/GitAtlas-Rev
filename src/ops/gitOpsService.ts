@@ -1,4 +1,4 @@
-// Webview'dan gelen git işlemlerini sırayla, onaylarıyla ve Türkçe sonuç mesajlarıyla yürütür.
+// Webview'dan gelen git işlemlerini sırayla, onaylarıyla ve etkin dilde (tr/en) sonuç mesajlarıyla yürütür.
 // VS Code'dan bağımsızdır: diyaloglar OpsUi, kimlik GetToken üzerinden gelir.
 import { existsSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
