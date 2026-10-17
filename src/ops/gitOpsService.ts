@@ -30,7 +30,7 @@ const NETWORK_OPS = new Set(['fetch', 'pull', 'push']);
 
 const MSG_CANCELLED = 'İptal edildi.';
 const MSG_CONFLICT = "Çakışma var: dosyaları çözüp 'Çözüldü' deyin ya da işlemi iptal edin.";
-const MSG_AUTH = "Kimlik doğrulama başarısız. Git kimlik bilgilerinizi ayarlayın ya da RewiewRev'de GitHub'a bağlanın.";
+const MSG_AUTH = "Kimlik doğrulama başarısız. Git kimlik bilgilerinizi ayarlayın ya da GitAtlas-RevRev'de GitHub'a bağlanın.";
 const MSG_NETWORK = 'Uzak depoya ulaşılamadı. İnternet bağlantınızı ve uzak deponun adresini kontrol edin.';
 const MSG_DIRTY = 'Commit edilmemiş değişiklikler bu işlemle çakışıyor. Önce commit oluşturun ya da değişiklikleri saklayın (stash).';
 const MSG_REJECTED = "Uzakta yeni commit'ler var; önce Çek (pull) yapın.";
@@ -278,7 +278,7 @@ export class GitOpsService {
             { id: 'cancel', label: 'İptal' },
           ]);
           if (choice !== 'stash') return cancelled();
-          await run.git(['stash', 'push', '-u', '-m', `RewiewRev: ${op.branch} geçişinden önce`]);
+          await run.git(['stash', 'push', '-u', '-m', `GitAtlas-RevRev: ${op.branch} geçişinden önce`]);
           await runAll(cmds);
           return done(`Geçildi: ${op.branch}. Değişiklikleriniz saklandı (stash@{0}).`);
         }

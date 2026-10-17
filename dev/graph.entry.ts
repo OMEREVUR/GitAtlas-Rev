@@ -207,7 +207,7 @@ if (prs) {
   let n = 41;
   for (const r of all.refs) {
     if (r.kind !== 'local' || r.isHead) continue;
-    prs.set(r.name, [{ number: n, ci: ciCycle[(n - 41) % ciCycle.length], url: `https://github.com/ornek/rewiewrev/pull/${n}` }]);
+    prs.set(r.name, [{ number: n, ci: ciCycle[(n - 41) % ciCycle.length], url: `https://github.com/ornek/gitatlas-revrev/pull/${n}` }]);
     n++;
   }
   const first = [...prs.keys()][0];
@@ -254,7 +254,7 @@ function renderMini(): void {
   renderTreemap(mapEl!, fileStats, {
     compact: true,
     root: '',
-    repoName: 'rewiewrev',
+    repoName: 'gitatlas-revrev',
     highlight: touched,
     onSelect: (p) => (logEl!.textContent = `mini onSelect(${p})`),
     onOpen: () => undefined,

@@ -129,7 +129,7 @@ describe('gerçek geçici repo', () => {
     );
 
   beforeAll(async () => {
-    dir = await mkdtemp(path.join(os.tmpdir(), 'rewiewrev-log-'));
+    dir = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-log-'));
     await git('init', '-q', '-b', 'main');
     await mkdir(path.join(dir, 'src', 'old'), { recursive: true });
     await writeFile(path.join(dir, 'a.txt'), '1\n2\n3\n');
@@ -195,7 +195,7 @@ describe('gerçek geçici repo', () => {
   });
 
   it('repo olmayan klasörde notRepo hatası', async () => {
-    const plain = await mkdtemp(path.join(os.tmpdir(), 'rewiewrev-norepo-'));
+    const plain = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-norepo-'));
     try {
       await expect(runGit(['-c', 'safe.directory=*', 'status'], plain)).rejects.toMatchObject({ code: 'notRepo' });
       await expect(runGit(['status'], plain)).rejects.toBeInstanceOf(GitError);
@@ -218,7 +218,7 @@ describe('.mailmap ve setGitPath', () => {
   };
 
   beforeAll(async () => {
-    dir = await mkdtemp(path.join(os.tmpdir(), 'rewiewrev-mailmap-'));
+    dir = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-mailmap-'));
     await runGit(['init', '-q'], dir);
     await commitAs('Ali Veli', 'ali@is.example.com', 'a.txt');
     await commitAs('ali', 'ali@ev.example.com', 'b.txt');

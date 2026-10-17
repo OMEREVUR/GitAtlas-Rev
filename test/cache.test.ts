@@ -29,7 +29,7 @@ const snapshot: RepoSnapshot = {
 let dir: string;
 
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'rewiewrev-cache-'));
+  dir = await mkdtemp(join(tmpdir(), 'gitatlas-revrev-cache-'));
 });
 
 afterEach(async () => {

@@ -326,7 +326,7 @@ describe('getOriginUrl + GitHubLayer (vscode taklidi)', () => {
   };
 
   beforeAll(async () => {
-    tmp = await mkdtemp(path.join(os.tmpdir(), 'rewiewrev-gh-'));
+    tmp = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-gh-'));
     repo = path.join(tmp, 'repo');
     await runGit(['init', '-q', repo], tmp);
   });
@@ -445,7 +445,7 @@ describe('getOriginUrl + GitHubLayer (vscode taklidi)', () => {
     await l.setRoot(repo);
     l.dismiss();
     expect(l.data.status).toEqual({ state: 'off', dismissed: true });
-    expect(ws.store.get('rewiewrev.github.dismissed')).toBe(true);
+    expect(ws.store.get('gitatlas-revrev.github.dismissed')).toBe(true);
     const l2 = newLayer(ws);
     await l2.setRoot(repo);
     expect(l2.data.status).toEqual({ state: 'off', dismissed: true });

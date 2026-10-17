@@ -48,7 +48,7 @@ const PR_FIELDS = `
 
 /** Panel sorgusu; branch verilmezse mevcut branch'in PR'ı sorulmaz. */
 export function prPanelQuery(withBranch: boolean): string {
-  return `query RewiewRevPrPanel($owner: String!, $name: String!, $mineQuery: String!, $reviewQuery: String!${withBranch ? ', $branch: String!' : ''}) {
+  return `query GitAtlasRevRevPrPanel($owner: String!, $name: String!, $mineQuery: String!, $reviewQuery: String!${withBranch ? ', $branch: String!' : ''}) {
   viewer { login }
   repository(owner: $owner, name: $name) {
     defaultBranchRef { name }
@@ -213,7 +213,7 @@ async function rest(token: string, method: string, url: string, body: unknown, f
         Accept: 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
         Authorization: `Bearer ${token}`,
-        'User-Agent': 'rewiewrev-vscode',
+        'User-Agent': 'gitatlas-revrev-vscode',
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),

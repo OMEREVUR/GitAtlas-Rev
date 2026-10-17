@@ -29,7 +29,7 @@ describe('listRefs + graphLogArgs (gerçek repo)', { timeout: 30_000 }, () => {
   const h: Record<string, string> = {};
 
   beforeAll(async () => {
-    tmp = await mkdtemp(path.join(os.tmpdir(), 'rewiewrev-refs-'));
+    tmp = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-refs-'));
     const origin = path.join(tmp, 'origin.git');
     work = path.join(tmp, 'work');
     await runGit(['init', '-q', '--bare', origin], tmp);
@@ -164,7 +164,7 @@ describe('listRefs + graphLogArgs (gerçek repo)', { timeout: 30_000 }, () => {
     const empty = path.join(tmp, 'empty');
     await runGit(['init', '-q', empty], tmp);
     expect(await listRefs(empty)).toEqual([]);
-    const plain = await mkdtemp(path.join(os.tmpdir(), 'rewiewrev-norepo-'));
+    const plain = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-norepo-'));
     try {
       await expect(listRefs(plain)).rejects.toMatchObject({ code: 'notRepo' });
     } finally {

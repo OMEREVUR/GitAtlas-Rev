@@ -115,7 +115,7 @@ describe.skipIf(!bash)('loadGraph (fixture reposu)', () => {
   });
 
   it('commit\'siz repo: boş graph, hata yok', async () => {
-    const empty = await mkdtemp(join(tmpdir(), 'rewiewrev-graph-empty-'));
+    const empty = await mkdtemp(join(tmpdir(), 'gitatlas-revrev-graph-empty-'));
     temps.push(empty);
     git(empty, 'init', '-q');
     const g = await loadGraph(empty, { limit: 500 });
@@ -128,7 +128,7 @@ describe.skipIf(!bash)('loadGraph (fixture reposu)', () => {
   });
 
   it('repo olmayan klasör → GitError notRepo', async () => {
-    const plain = await mkdtemp(join(tmpdir(), 'rewiewrev-graph-plain-'));
+    const plain = await mkdtemp(join(tmpdir(), 'gitatlas-revrev-graph-plain-'));
     temps.push(plain);
     await expect(loadGraph(plain, { limit: 10 })).rejects.toMatchObject({ name: 'GitError', code: 'notRepo' });
   });

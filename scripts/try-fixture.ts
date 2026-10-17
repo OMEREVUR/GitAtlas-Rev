@@ -11,7 +11,7 @@ import type { TimeRange } from '../src/types';
 async function main(): Promise<void> {
   const root = process.argv[2];
   if (!root) throw new Error('Repo yolu ver: npm run try-fixture -- <repo-yolu>');
-  const storageDir = mkdtempSync(join(tmpdir(), 'rewiewrev-try-'));
+  const storageDir = mkdtempSync(join(tmpdir(), 'gitatlas-revrev-try-'));
   try {
     const t0 = performance.now();
     const snap = await loadSnapshot(root, storageDir, () => undefined);

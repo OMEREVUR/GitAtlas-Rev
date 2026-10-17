@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# RewiewRev fixture reposu: geçici klasörde belirlenimci bir git reposu kurar ve
+# GitAtlas-RevRev fixture reposu: geçici klasörde belirlenimci bir git reposu kurar ve
 # stdout'a YALNIZCA repo yolunu basar (Windows'ta "C:/..." biçiminde).
 #
 # Tarihler betiğin çalıştığı andan (NOW) geriye saat cinsinden sabit ofsetlerle verilir.
@@ -36,7 +36,7 @@
 set -euo pipefail
 
 NOW=$(date +%s)
-REPO=$(mktemp -d "${TMPDIR:-/tmp}/rewiewrev-fixture.XXXXXX")
+REPO=$(mktemp -d "${TMPDIR:-/tmp}/gitatlas-revrev-fixture.XXXXXX")
 cd "$REPO"
 
 git init -q -b main
@@ -80,7 +80,7 @@ D=24 # saat/gün
 
 # --- 90..31 gün önce -------------------------------------------------------
 line README.md "# Fixture"
-line README.md "RewiewRev deneme reposu."
+line README.md "GitAtlas-RevRev deneme reposu."
 line src/extension.ts "export function activate() {}"
 line package.json '{ "name": "fixture" }'
 line .mailmap "Zeynep Kaya <zeynep@example.com> <zkaya@eski.example.com>"

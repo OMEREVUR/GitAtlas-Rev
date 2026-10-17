@@ -149,7 +149,7 @@ function render(): void {
   const t0 = performance.now();
   renderTreemap(mapEl!, files, {
     root: state.root,
-    repoName: 'rewiewrev',
+    repoName: 'gitatlas-revrev',
     highlight: state.highlight,
     prCounts: params.get('pr') === '1' ? new Map([['src/git/logParser.ts', 3], ['src/webview/treemap.ts', 2], ['src/model/fileStats.ts', 1], ['src/panel/provider.ts', 1], ['README.md', 2], ['src/git/numstat.ts', 1]]) : undefined,
     prStale: params.get('stale') === '1',

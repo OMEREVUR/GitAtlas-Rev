@@ -1,6 +1,6 @@
 {
-  "name": "rewiewrev",
-  "displayName": "RewiewRev",
+  "name": "gitatlas-revrev",
+  "displayName": "GitAtlas-RevRev",
   "description": "Repoyu tek bakışta okutan harita: dosyalar satır sayısına göre boyutlanır, değişim sıklığına göre renklenir.",
   "version": "0.1.0",
   "publisher": "OmerCayir43",
@@ -17,196 +17,196 @@
   "main": "./dist/extension.js",
   "activationEvents": [
     "onStartupFinished",
-    "onWebviewPanel:rewiewrev.editor"
+    "onWebviewPanel:gitatlas-revrev.editor"
   ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "rewiewrev",
-          "title": "RewiewRev",
+          "id": "gitatlas-revrev",
+          "title": "GitAtlas-RevRev",
           "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "rewiewrev": [
+      "gitatlas-revrev": [
         {
           "type": "webview",
-          "id": "rewiewrev.panel",
+          "id": "gitatlas-revrev.panel",
           "name": "Harita"
         },
         {
-          "id": "rewiewrev.branches",
+          "id": "gitatlas-revrev.branches",
           "name": "Branch'ler"
         }
       ]
     },
     "commands": [
       {
-        "command": "rewiewrev.refresh",
+        "command": "gitatlas-revrev.refresh",
         "title": "Yenile",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(refresh)"
       },
       {
-        "command": "rewiewrev.openInEditor",
+        "command": "gitatlas-revrev.openInEditor",
         "title": "Haritayı düzenleyicide aç",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(open-preview)"
       },
       {
-        "command": "rewiewrev.refreshBranches",
+        "command": "gitatlas-revrev.refreshBranches",
         "title": "Branch'leri yenile",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(refresh)"
       },
       {
-        "command": "rewiewrev.github.connect",
+        "command": "gitatlas-revrev.github.connect",
         "title": "GitHub ile bağlan",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(github)"
       },
       {
-        "command": "rewiewrev.github.refresh",
+        "command": "gitatlas-revrev.github.refresh",
         "title": "GitHub verisini yenile",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(sync)"
       },
       {
-        "command": "rewiewrev.git.fetch",
+        "command": "gitatlas-revrev.git.fetch",
         "title": "Getir (fetch)",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(cloud-download)"
       },
       {
-        "command": "rewiewrev.git.pull",
+        "command": "gitatlas-revrev.git.pull",
         "title": "Çek (pull)",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(arrow-down)"
       },
       {
-        "command": "rewiewrev.git.push",
+        "command": "gitatlas-revrev.git.push",
         "title": "Gönder (push)",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(arrow-up)"
       },
       {
-        "command": "rewiewrev.git.commit",
+        "command": "gitatlas-revrev.git.commit",
         "title": "Commit oluştur",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(check)"
       },
       {
-        "command": "rewiewrev.branch.checkout",
+        "command": "gitatlas-revrev.branch.checkout",
         "title": "Bu branch'e geç",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(check)"
       },
       {
-        "command": "rewiewrev.branch.create",
+        "command": "gitatlas-revrev.branch.create",
         "title": "Yeni branch…",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(git-branch-create)"
       },
       {
-        "command": "rewiewrev.branch.merge",
+        "command": "gitatlas-revrev.branch.merge",
         "title": "Mevcut branch'e birleştir (merge)",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(git-merge)"
       },
       {
-        "command": "rewiewrev.branch.rename",
+        "command": "gitatlas-revrev.branch.rename",
         "title": "Yeniden adlandır…",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(edit)"
       },
       {
-        "command": "rewiewrev.branch.delete",
+        "command": "gitatlas-revrev.branch.delete",
         "title": "Sil…",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(trash)"
       },
       {
-        "command": "rewiewrev.showGitOutput",
+        "command": "gitatlas-revrev.showGitOutput",
         "title": "Git çıktısını göster",
-        "category": "RewiewRev",
+        "category": "GitAtlas-RevRev",
         "icon": "$(output)"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "rewiewrev.refresh",
-          "when": "view == rewiewrev.panel",
+          "command": "gitatlas-revrev.refresh",
+          "when": "view == gitatlas-revrev.panel",
           "group": "navigation"
         },
         {
-          "command": "rewiewrev.openInEditor",
-          "when": "view == rewiewrev.panel",
+          "command": "gitatlas-revrev.openInEditor",
+          "when": "view == gitatlas-revrev.panel",
           "group": "navigation"
         },
         {
-          "command": "rewiewrev.refreshBranches",
-          "when": "view == rewiewrev.branches",
+          "command": "gitatlas-revrev.refreshBranches",
+          "when": "view == gitatlas-revrev.branches",
           "group": "navigation"
         },
         {
-          "command": "rewiewrev.branch.create",
-          "when": "view == rewiewrev.branches",
+          "command": "gitatlas-revrev.branch.create",
+          "when": "view == gitatlas-revrev.branches",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
-          "command": "rewiewrev.branch.checkout",
-          "when": "view == rewiewrev.branches && viewItem =~ /^branch-(local|remote)$/",
+          "command": "gitatlas-revrev.branch.checkout",
+          "when": "view == gitatlas-revrev.branches && viewItem =~ /^branch-(local|remote)$/",
           "group": "1_branch@1"
         },
         {
-          "command": "rewiewrev.branch.create",
-          "when": "view == rewiewrev.branches && viewItem =~ /^branch-/",
+          "command": "gitatlas-revrev.branch.create",
+          "when": "view == gitatlas-revrev.branches && viewItem =~ /^branch-/",
           "group": "1_branch@2"
         },
         {
-          "command": "rewiewrev.branch.merge",
-          "when": "view == rewiewrev.branches && viewItem =~ /^branch-(local|remote)$/",
+          "command": "gitatlas-revrev.branch.merge",
+          "when": "view == gitatlas-revrev.branches && viewItem =~ /^branch-(local|remote)$/",
           "group": "2_change@1"
         },
         {
-          "command": "rewiewrev.branch.rename",
-          "when": "view == rewiewrev.branches && viewItem =~ /^branch-local/",
+          "command": "gitatlas-revrev.branch.rename",
+          "when": "view == gitatlas-revrev.branches && viewItem =~ /^branch-local/",
           "group": "2_change@2"
         },
         {
-          "command": "rewiewrev.branch.delete",
-          "when": "view == rewiewrev.branches && viewItem == branch-local",
+          "command": "gitatlas-revrev.branch.delete",
+          "when": "view == gitatlas-revrev.branches && viewItem == branch-local",
           "group": "3_danger@1"
         }
       ],
       "commandPalette": [
         {
-          "command": "rewiewrev.branch.checkout",
+          "command": "gitatlas-revrev.branch.checkout",
           "when": "false"
         },
         {
-          "command": "rewiewrev.branch.merge",
+          "command": "gitatlas-revrev.branch.merge",
           "when": "false"
         },
         {
-          "command": "rewiewrev.branch.rename",
+          "command": "gitatlas-revrev.branch.rename",
           "when": "false"
         },
         {
-          "command": "rewiewrev.branch.delete",
+          "command": "gitatlas-revrev.branch.delete",
           "when": "false"
         }
       ]
     },
     "configuration": {
-      "title": "RewiewRev",
+      "title": "GitAtlas-RevRev",
       "properties": {
-        "rewiewrev.ignore": {
+        "gitatlas-revrev.ignore": {
           "type": "array",
           "items": {
             "type": "string"
@@ -214,7 +214,7 @@
           "default": [],
           "markdownDescription": "Haritadan ve rozetlerden hariç tutulacak ek glob desenleri (ör. `src/generated/**`). Varsayılan olarak `node_modules`, `dist`, `out`, `build`, `*.lock`, `package-lock.json` ve `*.min.js` zaten hariçtir."
         },
-        "rewiewrev.defaultRange": {
+        "gitatlas-revrev.defaultRange": {
           "type": "string",
           "enum": [
             "7d",
@@ -229,14 +229,14 @@
           "default": "30d",
           "markdownDescription": "Panel açıldığında seçili olan zaman aralığı."
         },
-        "rewiewrev.graph.initialCommits": {
+        "gitatlas-revrev.graph.initialCommits": {
           "type": "number",
           "default": 500,
           "minimum": 100,
           "maximum": 5000,
           "markdownDescription": "Graph'ta ilk yüklenecek commit sayısı. Daha eskileri kaydırdıkça yüklenir."
         },
-        "rewiewrev.explorer.badges": {
+        "gitatlas-revrev.explorer.badges": {
           "type": "string",
           "enum": [
             "hot",
@@ -256,24 +256,24 @@
           "default": "hot",
           "markdownDescription": "Gezgin'deki dosya adlarının yanında hangi rozetlerin görüneceği. GitHub bağlıyken aynı dosyaya 2+ açık PR dokunuyorsa PR sayısı ısının önüne geçer."
         },
-        "rewiewrev.github.enabled": {
+        "gitatlas-revrev.github.enabled": {
           "type": "boolean",
           "default": true,
           "markdownDescription": "GitHub katmanı (açık PR'lar, çakışma uyarısı, CI). Token gerekmez; VS Code'daki GitHub oturumu kullanılır."
         },
-        "rewiewrev.github.refreshInterval": {
+        "gitatlas-revrev.github.refreshInterval": {
           "type": "number",
           "default": 2,
           "minimum": 1,
           "maximum": 60,
           "markdownDescription": "GitHub verisinin yenilenme aralığı, dakika. Sadece panel açıkken yenilenir; istek limiti azalınca otomatik uzar."
         },
-        "rewiewrev.git.path": {
+        "gitatlas-revrev.git.path": {
           "type": "string",
           "default": "",
           "markdownDescription": "Git yolu. Boş bırakılırsa VS Code'un `git.path` ayarı, o da boşsa PATH'teki `git` kullanılır."
         },
-        "rewiewrev.git.pullStrategy": {
+        "gitatlas-revrev.git.pullStrategy": {
           "type": "string",
           "enum": [
             "ask",

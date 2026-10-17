@@ -134,8 +134,8 @@ function fakeMiniMap(host: HTMLElement, hot: Set<string>): void {
 }
 
 const FAKE_PRS: PullRequest[] = [
-  { number: 41, title: 'Graph görünümü', url: 'https://github.com/ornek/rewiewrev/pull/41', author: 'mert', headRef: 'feature/graph', baseRef: 'main', isDraft: false, updatedAt: NOW, files: [], ci: 'success' },
-  { number: 42, title: 'main üzerinde sürüm hazırlığı', url: 'https://github.com/ornek/rewiewrev/pull/42', author: 'deniz', headRef: 'main', baseRef: 'release', isDraft: true, updatedAt: NOW, files: [], ci: 'pending' },
+  { number: 41, title: 'Graph görünümü', url: 'https://github.com/ornek/gitatlas-revrev/pull/41', author: 'mert', headRef: 'feature/graph', baseRef: 'main', isDraft: false, updatedAt: NOW, files: [], ci: 'success' },
+  { number: 42, title: 'main üzerinde sürüm hazırlığı', url: 'https://github.com/ornek/gitatlas-revrev/pull/42', author: 'deniz', headRef: 'main', baseRef: 'release', isDraft: true, updatedAt: NOW, files: [], ci: 'pending' },
 ];
 
 // ---------- sayfa ----------

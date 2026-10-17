@@ -62,7 +62,7 @@ export interface RunGitOptions {
 
 let gitPath = 'git';
 
-/** rewiewrev.git.path; boş/undefined → PATH'teki 'git'. */
+/** gitatlas-revrev.git.path; boş/undefined → PATH'teki 'git'. */
 export function setGitPath(path: string | undefined): void {
   gitPath = path?.trim() || 'git';
 }
@@ -101,7 +101,7 @@ export function runGit(args: string[], cwd: string, opts: RunGitOptions = {}): P
           const message =
             gitPath === 'git'
               ? 'Git bulunamadı. Git kurulu ve PATH üzerinde olmalı.'
-              : `Git bulunamadı: ${gitPath}. rewiewrev.git.path ayarını kontrol edin.`;
+              : `Git bulunamadı: ${gitPath}. gitatlas-revrev.git.path ayarını kontrol edin.`;
           reject(new GitError('notFound', message, stderr, stdout));
           return;
         }

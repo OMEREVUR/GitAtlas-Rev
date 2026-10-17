@@ -28,7 +28,7 @@ function errorSpec(code: ErrorCode, message: string): ErrorSpec {
       return {
         icon: 'folder',
         title: 'Bu klasör bir git reposu değil',
-        text: ['RewiewRev haritayı git geçmişinden çizer. Bu klasörde ', { code: '.git' }, ' bulunamadı.'],
+        text: ['GitAtlas-RevRev haritayı git geçmişinden çizer. Bu klasörde ', { code: '.git' }, ' bulunamadı.'],
         actions: [
           { label: 'Repoyu başlat', primary: true, msg: cmd('initRepo') },
           { label: 'Başka klasör aç', primary: false, msg: cmd('openFolder') },
@@ -47,7 +47,7 @@ function errorSpec(code: ErrorCode, message: string): ErrorSpec {
         danger: true,
         title: 'Git bulunamadı',
         text: [
-          'RewiewRev ',
+          'GitAtlas-RevRev ',
           { code: 'git' },
           ' komutunu çalıştıramadı. Git kurulu değilse indir; kuruluysa yolunu ',
           { code: 'git.path' },

@@ -299,7 +299,7 @@ describe.skipIf(!bash)('GitHubOpsService (fixture + sahte GitHub API)', () => {
 
     // Uzakta feature/graph'a yeni bir commit gelsin; yerel feature/graph var → switch + merge --ff-only
     git(repo, 'push', '-q', 'origin', 'feature/graph');
-    const dir = await mkdtemp(join(tmpdir(), 'rewiewrev-ghops-'));
+    const dir = await mkdtemp(join(tmpdir(), 'gitatlas-revrev-ghops-'));
     temps.push(dir);
     const other = join(dir, 'other');
     git(dir, 'clone', '-q', '-b', 'feature/graph', originOf(repo), other);
@@ -346,7 +346,7 @@ describe.skipIf(!bash)('GitHubOpsService (fixture + sahte GitHub API)', () => {
       commands: [
         'git fetch origin +refs/pull/7/head:refs/remotes/origin/pr/7',
         'git switch --no-track -c pr/7 origin/pr/7',
-        'git stash push -u -m "RewiewRev: pr/7 geçişinden önce"',
+        'git stash push -u -m "GitAtlas-RevRev: pr/7 geçişinden önce"',
         'git switch --no-track -c pr/7 origin/pr/7',
       ],
     });

@@ -19,7 +19,7 @@ export type ExtensionToWebview =
       files: FileStat[];
       /** Aralıktan bağımsız, en yeniden en eskiye, en fazla 1000 commit. */
       commits: CommitSummary[];
-      /** rewiewrev.graph.initialCommits ayarı (graph sayfa boyutu). */
+      /** gitatlas-revrev.graph.initialCommits ayarı (graph sayfa boyutu). */
       graphPageSize?: number;
     }
   | { type: 'error'; code: ErrorCode; message: string }
@@ -71,7 +71,7 @@ export type WebviewToExtension =
   | { type: 'gitOp'; id: string; op: GitOpRequest }
   /** Değişikliğin diff'i: staged → HEAD ↔ index, değilse index ↔ çalışma ağacı. */
   | { type: 'openChange'; path: string; staged: boolean }
-  /** "RewiewRev Git" çıktı kanalını göster. */
+  /** "GitAtlas-RevRev Git" çıktı kanalını göster. */
   | { type: 'showOutput' }
   // v5 (2. tur)
   | { type: 'loadPrPanel' }

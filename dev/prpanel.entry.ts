@@ -20,7 +20,7 @@ const HOUR = 3600_000;
 const pr = (n: number, p: Partial<PullRequestDetail>): PullRequestDetail => ({
   number: n,
   title: `PR ${n}`,
-  url: `https://github.com/ornek/rewiewrev/pull/${n}`,
+  url: `https://github.com/ornek/gitatlas-revrev/pull/${n}`,
   author: 'mert',
   headRef: `feature/pr-${n}`,
   baseRef: 'main',
@@ -41,9 +41,9 @@ const pr = (n: number, p: Partial<PullRequestDetail>): PullRequestDetail => ({
 });
 
 const CHECKS: PullRequestDetail['checks'] = [
-  { name: 'build (ubuntu-latest)', state: 'success', url: 'https://github.com/ornek/rewiewrev/actions/runs/1' },
-  { name: 'build (windows-latest)', state: 'success', url: 'https://github.com/ornek/rewiewrev/actions/runs/2' },
-  { name: 'test', state: 'success', url: 'https://github.com/ornek/rewiewrev/actions/runs/3' },
+  { name: 'build (ubuntu-latest)', state: 'success', url: 'https://github.com/ornek/gitatlas-revrev/actions/runs/1' },
+  { name: 'build (windows-latest)', state: 'success', url: 'https://github.com/ornek/gitatlas-revrev/actions/runs/2' },
+  { name: 'test', state: 'success', url: 'https://github.com/ornek/gitatlas-revrev/actions/runs/3' },
   { name: 'lint', state: 'success' },
   { name: 'typecheck', state: 'success' },
   { name: 'e2e: Extension Development Host üzerinde çok uzun adlı bir check', state: 'success' },
@@ -79,7 +79,7 @@ let githubStatus: GitHubStatus | undefined =
   kase === 'noRemote'
     ? { state: 'noRemote' }
     : kase === 'notGitHub'
-      ? { state: 'notGitHub', remoteUrl: 'gitlab.com/ornek/rewiewrev' }
+      ? { state: 'notGitHub', remoteUrl: 'gitlab.com/ornek/gitatlas-revrev' }
       : kase === 'connecting'
         ? { state: 'connecting' }
         : kase === 'off'
@@ -116,7 +116,7 @@ switch (kase) {
       ci: 'failure',
       checks: [
         { name: 'build', state: 'success' },
-        { name: 'test', state: 'failure', url: 'https://github.com/ornek/rewiewrev/actions/runs/9' },
+        { name: 'test', state: 'failure', url: 'https://github.com/ornek/gitatlas-revrev/actions/runs/9' },
         { name: 'lint', state: 'pending' },
       ],
     });
@@ -143,8 +143,8 @@ const prResult = (ok: boolean): OpResult => ({
   kind: 'createPr',
   ok,
   commands: ['git push -u origin feature/yeni'],
-  message: ok ? '#24 açıldı: https://github.com/ornek/rewiewrev/pull/24' : 'PR açılamadı.',
-  detail: ok ? 'remote:\nremote: Create a pull request for feature/yeni on GitHub by visiting:\nremote:   https://github.com/ornek/rewiewrev/pull/new/feature/yeni' : undefined,
+  message: ok ? '#24 açıldı: https://github.com/ornek/gitatlas-revrev/pull/24' : 'PR açılamadı.',
+  detail: ok ? 'remote:\nremote: Create a pull request for feature/yeni on GitHub by visiting:\nremote:   https://github.com/ornek/gitatlas-revrev/pull/new/feature/yeni' : undefined,
 });
 if (params.get('notice') === 'running') notice = { running: { kind: 'createPr', commands: ['git push -u origin feature/yeni'] } };
 if (params.get('notice') === 'ok') notice = { last: prResult(true) };
@@ -317,7 +317,7 @@ if (selftest) {
     notice = { last: prResult(true) };
     render();
     const openBtn = [...noticeEl.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === "PR'ı aç");
-    check("sonuçta GitHub adresi → \"PR'ı aç\" düğmesi", openBtn !== undefined && openBtn.title === 'https://github.com/ornek/rewiewrev/pull/24');
+    check("sonuçta GitHub adresi → \"PR'ı aç\" düğmesi", openBtn !== undefined && openBtn.title === 'https://github.com/ornek/gitatlas-revrev/pull/24');
     log('selftest bitti');
   })();
 }

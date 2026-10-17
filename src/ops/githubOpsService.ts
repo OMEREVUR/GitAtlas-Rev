@@ -74,7 +74,7 @@ function gitMessage(err: unknown): string {
   if (err.code !== 'failed') return err.message;
   switch (err.kind) {
     case 'auth':
-      return "Kimlik doğrulama başarısız. Git kimlik bilgilerinizi ayarlayın ya da RewiewRev'de GitHub'a bağlanın.";
+      return "Kimlik doğrulama başarısız. Git kimlik bilgilerinizi ayarlayın ya da GitAtlas-RevRev'de GitHub'a bağlanın.";
     case 'network':
       return 'Uzak depoya ulaşılamadı. İnternet bağlantınızı ve uzak deponun adresini kontrol edin.';
     case 'dirtyTree':
@@ -256,7 +256,7 @@ export class GitHubOpsService {
             { id: 'cancel', label: 'İptal' },
           ]);
           if (choice !== 'stash') return cancelled();
-          await run.git(['stash', 'push', '-u', '-m', `RewiewRev: ${local} geçişinden önce`]);
+          await run.git(['stash', 'push', '-u', '-m', `GitAtlas-RevRev: ${local} geçişinden önce`]);
           stashed = true;
           await run.git(cmd);
         }

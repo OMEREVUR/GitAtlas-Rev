@@ -8,7 +8,7 @@ import { GitHubProvider } from './provider';
 import { getOriginUrl, parseGitHubRemote, redactRemoteUrl } from './remote';
 
 const CACHE_VERSION = 1;
-const DISMISSED_KEY = 'rewiewrev.github.dismissed';
+const DISMISSED_KEY = 'gitatlas-revrev.github.dismissed';
 const SCOPES = ['repo'];
 const MAX_SLOW_INTERVAL_MIN = 30;
 
@@ -70,7 +70,7 @@ export class GitHubLayer implements vscode.Disposable {
         if (e.provider.id === 'github') void this.onSessionsChanged();
       }),
       vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('rewiewrev.github')) void this.onConfigChanged();
+        if (e.affectsConfiguration('gitatlas-revrev.github')) void this.onConfigChanged();
       }),
     );
   }
@@ -339,11 +339,11 @@ export class GitHubLayer implements vscode.Disposable {
   }
 
   private enabled(): boolean {
-    return vscode.workspace.getConfiguration('rewiewrev').get<boolean>('github.enabled', true) !== false;
+    return vscode.workspace.getConfiguration('gitatlas-revrev').get<boolean>('github.enabled', true) !== false;
   }
 
   private baseIntervalMin(): number {
-    const v = vscode.workspace.getConfiguration('rewiewrev').get<number>('github.refreshInterval', 2);
+    const v = vscode.workspace.getConfiguration('gitatlas-revrev').get<number>('github.refreshInterval', 2);
     return typeof v === 'number' && Number.isFinite(v) ? Math.min(60, Math.max(1, v)) : 2;
   }
 

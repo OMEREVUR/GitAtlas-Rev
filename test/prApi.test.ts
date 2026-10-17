@@ -290,7 +290,7 @@ describe('prCheckoutCommands', () => {
     });
 
     it('fork ve aynı repo komutları gerçekten çalışır (pr/<n> checkout edilmişken de)', async () => {
-      tmp = await mkdtemp(path.join(os.tmpdir(), 'rewiewrev-prco-'));
+      tmp = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-prco-'));
       const CFG = ['-c', 'user.name=T', '-c', 'user.email=t@e.com', '-c', 'commit.gpgsign=false'];
       const origin = path.join(tmp, 'origin.git');
       const src = path.join(tmp, 'src');

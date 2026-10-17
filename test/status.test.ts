@@ -32,7 +32,7 @@ async function runOp(dir: string, cmds: string[][]): Promise<void> {
 }
 
 beforeAll(async () => {
-  tmp = await mkdtemp(path.join(os.tmpdir(), 'rewiewrev-status-'));
+  tmp = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-status-'));
 });
 
 afterAll(async () => {

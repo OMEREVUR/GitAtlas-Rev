@@ -70,7 +70,7 @@ describe.skipIf(!bash)('loadSnapshot (fixture reposu)', () => {
   beforeAll(async () => {
     repo = execFileSync(bash!, [SCRIPT], { encoding: 'utf8' }).trim();
     temps.push(repo);
-    storage = await mkdtemp(join(tmpdir(), 'rewiewrev-storage-'));
+    storage = await mkdtemp(join(tmpdir(), 'gitatlas-revrev-storage-'));
     temps.push(storage);
   }, 60_000);
 
@@ -157,14 +157,14 @@ describe.skipIf(!bash)('loadSnapshot (fixture reposu)', () => {
   });
 
   it('commit\'i olmayan repo → NoCommitsError', async () => {
-    const empty = await mkdtemp(join(tmpdir(), 'rewiewrev-empty-'));
+    const empty = await mkdtemp(join(tmpdir(), 'gitatlas-revrev-empty-'));
     temps.push(empty);
     git(empty, 'init', '-q');
     await expect(loadSnapshot(empty, storage, () => undefined)).rejects.toBeInstanceOf(NoCommitsError);
   });
 
   it('repo olmayan klasör → GitError notRepo', async () => {
-    const plain = await mkdtemp(join(tmpdir(), 'rewiewrev-plain-'));
+    const plain = await mkdtemp(join(tmpdir(), 'gitatlas-revrev-plain-'));
     temps.push(plain);
     await expect(loadSnapshot(plain, storage, () => undefined)).rejects.toMatchObject({
       name: 'GitError',

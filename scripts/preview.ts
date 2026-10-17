@@ -33,7 +33,7 @@ async function main(): Promise<void> {
 
   let sampleBranch: string | undefined;
   let hotPath: string | undefined;
-  const storageDir = mkdtempSync(join(tmpdir(), 'rewiewrev-preview-'));
+  const storageDir = mkdtempSync(join(tmpdir(), 'gitatlas-revrev-preview-'));
   try {
     const snap = await loadSnapshot(resolve(repo), storageDir, () => undefined);
     const now = Date.now();

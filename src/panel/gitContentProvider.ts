@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { GitError, runGit } from '../git/gitRunner';
 
-export const GIT_SCHEME = 'rewiewrev-git';
+export const GIT_SCHEME = 'gitatlas-revrev-git';
 /** makeGitUri'de index'teki içerik için özel ref. */
 export const INDEX_REF = ':index';
 

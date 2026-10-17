@@ -81,9 +81,9 @@ let notice: OpNoticeState = {};
 let seq = 0;
 
 const DETAIL = [
-  'To github.com:ornek/rewiewrev.git',
+  'To github.com:ornek/gitatlas-revrev.git',
   ' ! [rejected]        feature/degisiklikler -> feature/degisiklikler (fetch first)',
-  "error: failed to push some refs to 'github.com:ornek/rewiewrev.git'",
+  "error: failed to push some refs to 'github.com:ornek/gitatlas-revrev.git'",
   'hint: Updates were rejected because the remote contains work that you do not',
   'hint: have locally. This is usually caused by another repository pushing to',
   'hint: the same ref. If you want to integrate the remote changes, use',

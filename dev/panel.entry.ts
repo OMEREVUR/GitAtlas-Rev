@@ -133,9 +133,9 @@ function post(msg: WebviewToExtension): void {
 
 const prCount = Number(params.get('pr') ?? 0);
 const FAKE_PRS: PullRequest[] = [
-  { number: 41, title: 'Graph: merge noktaları ve uzun bir başlığın kart içinde kesilmesi', url: 'https://github.com/ornek/rewiewrev/pull/41', author: 'mert', headRef: 'feature/graph', baseRef: 'main', isDraft: false, updatedAt: NOW - 3 * HOUR, files: [], ci: 'success' },
-  { number: 44, title: 'logParser: rename takibi', url: 'https://github.com/ornek/rewiewrev/pull/44', author: 'ayse', headRef: 'fix/rename', baseRef: 'main', isDraft: true, updatedAt: NOW - 20 * HOUR, files: [], ci: 'failure' },
-  { number: 47, title: 'Cache sürümü', url: 'https://github.com/ornek/rewiewrev/pull/47', author: 'can', headRef: 'cache-v2', baseRef: 'main', isDraft: false, updatedAt: NOW - 30 * HOUR, files: [], ci: 'pending' },
+  { number: 41, title: 'Graph: merge noktaları ve uzun bir başlığın kart içinde kesilmesi', url: 'https://github.com/ornek/gitatlas-revrev/pull/41', author: 'mert', headRef: 'feature/graph', baseRef: 'main', isDraft: false, updatedAt: NOW - 3 * HOUR, files: [], ci: 'success' },
+  { number: 44, title: 'logParser: rename takibi', url: 'https://github.com/ornek/gitatlas-revrev/pull/44', author: 'ayse', headRef: 'fix/rename', baseRef: 'main', isDraft: true, updatedAt: NOW - 20 * HOUR, files: [], ci: 'failure' },
+  { number: 47, title: 'Cache sürümü', url: 'https://github.com/ornek/gitatlas-revrev/pull/47', author: 'can', headRef: 'cache-v2', baseRef: 'main', isDraft: false, updatedAt: NOW - 30 * HOUR, files: [], ci: 'pending' },
 ];
 
 const stateParam = params.get('state');

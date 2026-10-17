@@ -257,7 +257,7 @@ export class BranchView implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
 
   constructor() {
-    this.treeView = vscode.window.createTreeView('rewiewrev.branches', {
+    this.treeView = vscode.window.createTreeView('gitatlas-revrev.branches', {
       treeDataProvider: this.provider,
       showCollapseAll: false,
     });
@@ -335,7 +335,7 @@ export function refFromCommandArg(arg: unknown): GitRef | undefined {
   return typeof ref.name === 'string' && (ref.kind === 'local' || ref.kind === 'remote') ? (node.ref as GitRef) : undefined;
 }
 
-/** runOp'u sağlayan taraf (RewiewRevPanelProvider). */
+/** runOp'u sağlayan taraf (GitAtlasRevRevPanelProvider). */
 export interface BranchOpsRunner {
   runOp(op: GitOpRequest): Promise<OpResult>;
 }
@@ -349,14 +349,14 @@ export interface BranchCommandHandlers {
 }
 
 /**
- * rewiewrev.branch.* komutlarının işleyicileri. Argüman ağaçtaki öğedir; paletten çağrılırsa
+ * gitatlas-revrev.branch.* komutlarının işleyicileri. Argüman ağaçtaki öğedir; paletten çağrılırsa
  * ağaçtaki seçim, o da yoksa QuickPick ile branch sorulur.
  */
 export function branchCommandHandlers(runner: BranchOpsRunner, view: BranchView): BranchCommandHandlers {
   const pick = async (title: string, filter: (r: GitRef) => boolean): Promise<GitRef | undefined> => {
     const candidates = view.branches.filter(filter);
     if (candidates.length === 0) {
-      void vscode.window.showInformationMessage('RewiewRev: uygun branch yok.');
+      void vscode.window.showInformationMessage('GitAtlas-RevRev: uygun branch yok.');
       return undefined;
     }
     const picked = await vscode.window.showQuickPick(
@@ -413,7 +413,7 @@ export function branchCommandHandlers(runner: BranchOpsRunner, view: BranchView)
     async merge(arg) {
       const current = head();
       if (!current) {
-        void vscode.window.showWarningMessage('RewiewRev: birleştirmek için bir branch\'te olmalısınız (HEAD ayrık).');
+        void vscode.window.showWarningMessage('GitAtlas-RevRev: birleştirmek için bir branch\'te olmalısınız (HEAD ayrık).');
         return;
       }
       const ref = resolve(arg, notHead) ?? (await pick(`"${current.name}" üzerine hangi branch birleştirilsin?`, notHead));

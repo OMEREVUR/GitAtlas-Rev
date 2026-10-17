@@ -42,7 +42,7 @@ import type {
 import { INDEX_REF, makeGitUri } from './gitContentProvider';
 import { createVscodeOpsUi } from './opsUi';
 import { WorkingTreeWatcher } from './workingTreeWatcher';
-import type { RewiewRevStatusBar } from './statusBar';
+import type { GitAtlasRevRevStatusBar } from './statusBar';
 
 const RANGES: readonly TimeRange[] = ['7d', '30d', 'all'];
 const ACTIONS: readonly StateAction[] = ['openFolder', 'initRepo', 'openScm', 'openGitPathSetting', 'downloadGit'];
@@ -362,10 +362,10 @@ export function mapError(err: unknown): { code: ErrorCode; message: string; shor
 
 class NoWorkspaceError extends Error {}
 
-export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscode.WebviewPanelSerializer, vscode.Disposable {
-  static readonly viewType = 'rewiewrev.panel';
-  /** Düzenleyici alanındaki sekme ("RewiewRev: Harita"). */
-  static readonly editorViewType = 'rewiewrev.editor';
+export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, vscode.WebviewPanelSerializer, vscode.Disposable {
+  static readonly viewType = 'gitatlas-revrev.panel';
+  /** Düzenleyici alanındaki sekme ("GitAtlas-RevRev: Harita"). */
+  static readonly editorViewType = 'gitatlas-revrev.editor';
 
   private readonly rootEmitter = new vscode.EventEmitter<string>();
   readonly onDidResolveRoot: vscode.Event<string> = this.rootEmitter.event;
@@ -433,7 +433,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   private opCounter = 0;
   /** Bu oturumda alınan token'lar; çıktı kanalında maskelenir. */
   private readonly secrets = new Set<string>();
-  private readonly output = vscode.window.createOutputChannel('RewiewRev Git');
+  private readonly output = vscode.window.createOutputChannel('GitAtlas-RevRev Git');
 
   private running: Promise<void> | undefined;
   private rerun = false;
@@ -444,7 +444,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     private readonly extensionUri: vscode.Uri,
     private readonly storageDir: string,
     private readonly decorations: HeatDecorationProvider,
-    private readonly statusBar: RewiewRevStatusBar,
+    private readonly statusBar: GitAtlasRevRevStatusBar,
     private readonly github: GitHubLayer,
   ) {
     setGitPath(getGitPath());
@@ -489,8 +489,8 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
       return;
     }
     const panel = vscode.window.createWebviewPanel(
-      RewiewRevPanelProvider.editorViewType,
-      'RewiewRev: Harita',
+      GitAtlasRevRevPanelProvider.editorViewType,
+      'GitAtlas-RevRev: Harita',
       vscode.ViewColumn.Active,
       { retainContextWhenHidden: true },
     );
@@ -682,20 +682,20 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
 
   /**
    * "GitHub ile bağlan": ayar kapalıysa ayarı, origin yoksa "GitHub'da yayınla"yı, origin GitHub değilse
-   * nedenini gösterir; aksi hâlde bağlanır. Webview düğmesi ve rewiewrev.github.connect komutu bunu kullanır.
+   * nedenini gösterir; aksi hâlde bağlanır. Webview düğmesi ve gitatlas-revrev.github.connect komutu bunu kullanır.
    */
   async connectGitHub(): Promise<void> {
-    const enabled = vscode.workspace.getConfiguration('rewiewrev').get<unknown>('github.enabled') !== false;
+    const enabled = vscode.workspace.getConfiguration('gitatlas-revrev').get<unknown>('github.enabled') !== false;
     const status = this.github.data.status;
     switch (githubConnectAction(status, enabled)) {
       case 'disabled': {
-        const choice = await vscode.window.showInformationMessage('RewiewRev: GitHub katmanı ayarlardan kapalı.', 'Ayarı aç');
-        if (choice) await vscode.commands.executeCommand('workbench.action.openSettings', 'rewiewrev.github.enabled');
+        const choice = await vscode.window.showInformationMessage('GitAtlas-RevRev: GitHub katmanı ayarlardan kapalı.', 'Ayarı aç');
+        if (choice) await vscode.commands.executeCommand('workbench.action.openSettings', 'gitatlas-revrev.github.enabled');
         return;
       }
       case 'publish-prompt': {
         const choice = await vscode.window.showInformationMessage(
-          "RewiewRev: Bu repo henüz GitHub'da değil (origin remote'u yok).",
+          "GitAtlas-RevRev: Bu repo henüz GitHub'da değil (origin remote'u yok).",
           "GitHub'da yayınla",
         );
         if (choice) await this.publishToGitHub();
@@ -704,7 +704,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
       case 'not-github': {
         const url = status.state === 'notGitHub' ? status.remoteUrl : '';
         void vscode.window.showInformationMessage(
-          `RewiewRev: origin bir GitHub reposu değil: ${redactSecrets(url)}. GitHub katmanı yalnızca github.com repolarıyla çalışır.`,
+          `GitAtlas-RevRev: origin bir GitHub reposu değil: ${redactSecrets(url)}. GitHub katmanı yalnızca github.com repolarıyla çalışır.`,
         );
         return;
       }
@@ -713,7 +713,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
           await this.github.connect(); // iptal edilirse durum 'off' kalır; bir şey göstermeyiz
         } catch (err) {
           const text = err instanceof Error ? err.message : String(err);
-          void vscode.window.showErrorMessage(`RewiewRev: GitHub'a bağlanılamadı: ${text}`);
+          void vscode.window.showErrorMessage(`GitAtlas-RevRev: GitHub'a bağlanılamadı: ${text}`);
         }
         return;
     }
@@ -725,7 +725,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     const cmd = commands.includes('github.publish') ? 'github.publish' : commands.includes('git.publish') ? 'git.publish' : undefined;
     if (!cmd) {
       void vscode.window.showErrorMessage(
-        "RewiewRev: GitHub'da yayınlama komutu bulunamadı. VS Code'un yerleşik Git ve GitHub eklentileri etkin olmalı.",
+        "GitAtlas-RevRev: GitHub'da yayınlama komutu bulunamadı. VS Code'un yerleşik Git ve GitHub eklentileri etkin olmalı.",
       );
       return;
     }
@@ -733,7 +733,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
       await vscode.commands.executeCommand(cmd);
     } catch (err) {
       const text = err instanceof Error ? err.message : String(err);
-      void vscode.window.showErrorMessage(`RewiewRev: GitHub'da yayınlanamadı: ${text}`);
+      void vscode.window.showErrorMessage(`GitAtlas-RevRev: GitHub'da yayınlanamadı: ${text}`);
     }
     await this.redetectRemote();
     void this.reload();
@@ -840,7 +840,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     this.output.appendLine(redactSecrets(line, [...this.secrets]));
   }
 
-  /** "RewiewRev Git" çıktı kanalını gösterir. */
+  /** "GitAtlas-RevRev Git" çıktı kanalını gösterir. */
   showGitOutput(): void {
     this.output.show(true);
   }
@@ -905,7 +905,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   /** Komutlardan gelen işlem başarısız olursa "Çıktıyı göster" düğmeli hata bildirimi. */
   private notifyFailure(result: OpResult): void {
     if (result.ok || result.cancelled) return;
-    void vscode.window.showErrorMessage(`RewiewRev: ${result.message}`, 'Çıktıyı göster').then((choice) => {
+    void vscode.window.showErrorMessage(`GitAtlas-RevRev: ${result.message}`, 'Çıktıyı göster').then((choice) => {
       if (choice) this.showGitOutput();
     });
   }
@@ -1093,7 +1093,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
 
   private reportDerivedError(what: string, err: unknown): void {
     const text = err instanceof Error ? err.message : String(err);
-    void vscode.window.showErrorMessage(`RewiewRev: ${what} hazırlanamadı: ${text}`);
+    void vscode.window.showErrorMessage(`GitAtlas-RevRev: ${what} hazırlanamadı: ${text}`);
   }
 
   // ---- branch'ler ve graph ----
@@ -1268,7 +1268,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
       }
     } catch (err) {
       const text = err instanceof Error ? err.message : String(err);
-      void vscode.window.showErrorMessage(`RewiewRev: ${text}`);
+      void vscode.window.showErrorMessage(`GitAtlas-RevRev: ${text}`);
     }
   }
 
@@ -1289,7 +1289,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     const match = (c: { hash: string }): boolean => c.hash === hash || c.hash.startsWith(hash);
     const commit = this.snapshot?.commits.find(match) ?? this.graph?.commits.find(match);
     if (!root || !commit) {
-      void vscode.window.showWarningMessage('RewiewRev: commit bulunamadı. Haritayı yenileyip tekrar deneyin.');
+      void vscode.window.showWarningMessage('GitAtlas-RevRev: commit bulunamadı. Haritayı yenileyip tekrar deneyin.');
       return;
     }
     const change = commit.files.find((f) => f.path === relPath || f.oldPath === relPath);
@@ -1343,7 +1343,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="${asset('codicons', 'codicon.css')}">
 <link rel="stylesheet" href="${asset('webview.css')}">
-<title>RewiewRev</title>
+<title>GitAtlas-RevRev</title>
 </head>
 <body>
 <div id="app"></div>

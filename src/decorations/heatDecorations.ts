@@ -26,8 +26,8 @@ export function computeHeatTiers(files: readonly Pick<FileStat, 'path' | 'change
 /** Rozet metni ve Türkçe tooltip. VS Code rozeti en fazla 2 karakter kabul eder. */
 export function heatBadge(tier: HeatTier, changes: number): { badge: string; tooltip: string } {
   return tier === 2
-    ? { badge: '●●', tooltip: `RewiewRev: çok sık değişiyor · ${changes} commit` }
-    : { badge: '●', tooltip: `RewiewRev: sık değişiyor · ${changes} commit` };
+    ? { badge: '●●', tooltip: `GitAtlas-RevRev: çok sık değişiyor · ${changes} commit` }
+    : { badge: '●', tooltip: `GitAtlas-RevRev: sık değişiyor · ${changes} commit` };
 }
 
 /** Bu kadar ve üstü açık PR aynı dosyaya dokunursa PR rozeti ısının önüne geçer. */
@@ -77,7 +77,7 @@ export function computeBadges(
     for (const f of files) {
       const level = levels.get(f.path) ?? 0;
       if (level > 0) {
-        out.set(f.path, { kind: 'heat', badge: String(level), tooltip: `RewiewRev: ısı ${level}/5 · ${f.changes} commit` });
+        out.set(f.path, { kind: 'heat', badge: String(level), tooltip: `GitAtlas-RevRev: ısı ${level}/5 · ${f.changes} commit` });
       }
     }
   }
@@ -89,7 +89,7 @@ export function computeBadges(
         out.set(f.path, {
           kind: 'pr',
           badge: prBadgeText(n),
-          tooltip: `RewiewRev: ${n} açık PR bu dosyaya dokunuyor (çakışma riski)`,
+          tooltip: `GitAtlas-RevRev: ${n} açık PR bu dosyaya dokunuyor (çakışma riski)`,
         });
       }
     }
@@ -108,7 +108,7 @@ export class HeatDecorationProvider implements vscode.FileDecorationProvider, vs
 
   private entries = new Map<string, { uri: vscode.Uri; decoration: vscode.FileDecoration }>();
 
-  /** Rozetleri yeniden kurar. Mod `rewiewrev.explorer.badges` ayarından okunur. */
+  /** Rozetleri yeniden kurar. Mod `gitatlas-revrev.explorer.badges` ayarından okunur. */
   update(files: FileStat[], root: string, prCounts?: Map<string, number>): void {
     const old = this.entries;
     const next = new Map<string, { uri: vscode.Uri; decoration: vscode.FileDecoration }>();

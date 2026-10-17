@@ -2,7 +2,7 @@ import type { BranchCi, CiState, PullRequest, RateLimitInfo } from '../types';
 
 export const GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql';
 
-export const PULLS_QUERY = `query RewiewRevPulls($owner: String!, $name: String!) {
+export const PULLS_QUERY = `query GitAtlasRevRevPulls($owner: String!, $name: String!) {
   repository(owner: $owner, name: $name) {
     pullRequests(states: OPEN, first: 50, orderBy: {field: UPDATED_AT, direction: DESC}) {
       nodes {
@@ -182,7 +182,7 @@ export async function graphqlRequest(
         Authorization: `bearer ${token}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'User-Agent': 'rewiewrev-vscode',
+        'User-Agent': 'gitatlas-revrev-vscode',
       },
       body: JSON.stringify({ query, variables }),
     });

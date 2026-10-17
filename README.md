@@ -1,6 +1,6 @@
-# RewiewRev
+# GitAtlas-RevRev
 
-Repoyu tek bakışta okutan harita. RewiewRev, VS Code'un yan panelinde reponu bir **treemap** olarak çizer: her kutu bir dosya, kutunun boyutu satır sayısı, rengi ne sık değiştiği (churn). Üstüne commit graph'ı, branch'ler, GitHub'daki açık PR'lar, zaman makinesi ve katkı paneli biner.
+Repoyu tek bakışta okutan harita. GitAtlas-RevRev, VS Code'un yan panelinde reponu bir **treemap** olarak çizer: her kutu bir dosya, kutunun boyutu satır sayısı, rengi ne sık değiştiği (churn). Üstüne commit graph'ı, branch'ler, GitHub'daki açık PR'lar, zaman makinesi ve katkı paneli biner.
 
 ## Özellikler
 
@@ -10,7 +10,7 @@ Repoyu tek bakışta okutan harita. RewiewRev, VS Code'un yan panelinde reponu b
 - Dosya kartı: son commit'ler, "Dosyayı aç", her commit için "Diff".
 - Son commit'ler akışı: bir commit'e tıklayınca dokunduğu dosyalar haritada yanar.
 - Explorer rozeti: sık değişen dosyaların yanında ●● / ●; panel kapalıyken de görünür.
-- Harita düzenleyici alanında sekme olarak da açılabilir: **RewiewRev: Haritayı düzenleyicide aç**.
+- Harita düzenleyici alanında sekme olarak da açılabilir: **GitAtlas-RevRev: Haritayı düzenleyicide aç**.
 
 **Graph ve branch'ler (v2)**
 - Commit graph: branch'ler renkli şeritler, merge'ler içi boş noktalar. Branch, yazar, tarih ve metin (mesaj, dosya, hash) filtresi; kaydırdıkça daha eski commit'ler yüklenir.
@@ -20,7 +20,7 @@ Repoyu tek bakışta okutan harita. RewiewRev, VS Code'un yan panelinde reponu b
 **GitHub katmanı (v3)**
 - **PR çakışma uyarısı:** aynı dosyaya 2+ açık PR dokunuyorsa kutu mor kesikli çerçeveyle işaretlenir; dosya kartında PR'lar listelenir; Explorer'da PR sayısı rozeti görünür.
 - PR ve CI rozetleri graph'ta ve Branch'ler panelinde.
-- Token gerekmez: VS Code'un yerleşik GitHub oturumu kullanılır (**RewiewRev: GitHub ile bağlan**). origin GitHub değilse katman sessizce kapalı kalır.
+- Token gerekmez: VS Code'un yerleşik GitHub oturumu kullanılır (**GitAtlas-RevRev: GitHub ile bağlan**). origin GitHub değilse katman sessizce kapalı kalır.
 
 **Zaman makinesi ve katkı paneli (v4)**
 - Zaman makinesi: kaydırıcıyla ya da oynat düğmesiyle repoyu geçmiş bir tarihte gör; ısı o tarihten önceki 7 günün değişimi, o tarihte henüz olmayan dosyalar kesik çerçeveli.
@@ -32,27 +32,27 @@ Repoyu tek bakışta okutan harita. RewiewRev, VS Code'un yan panelinde reponu b
 - Her sekmede eşitleme çubuğu: Getir, Çek, Gönder (yeni branch'te "Yayınla"). Pull önce fast-forward dener, olmazsa merge mi rebase mi diye sorar.
 - Branch'ler panelinde sağ tık: geç, yeni branch, birleştir, yeniden adlandır, sil. Saklananlar (stash): sakla, uygula, sil. Çakışmada "Çözüldü / Devam et / İptal et".
 - GitHub bağlıysa **Pull request'ler**: bu branch'ten PR aç (gerekirse önce gönderir), PR'ı birleştir (merge/squash/rebase), PR branch'ine geç; "Benim PR'larım" ve "Review bekleyenler".
-- Riskli her işlem önce onay ister; komutlar ve çıktıları "RewiewRev Git" çıktı kanalında.
+- Riskli her işlem önce onay ister; komutlar ve çıktıları "GitAtlas-RevRev Git" çıktı kanalında.
 
 ## Ayarlar
 
 | Ayar | Varsayılan | Açıklama |
 | --- | --- | --- |
-| `rewiewrev.ignore` | `[]` | Haritadan ve rozetlerden hariç tutulacak ek glob desenleri. `node_modules`, `dist`, `out`, `build`, `*.lock`, `package-lock.json`, `*.min.js` zaten hariç. |
-| `rewiewrev.defaultRange` | `30d` | Panel açıldığında seçili zaman aralığı. |
-| `rewiewrev.graph.initialCommits` | `500` | Graph'ta ilk yüklenecek commit sayısı. |
-| `rewiewrev.explorer.badges` | `hot` | Explorer rozetleri: `hot` (●● / ●), `all` (1–5 ısı), `off`. |
-| `rewiewrev.github.enabled` | `true` | GitHub katmanı. |
-| `rewiewrev.github.refreshInterval` | `2` | GitHub yenileme aralığı (dakika); yalnızca panel açıkken, limit azalınca otomatik uzar. |
-| `rewiewrev.git.pullStrategy` | `ask` | Pull fast-forward olmazsa: `ask` (sor), `merge`, `rebase`. |
-| `rewiewrev.git.path` | `""` | Git yolu; boşsa VS Code'un `git.path` ayarı ya da PATH'teki `git`. |
+| `gitatlas-revrev.ignore` | `[]` | Haritadan ve rozetlerden hariç tutulacak ek glob desenleri. `node_modules`, `dist`, `out`, `build`, `*.lock`, `package-lock.json`, `*.min.js` zaten hariç. |
+| `gitatlas-revrev.defaultRange` | `30d` | Panel açıldığında seçili zaman aralığı. |
+| `gitatlas-revrev.graph.initialCommits` | `500` | Graph'ta ilk yüklenecek commit sayısı. |
+| `gitatlas-revrev.explorer.badges` | `hot` | Explorer rozetleri: `hot` (●● / ●), `all` (1–5 ısı), `off`. |
+| `gitatlas-revrev.github.enabled` | `true` | GitHub katmanı. |
+| `gitatlas-revrev.github.refreshInterval` | `2` | GitHub yenileme aralığı (dakika); yalnızca panel açıkken, limit azalınca otomatik uzar. |
+| `gitatlas-revrev.git.pullStrategy` | `ask` | Pull fast-forward olmazsa: `ask` (sor), `merge`, `rebase`. |
+| `gitatlas-revrev.git.path` | `""` | Git yolu; boşsa VS Code'un `git.path` ayarı ya da PATH'teki `git`. |
 
 ## Gizlilik
 
-- RewiewRev'in **kendi sunucusu yoktur**; hiçbir veri dışarı gönderilmez.
+- GitAtlas-RevRev'in **kendi sunucusu yoktur**; hiçbir veri dışarı gönderilmez.
 - Git verisi yalnızca senin makinende, yerel `git` komutlarıyla okunur; Değişiklikler sekmesindeki işlemler de yerel `git` ile yapılır (pre-commit hook'ların çalışır); sonuçlar VS Code'un eklenti depolama alanında (globalStorage) repo başına bir dosyada cache'lenir.
 - Push/pull için önce git'in kendi kimlik bilgileri kullanılır; başarısız olursa ve GitHub'a bağlıysan bir kez VS Code GitHub oturumuyla denenir (token diske yazılmaz, loglanmaz).
-- GitHub katmanı yalnızca sen bağlandığında çalışır. İstekler doğrudan `api.github.com`'a, VS Code'un GitHub oturumuyla gider; token RewiewRev tarafından saklanmaz. Çekilen PR/CI özeti yine yalnızca yerelde cache'lenir.
+- GitHub katmanı yalnızca sen bağlandığında çalışır. İstekler doğrudan `api.github.com`'a, VS Code'un GitHub oturumuyla gider; token GitAtlas-RevRev tarafından saklanmaz. Çekilen PR/CI özeti yine yalnızca yerelde cache'lenir.
 
 ## Geliştirme
 

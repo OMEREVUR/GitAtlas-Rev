@@ -3,15 +3,15 @@ import { HeatDecorationProvider } from './decorations/heatDecorations';
 import { GitHubLayer } from './github/githubLayer';
 import { BranchView, branchCommandHandlers } from './panel/branchTree';
 import { GIT_SCHEME, GitContentProvider } from './panel/gitContentProvider';
-import { RewiewRevPanelProvider } from './panel/panelProvider';
-import { RewiewRevStatusBar } from './panel/statusBar';
+import { GitAtlasRevRevPanelProvider } from './panel/panelProvider';
+import { GitAtlasRevRevStatusBar } from './panel/statusBar';
 
 export function activate(context: vscode.ExtensionContext): void {
   const storageDir = context.globalStorageUri.fsPath;
   const decorations = new HeatDecorationProvider();
-  const statusBar = new RewiewRevStatusBar();
+  const statusBar = new GitAtlasRevRevStatusBar();
   const github = new GitHubLayer(storageDir, context.workspaceState);
-  const panel = new RewiewRevPanelProvider(context.extensionUri, storageDir, decorations, statusBar, github);
+  const panel = new GitAtlasRevRevPanelProvider(context.extensionUri, storageDir, decorations, statusBar, github);
   const branches = new BranchView();
 
   context.subscriptions.push(
@@ -22,16 +22,16 @@ export function activate(context: vscode.ExtensionContext): void {
     branches,
     vscode.window.registerFileDecorationProvider(decorations),
     vscode.workspace.registerTextDocumentContentProvider(GIT_SCHEME, new GitContentProvider()),
-    vscode.window.registerWebviewViewProvider(RewiewRevPanelProvider.viewType, panel, {
+    vscode.window.registerWebviewViewProvider(GitAtlasRevRevPanelProvider.viewType, panel, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
-    vscode.window.registerWebviewPanelSerializer(RewiewRevPanelProvider.editorViewType, panel),
-    vscode.commands.registerCommand('rewiewrev.refresh', () => panel.reload()),
-    vscode.commands.registerCommand('rewiewrev.openInEditor', () => panel.openInEditor()),
-    vscode.commands.registerCommand('rewiewrev.refreshBranches', () => panel.refreshRefs()),
+    vscode.window.registerWebviewPanelSerializer(GitAtlasRevRevPanelProvider.editorViewType, panel),
+    vscode.commands.registerCommand('gitatlas-revrev.refresh', () => panel.reload()),
+    vscode.commands.registerCommand('gitatlas-revrev.openInEditor', () => panel.openInEditor()),
+    vscode.commands.registerCommand('gitatlas-revrev.refreshBranches', () => panel.refreshRefs()),
     // Sebebe göre: bağlan / "GitHub'da yayınla" önerisi / GitHub dışı remote / ayar kapalı.
-    vscode.commands.registerCommand('rewiewrev.github.connect', () => panel.connectGitHub()),
-    vscode.commands.registerCommand('rewiewrev.github.refresh', () => github.refresh()),
+    vscode.commands.registerCommand('gitatlas-revrev.github.connect', () => panel.connectGitHub()),
+    vscode.commands.registerCommand('gitatlas-revrev.github.refresh', () => github.refresh()),
     // Branch'ler paneli ↔ harita/graph: seçilen branch'in dokunduğu dosyalar haritada yanar.
     panel.onDidLoadRefs((refs) => branches.update(refs, refs ? undefined : 'Git reposu bulunamadı.')),
     branches.onDidSelectBranch((ref) => panel.selectBranch(ref?.name)),
@@ -43,14 +43,14 @@ export function activate(context: vscode.ExtensionContext): void {
   // v5: git işlemleri komut paletinden ve Branch'ler ağacının sağ tık menüsünden.
   const branchCmds = branchCommandHandlers(panel, branches);
   context.subscriptions.push(
-    vscode.commands.registerCommand('rewiewrev.git.fetch', () => panel.runOp({ kind: 'fetch' })),
-    vscode.commands.registerCommand('rewiewrev.git.pull', () => panel.runOp({ kind: 'pull' })),
-    vscode.commands.registerCommand('rewiewrev.git.push', () => panel.runOp({ kind: 'push' })),
-    vscode.commands.registerCommand('rewiewrev.git.commit', async () => {
+    vscode.commands.registerCommand('gitatlas-revrev.git.fetch', () => panel.runOp({ kind: 'fetch' })),
+    vscode.commands.registerCommand('gitatlas-revrev.git.pull', () => panel.runOp({ kind: 'pull' })),
+    vscode.commands.registerCommand('gitatlas-revrev.git.push', () => panel.runOp({ kind: 'push' })),
+    vscode.commands.registerCommand('gitatlas-revrev.git.commit', async () => {
       const staged = panel.workingTreeStatus?.files.filter((f) => f.staged).length ?? 0;
       if (staged === 0) {
         void vscode.window.showInformationMessage(
-          "RewiewRev: Commit'e eklenmiş dosya yok. RewiewRev panelindeki Değişiklikler sekmesinden dosya seçin.",
+          "GitAtlas-RevRev: Commit'e eklenmiş dosya yok. GitAtlas-RevRev panelindeki Değişiklikler sekmesinden dosya seçin.",
         );
         return;
       }
@@ -62,12 +62,12 @@ export function activate(context: vscode.ExtensionContext): void {
       });
       if (message?.trim()) await panel.runOp({ kind: 'commit', message: message.trim(), amend: false, push: false });
     }),
-    vscode.commands.registerCommand('rewiewrev.showGitOutput', () => panel.showGitOutput()),
-    vscode.commands.registerCommand('rewiewrev.branch.checkout', (a: unknown) => branchCmds.checkout(a)),
-    vscode.commands.registerCommand('rewiewrev.branch.create', (a: unknown) => branchCmds.create(a)),
-    vscode.commands.registerCommand('rewiewrev.branch.merge', (a: unknown) => branchCmds.merge(a)),
-    vscode.commands.registerCommand('rewiewrev.branch.rename', (a: unknown) => branchCmds.rename(a)),
-    vscode.commands.registerCommand('rewiewrev.branch.delete', (a: unknown) => branchCmds.delete(a)),
+    vscode.commands.registerCommand('gitatlas-revrev.showGitOutput', () => panel.showGitOutput()),
+    vscode.commands.registerCommand('gitatlas-revrev.branch.checkout', (a: unknown) => branchCmds.checkout(a)),
+    vscode.commands.registerCommand('gitatlas-revrev.branch.create', (a: unknown) => branchCmds.create(a)),
+    vscode.commands.registerCommand('gitatlas-revrev.branch.merge', (a: unknown) => branchCmds.merge(a)),
+    vscode.commands.registerCommand('gitatlas-revrev.branch.rename', (a: unknown) => branchCmds.rename(a)),
+    vscode.commands.registerCommand('gitatlas-revrev.branch.delete', (a: unknown) => branchCmds.delete(a)),
   );
 
   // Eşitleme çubuğundaki branch adı ve "Yeni branch" düğmesi.

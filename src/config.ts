@@ -22,13 +22,13 @@ export const MAX_GRAPH_PAGE_SIZE = 5000;
 
 /** Ayarlarda izlenen anahtarlar; onDidChangeConfiguration'da kullanılır. */
 export const CONFIG_KEYS = {
-  ignore: 'rewiewrev.ignore',
-  defaultRange: 'rewiewrev.defaultRange',
-  graphPageSize: 'rewiewrev.graph.initialCommits',
-  badges: 'rewiewrev.explorer.badges',
-  gitPath: 'rewiewrev.git.path',
+  ignore: 'gitatlas-revrev.ignore',
+  defaultRange: 'gitatlas-revrev.defaultRange',
+  graphPageSize: 'gitatlas-revrev.graph.initialCommits',
+  badges: 'gitatlas-revrev.explorer.badges',
+  gitPath: 'gitatlas-revrev.git.path',
   vscodeGitPath: 'git.path',
-  pullStrategy: 'rewiewrev.git.pullStrategy',
+  pullStrategy: 'gitatlas-revrev.git.pullStrategy',
 } as const;
 
 // ---- saf doğrulayıcılar ----
@@ -66,7 +66,7 @@ function nonEmpty(v: unknown): string | undefined {
 }
 
 /**
- * Git yolu: önce `rewiewrev.git.path`, boşsa VS Code'un `git.path` ayarı
+ * Git yolu: önce `gitatlas-revrev.git.path`, boşsa VS Code'un `git.path` ayarı
  * (string ya da string[]; dizide ilk dolu eleman), o da boşsa undefined (PATH'teki git).
  */
 export function pickGitPath(own: unknown, vscodeGitPath: unknown): string | undefined {
@@ -85,10 +85,10 @@ export function pickGitPath(own: unknown, vscodeGitPath: unknown): string | unde
 // ---- ayar okuyucular ----
 
 function cfg(): vscode.WorkspaceConfiguration {
-  return vscode.workspace.getConfiguration('rewiewrev');
+  return vscode.workspace.getConfiguration('gitatlas-revrev');
 }
 
-/** DEFAULT_IGNORE + `rewiewrev.ignore`. */
+/** DEFAULT_IGNORE + `gitatlas-revrev.ignore`. */
 export function getIgnoreGlobs(): string[] {
   return [...DEFAULT_IGNORE, ...sanitizeIgnore(cfg().get<unknown>('ignore'))];
 }

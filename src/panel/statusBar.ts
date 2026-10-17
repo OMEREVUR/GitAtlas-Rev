@@ -34,33 +34,33 @@ export function githubStatusText(data: GitHubData | undefined, now: number): { s
   }
 }
 
-export class RewiewRevStatusBar implements vscode.Disposable {
+export class GitAtlasRevRevStatusBar implements vscode.Disposable {
   private readonly item: vscode.StatusBarItem;
   private baseText = '';
   private baseTooltip = '';
   private github: GitHubData | undefined;
 
   constructor() {
-    this.item = vscode.window.createStatusBarItem('rewiewrev.status', vscode.StatusBarAlignment.Left, 0);
-    this.item.name = 'RewiewRev';
-    this.item.command = { title: 'RewiewRev panelini aç', command: 'rewiewrev.panel.focus' };
+    this.item = vscode.window.createStatusBarItem('gitatlas-revrev.status', vscode.StatusBarAlignment.Left, 0);
+    this.item.name = 'GitAtlas-RevRev';
+    this.item.command = { title: 'GitAtlas-RevRev panelini aç', command: 'gitatlas-revrev.panel.focus' };
   }
 
   /** progress 0..1 */
   setScanning(progress: number): void {
     const pct = Math.round(Math.min(1, Math.max(0, progress)) * 100);
-    this.set(`$(sync~spin) RewiewRev: taranıyor %${pct}`, 'RewiewRev git geçmişini tarıyor');
+    this.set(`$(sync~spin) GitAtlas-RevRev: taranıyor %${pct}`, 'GitAtlas-RevRev git geçmişini tarıyor');
   }
 
   setReady(fileCount: number, fromCache: boolean): void {
     this.set(
-      `$(flame) RewiewRev: tarama tamam · ${fromCache ? 'cache güncel' : 'güncellendi'}`,
-      `RewiewRev: ${fileCount} dosya · haritayı açmak için tıklayın`,
+      `$(flame) GitAtlas-RevRev: tarama tamam · ${fromCache ? 'cache güncel' : 'güncellendi'}`,
+      `GitAtlas-RevRev: ${fileCount} dosya · haritayı açmak için tıklayın`,
     );
   }
 
   setError(text: string): void {
-    this.set(`$(warning) RewiewRev: ${text}`, `RewiewRev: ${text} · ayrıntı için tıklayın`);
+    this.set(`$(warning) GitAtlas-RevRev: ${text}`, `GitAtlas-RevRev: ${text} · ayrıntı için tıklayın`);
   }
 
   /** GitHub durumu; bağlıyken " · GitHub: N PR", eski veride " · GitHub: eski veri" eklenir. */

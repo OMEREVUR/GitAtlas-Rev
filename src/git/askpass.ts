@@ -28,7 +28,7 @@ const SH_SCRIPT = [
 /** push/pull için GIT_ASKPASS yedeği: kullanıcı adı "x-access-token", parola token. */
 export async function createAskpassEnv(token: string): Promise<{ env: Record<string, string>; dispose: () => Promise<void> }> {
   const win = process.platform === 'win32';
-  const file = path.join(os.tmpdir(), `rewiewrev-askpass-${randomBytes(8).toString('hex')}${win ? '.cmd' : '.sh'}`);
+  const file = path.join(os.tmpdir(), `gitatlas-revrev-askpass-${randomBytes(8).toString('hex')}${win ? '.cmd' : '.sh'}`);
   await writeFile(file, win ? CMD_SCRIPT : SH_SCRIPT, { encoding: 'utf8', mode: 0o700 });
   if (!win) await chmod(file, 0o700);
   return {

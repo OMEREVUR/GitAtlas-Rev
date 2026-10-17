@@ -112,7 +112,7 @@ function render(): void {
     at: state.at,
     steps,
     frame: timelineFrame(timeline, state.at, 7),
-    repoName: 'rewiewrev',
+    repoName: 'gitatlas-revrev',
     playing: state.timer !== undefined,
     onSeek: (at) => {
       stop();
