@@ -5,3 +5,4 @@ dev/screenshots/
 *.vsix
 .vitest-cache/
 TEST-PHOTOS/
+extension-versions/
