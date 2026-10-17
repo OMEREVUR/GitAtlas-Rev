@@ -4,7 +4,7 @@
 - GitAtlas-RevRev, bir git reposunu VS Code yan panelinde treemap olarak gösteren bir eklenti. Kutu boyutu = satır sayısı, renk = churn (seçili aralıkta kaç commit'te değiştiği). Commit akışında bir commit seçilince dokunduğu dosyalar haritada yanar; Explorer'da sıcaklık rozeti görünür.
 - Ürünün tek doğru kaynağı: `RewiewRev — Proje Raporu.md`. Bu dosya değiştirilmez, silinmez, taşınmaz.
 - Arayüz tasarımı: `rewiewrev-design/` (salt okunur referans). Önce `rewiewrev-design/README.md`, sonra ilgili `.dc.html` okunur. `support.js` ve tasarımlardaki `THEMES`/`rrTheme()` haritası eklentiye taşınmaz.
-- Ad yazımı "GitAtlas-RevRev", paket adı "gitatlas-revrev". Düzeltilmez, değiştirilmez.
+- Ad yazımı "GitAtlas-RevRev", paket adı "gitatlas-revrev" (Ekim 2026'da kullanıcının kararıyla "RewiewRev"den değiştirildi; rapor ve tasarım klasörü eski adı taşır). Yazım düzeltilmez, değiştirilmez. Komut, ayar ve görünüm kimlikleri `gitatlas-revrev.*`.
 
 ## Sürüm durumu
 - **v1 (MVP) tamam** (Ekim 2026, kullanıcı F5 ile denedi): yan panel + düzenleyici sekmesi (komut "GitAtlas-RevRev: Haritayı düzenleyicide aç"; ikisi aynı provider'dan beslenir), treemap (klasöre inme ile), zaman filtresi 7g/30g/tümü, dosya kartı, son commit'ler akışı, Explorer rozeti, globalStorage cache, ignore ayarı, durum ekranları, durum çubuğu.
