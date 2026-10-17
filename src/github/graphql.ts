@@ -65,7 +65,7 @@ function nodes(v: unknown): unknown[] {
   return Array.isArray(n) ? n : [];
 }
 
-function toCi(rollup: unknown): CiState {
+export function toCi(rollup: unknown): CiState {
   switch (rec(rollup).state) {
     case 'SUCCESS':
       return 'success';
@@ -80,7 +80,7 @@ function toCi(rollup: unknown): CiState {
   }
 }
 
-function parseRateLimit(v: unknown): RateLimitInfo | undefined {
+export function parseRateLimit(v: unknown): RateLimitInfo | undefined {
   const r = rec(v);
   if (typeof r.remaining !== 'number' || typeof r.limit !== 'number') return undefined;
   const resetAt = Date.parse(str(r.resetAt));
@@ -109,11 +109,8 @@ function parsePull(v: unknown): PullRequest | undefined {
   };
 }
 
-/** GraphQL yanıtını güvenli biçimde daraltır; "errors" varsa GitHubApiError fırlatır. */
-export function parsePullsResponse(json: unknown): PullsResult {
-  const root = rec(json);
-  const data = rec(root.data);
-  const rateLimit = parseRateLimit(data.rateLimit);
+/** GraphQL "errors" alanı varsa sınıflandırıp GitHubApiError fırlatır. */
+export function throwGraphqlErrors(root: Record<string, unknown>, rateLimit?: RateLimitInfo): void {
   if (Array.isArray(root.errors) && root.errors.length > 0) {
     const first = rec(root.errors[0]);
     const type = str(first.type);
@@ -123,6 +120,14 @@ export function parsePullsResponse(json: unknown): PullsResult {
     if (type === 'FORBIDDEN') throw new GitHubApiError('unauthorized', `GitHub erişimi reddedildi: ${message}`, rateLimit);
     throw new GitHubApiError('other', `GitHub API hatası: ${message}`, rateLimit);
   }
+}
+
+/** GraphQL yanıtını güvenli biçimde daraltır; "errors" varsa GitHubApiError fırlatır. */
+export function parsePullsResponse(json: unknown): PullsResult {
+  const root = rec(json);
+  const data = rec(root.data);
+  const rateLimit = parseRateLimit(data.rateLimit);
+  throwGraphqlErrors(root, rateLimit);
   if (!isRecord(data.repository)) throw new GitHubApiError('notFound', "GitHub'da depo bulunamadı ya da erişim izni yok.", rateLimit);
   const repo = data.repository;
   const pullRequests = nodes(repo.pullRequests)
@@ -137,7 +142,7 @@ export function parsePullsResponse(json: unknown): PullsResult {
   return rateLimit ? { pullRequests, branchCi, rateLimit } : { pullRequests, branchCi };
 }
 
-function rateLimitFromHeaders(headers: Headers): RateLimitInfo | undefined {
+export function rateLimitFromHeaders(headers: Headers): RateLimitInfo | undefined {
   const remaining = Number(headers.get('x-ratelimit-remaining'));
   const limit = Number(headers.get('x-ratelimit-limit'));
   const reset = Number(headers.get('x-ratelimit-reset'));
@@ -149,8 +154,26 @@ function rateLimitFromHeaders(headers: Headers): RateLimitInfo | undefined {
   };
 }
 
-/** Açık PR'lar, branch CI'ları ve limit tek GraphQL isteğiyle. */
-export async function fetchPulls(token: string, owner: string, repo: string, fetchFn: typeof fetch): Promise<PullsResult> {
+export const NETWORK_MESSAGE = "GitHub'a ulaşılamadı. İnternet bağlantısını kontrol edin.";
+
+/** GraphQL ve REST için ortak HTTP durum eşlemesi (401/403/429/404/diğer). */
+export function throwForStatus(res: Response, rateLimit: RateLimitInfo | undefined): void {
+  if (res.status === 401) throw new GitHubApiError('unauthorized', 'GitHub oturumu geçersiz ya da süresi doldu.', rateLimit);
+  if ((res.status === 403 || res.status === 429) && (rateLimit?.remaining === 0 || res.status === 429)) {
+    throw new GitHubApiError('rateLimited', 'GitHub istek limiti doldu.', rateLimit);
+  }
+  if (res.status === 403) throw new GitHubApiError('unauthorized', 'GitHub erişimi reddedildi (izin ya da SSO yetkisi eksik olabilir).', rateLimit);
+  if (res.status === 404) throw new GitHubApiError('notFound', "GitHub'da depo bulunamadı ya da erişim izni yok.", rateLimit);
+  if (!res.ok) throw new GitHubApiError('other', `GitHub isteği başarısız oldu (HTTP ${res.status}).`, rateLimit);
+}
+
+/** GraphQL isteği; HTTP hatalarını GitHubApiError'a çevirir, ham JSON'u döner ("errors" kontrolü çağırana kalır). */
+export async function graphqlRequest(
+  token: string,
+  query: string,
+  variables: Record<string, unknown>,
+  fetchFn: typeof fetch,
+): Promise<{ json: unknown; rateLimit?: RateLimitInfo }> {
   let res: Response;
   try {
     res = await fetchFn(GITHUB_GRAPHQL_URL, {
@@ -161,26 +184,26 @@ export async function fetchPulls(token: string, owner: string, repo: string, fet
         Accept: 'application/json',
         'User-Agent': 'rewiewrev-vscode',
       },
-      body: JSON.stringify({ query: PULLS_QUERY, variables: { owner, name: repo } }),
+      body: JSON.stringify({ query, variables }),
     });
   } catch {
-    throw new GitHubApiError('network', "GitHub'a ulaşılamadı. İnternet bağlantısını kontrol edin.");
+    throw new GitHubApiError('network', NETWORK_MESSAGE);
   }
-  const headerLimit = rateLimitFromHeaders(res.headers);
-  if (res.status === 401) throw new GitHubApiError('unauthorized', 'GitHub oturumu geçersiz ya da süresi doldu.', headerLimit);
-  if ((res.status === 403 || res.status === 429) && (headerLimit?.remaining === 0 || res.status === 429)) {
-    throw new GitHubApiError('rateLimited', 'GitHub istek limiti doldu.', headerLimit);
-  }
-  if (res.status === 403) throw new GitHubApiError('unauthorized', 'GitHub erişimi reddedildi (izin ya da SSO yetkisi eksik olabilir).', headerLimit);
-  if (res.status === 404) throw new GitHubApiError('notFound', "GitHub'da depo bulunamadı ya da erişim izni yok.", headerLimit);
-  if (!res.ok) throw new GitHubApiError('other', `GitHub isteği başarısız oldu (HTTP ${res.status}).`, headerLimit);
+  const rateLimit = rateLimitFromHeaders(res.headers);
+  throwForStatus(res, rateLimit);
   let json: unknown;
   try {
     json = await res.json();
   } catch {
     throw new GitHubApiError('network', 'GitHub yanıtı okunamadı.');
   }
+  return rateLimit ? { json, rateLimit } : { json };
+}
+
+/** Açık PR'lar, branch CI'ları ve limit tek GraphQL isteğiyle. */
+export async function fetchPulls(token: string, owner: string, repo: string, fetchFn: typeof fetch): Promise<PullsResult> {
+  const { json, rateLimit } = await graphqlRequest(token, PULLS_QUERY, { owner, name: repo }, fetchFn);
   const result = parsePullsResponse(json);
-  if (!result.rateLimit && headerLimit) result.rateLimit = headerLimit;
+  if (!result.rateLimit && rateLimit) result.rateLimit = rateLimit;
   return result;
 }

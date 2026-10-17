@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RewiewRev — pull request'ler</title>
+  <link rel="stylesheet" href="themes.css">
+  <link rel="stylesheet" href="../node_modules/@vscode/codicons/dist/codicon.css">
+  <link rel="stylesheet" href="out/prpanel.entry.css">
+  <style>
+    /* Yalnızca önizleme düzeni. */
+    body { display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; container-type: inline-size; }
+    .dev-main { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; max-width: 460px; box-sizing: border-box; }
+    #log { flex: 0 0 110px; overflow: auto; padding: 6px 12px; border-top: 1px solid var(--vscode-panel-border); font-family: var(--vscode-editor-font-family); font-size: 11px; color: var(--vscode-descriptionForeground); }
+  </style>
+</head>
+<body class="vscode-dark">
+  <div class="dev-main">
+    <div id="notice" hidden></div>
+    <div id="pr"></div>
+  </div>
+  <div id="log"></div>
+  <script src="out/prpanel.entry.js"></script>
+</body>
+</html>

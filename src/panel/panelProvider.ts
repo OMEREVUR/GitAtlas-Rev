@@ -12,17 +12,26 @@ import { computeContrib } from '../model/contrib';
 import { loadGraph } from '../model/graphService';
 import { loadSnapshot, NoCommitsError } from '../model/repoService';
 import { buildTimeline } from '../model/timeline';
+import { fetchPrPanel } from '../github/prApi';
+import { GitHubOpsService } from '../ops/githubOpsService';
 import { GitOpsService } from '../ops/gitOpsService';
+import { computePrDraft } from '../ops/prDraft';
 import { OpQueue } from '../ops/opQueue';
 import type { ErrorCode, ExtensionToWebview, StateAction, WebviewToExtension } from '../protocol';
 import type {
   FileStat,
   GitHubData,
+  GitHubOpKind,
+  GitHubOpRequest,
   GitOpKind,
   GitOpRequest,
   GitRef,
   GraphData,
+  MergeMethod,
   OpResult,
+  PrPanelData,
+  PullRequest,
+  PullRequestDetail,
   PullStrategy,
   RepoSnapshot,
   StashEntry,
@@ -153,6 +162,74 @@ export function parseGitOp(raw: unknown): GitOpRequest | undefined {
   }
 }
 
+const MERGE_METHODS: readonly MergeMethod[] = ['merge', 'squash', 'rebase'];
+const MAX_PR_TITLE = 256;
+const MAX_PR_BODY = 65536;
+
+function isPrNumber(v: unknown): v is number {
+  return typeof v === 'number' && Number.isInteger(v) && v > 0 && v <= 1e9;
+}
+
+/** Webview'dan gelen GitHub işlemini doğrular; bozuksa undefined. */
+export function parseGitHubOp(raw: unknown): GitHubOpRequest | undefined {
+  if (typeof raw !== 'object' || raw === null) return undefined;
+  const o = raw as Record<string, unknown>;
+  switch (o.kind) {
+    case 'createPr':
+      return typeof o.title === 'string' &&
+        o.title.trim().length >= 1 &&
+        o.title.length <= MAX_PR_TITLE &&
+        typeof o.body === 'string' &&
+        o.body.length <= MAX_PR_BODY &&
+        isSafeRefName(o.base) &&
+        typeof o.draft === 'boolean'
+        ? { kind: 'createPr', title: o.title, body: o.body, base: o.base, draft: o.draft }
+        : undefined;
+    case 'mergePr':
+      return isPrNumber(o.number) &&
+        typeof o.method === 'string' &&
+        (MERGE_METHODS as readonly string[]).includes(o.method) &&
+        typeof o.deleteBranch === 'boolean'
+        ? { kind: 'mergePr', number: o.number, method: o.method as MergeMethod, deleteBranch: o.deleteBranch }
+        : undefined;
+    case 'checkoutPr':
+      return isPrNumber(o.number) ? { kind: 'checkoutPr', number: o.number } : undefined;
+    default:
+      return undefined;
+  }
+}
+
+/** Temel PR bilgisinden (GitHub katmanının listesi) ayrıntı; bilinmeyen alanlar nötr değerle. */
+export function detailFromBasic(pr: PullRequest): PullRequestDetail {
+  return {
+    ...pr,
+    body: '',
+    mergeable: 'unknown',
+    reviewDecision: 'none',
+    reviewRequested: false,
+    isCrossRepository: false,
+    additions: 0,
+    deletions: 0,
+    changedFiles: pr.files.length,
+    checks: [],
+  };
+}
+
+/** PR numarasından ayrıntı: önce PR paneli verisi (mevcut branch, benim, review istenen), yoksa temel liste. */
+export function findPrDetail(
+  number: number,
+  panel: PrPanelData | undefined,
+  basic: readonly PullRequest[],
+): PullRequestDetail | undefined {
+  if (panel) {
+    const all = [...(panel.currentBranchPr ? [panel.currentBranchPr] : []), ...panel.mine, ...panel.reviewRequested];
+    const hit = all.find((p) => p.number === number);
+    if (hit) return hit;
+  }
+  const b = basic.find((p) => p.number === number);
+  return b ? detailFromBasic(b) : undefined;
+}
+
 /** Başarılı olunca HEAD/ref'leri (ve dolayısıyla harita/graph/branch'leri) değiştiren işlemler. */
 export function opChangesRefs(kind: GitOpKind): boolean {
   switch (kind) {
@@ -233,6 +310,16 @@ export function parseWebviewMessage(raw: unknown): WebviewToExtension | undefine
       return isSafeRelPath(m.path) && typeof m.staged === 'boolean' ? { type: 'openChange', path: m.path, staged: m.staged } : undefined;
     case 'showOutput':
       return { type: 'showOutput' };
+    case 'loadPrPanel':
+      return { type: 'loadPrPanel' };
+    case 'loadPrDraft':
+      if (m.base === undefined) return { type: 'loadPrDraft' };
+      return isSafeRefName(m.base) ? { type: 'loadPrDraft', base: m.base } : undefined;
+    case 'githubOp': {
+      if (typeof m.id !== 'string' || m.id === '' || m.id.length > 64) return undefined;
+      const op = parseGitHubOp(m.op);
+      return op ? { type: 'githubOp', id: m.id, op } : undefined;
+    }
     default:
       return undefined;
   }
@@ -307,6 +394,13 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   /** Tüm yazma işlemleri tek kuyrukta (kök değişse bile). */
   private readonly opQueue = new OpQueue();
   private ops: { root: string; service: GitOpsService } | undefined;
+  private githubOps: { root: string; service: GitHubOpsService } | undefined;
+  /** v5 2. tur: PR paneli (loadPrPanel geldikten sonra güncel tutulur). */
+  private prPanelRequested = false;
+  private lastPrPanel: PrPanelData | undefined;
+  private lastPrPanelMsg: ExtensionToWebview | undefined;
+  private prPanelRunning: Promise<void> | undefined;
+  private prPanelRerun = false;
   private opCounter = 0;
   /** Bu oturumda alınan token'lar; çıktı kanalında maskelenir. */
   private readonly secrets = new Set<string>();
@@ -514,6 +608,9 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     this.lastStatus = undefined;
     this.lastStashes = undefined;
     this.ops = undefined;
+    this.githubOps = undefined;
+    this.lastPrPanel = undefined;
+    this.lastPrPanelMsg = undefined;
     this.watcher?.dispose();
     this.watcher = undefined;
     this.ensureWatcher();
@@ -567,6 +664,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     this.broadcast({ type: 'github', data });
     this.statusBar.setGitHub(data);
     this.updateDecorations();
+    if (this.prPanelRequested && data.status.state === 'connected') void this.refreshPrPanel();
   }
 
   // ---- v5: çalışma ağacı ve git işlemleri ----
@@ -606,7 +704,9 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     try {
       const [status, stashes] = await Promise.all([getStatus(root), listStashes(root)]);
       if (this.disposed || root !== this.root) return;
+      const branchChanged = this.lastStatus !== undefined && this.lastStatus.branch !== status.branch;
       this.lastStatus = status;
+      if (branchChanged && this.prPanelRequested) void this.refreshPrPanel();
       this.lastStashes = stashes;
       this.broadcast({ type: 'status', status });
       this.broadcast({ type: 'stashes', stashes });
@@ -658,21 +758,60 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     return this.ops.service;
   }
 
+  private githubOpsFor(root: string): GitHubOpsService {
+    if (this.githubOps?.root !== root) {
+      const service = new GitHubOpsService({
+        root,
+        ui: createVscodeOpsUi(),
+        gitOps: this.opsFor(root),
+        queue: this.opQueue,
+        coords: () => this.github.repoCoords,
+        getToken: () => this.getToken(),
+        fetchFn: fetch,
+        log: (line) => this.log(line),
+        getPr: (n) => findPrDetail(n, this.lastPrPanel, this.github.data.pullRequests),
+        defaultBranch: () => this.lastPrPanel?.defaultBranch,
+      });
+      this.githubOps = { root, service };
+    }
+    return this.githubOps.service;
+  }
+
+  private newCommandId(): string {
+    return `cmd-${Date.now().toString(36)}-${++this.opCounter}`;
+  }
+
+  /** Komutlardan gelen işlem başarısız olursa "Çıktıyı göster" düğmeli hata bildirimi. */
+  private notifyFailure(result: OpResult): void {
+    if (result.ok || result.cancelled) return;
+    void vscode.window.showErrorMessage(`RewiewRev: ${result.message}`, 'Çıktıyı göster').then((choice) => {
+      if (choice) this.showGitOutput();
+    });
+  }
+
   /**
    * Komutlardan (palet, Branch'ler menüsü) git işlemi. Sonuç webview'lara da opResult olarak gider;
    * hata olursa ayrıca "Çıktıyı göster" düğmeli bir hata bildirimi çıkar.
    */
   async runOp(op: GitOpRequest): Promise<OpResult> {
-    const result = await this.executeOp(`cmd-${Date.now().toString(36)}-${++this.opCounter}`, op);
-    if (!result.ok && !result.cancelled) {
-      void vscode.window.showErrorMessage(`RewiewRev: ${result.message}`, 'Çıktıyı göster').then((choice) => {
-        if (choice) this.showGitOutput();
-      });
-    }
+    const result = await this.executeOp(this.newCommandId(), op);
+    this.notifyFailure(result);
     return result;
   }
 
-  private async executeOp(id: string, op: GitOpRequest): Promise<OpResult> {
+  /** Komutlardan GitHub işlemi (PR aç/birleştir/checkout); runOp ile aynı bildirim davranışı. */
+  async runGitHubOp(op: GitHubOpRequest): Promise<OpResult> {
+    const result = await this.executeGitHubOp(this.newCommandId(), op);
+    this.notifyFailure(result);
+    return result;
+  }
+
+  /** Kökü bulur, işlemi çalıştırır (opStarted → opResult tüm webview'lara); hata fırlatırsa ok:false sonuç. */
+  private async execute(
+    id: string,
+    kind: GitOpKind | GitHubOpKind,
+    run: (root: string, onStarted: (commands: string[]) => void) => Promise<OpResult>,
+  ): Promise<OpResult> {
     let result: OpResult;
     let root: string | undefined;
     try {
@@ -681,23 +820,102 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
       root = undefined;
     }
     if (!root) {
-      result = { id, kind: op.kind, ok: false, commands: [], message: 'Açık bir git reposu yok.' };
+      result = { id, kind, ok: false, commands: [], message: 'Açık bir git reposu yok.' };
     } else {
       try {
-        result = await this.opsFor(root).run(id, op, (commands) =>
-          this.broadcast({ type: 'opStarted', id, kind: op.kind, commands }),
-        );
+        result = await run(root, (commands) => this.broadcast({ type: 'opStarted', id, kind, commands }));
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        this.log(`[hata] ${op.kind}: ${message}`);
-        result = { id, kind: op.kind, ok: false, commands: [], message: `İşlem tamamlanamadı: ${message}` };
+        this.log(`[hata] ${kind}: ${message}`);
+        result = { id, kind, ok: false, commands: [], message: `İşlem tamamlanamadı: ${message}` };
       }
     }
+    if (!this.disposed) this.broadcast({ type: 'opResult', result });
+    return result;
+  }
+
+  private async executeOp(id: string, op: GitOpRequest): Promise<OpResult> {
+    const result = await this.execute(id, op.kind, (root, onStarted) => this.opsFor(root).run(id, op, onStarted));
     if (this.disposed) return result;
-    this.broadcast({ type: 'opResult', result });
     if (result.ok && opChangesRefs(op.kind)) void this.reload();
     if (this.statusRequested) void this.refreshStatus();
     return result;
+  }
+
+  private async executeGitHubOp(id: string, op: GitHubOpRequest): Promise<OpResult> {
+    const result = await this.execute(id, op.kind, (root, onStarted) => this.githubOpsFor(root).run(id, op, onStarted));
+    if (this.disposed) return result;
+    if (result.ok) {
+      void this.reload(); // reload sonunda status da yenilenir
+      void this.github.refresh();
+    } else if (this.statusRequested) {
+      void this.refreshStatus();
+    }
+    if (this.prPanelRequested) void this.refreshPrPanel();
+    return result;
+  }
+
+  // ---- v5 2. tur: PR paneli ve taslak ----
+
+  /** PR paneli verisini çeker ve gönderir. Aynı anda tek istek; arada gelenler birleşir. */
+  private refreshPrPanel(): Promise<void> {
+    if (this.prPanelRunning) {
+      this.prPanelRerun = true;
+      return this.prPanelRunning;
+    }
+    this.prPanelRunning = (async () => {
+      try {
+        do {
+          this.prPanelRerun = false;
+          await this.doRefreshPrPanel();
+        } while (this.prPanelRerun && !this.disposed);
+      } finally {
+        this.prPanelRunning = undefined;
+      }
+    })();
+    return this.prPanelRunning;
+  }
+
+  private postPrPanel(msg: ExtensionToWebview): void {
+    this.lastPrPanelMsg = msg;
+    this.broadcast(msg);
+  }
+
+  private async doRefreshPrPanel(): Promise<void> {
+    const state = this.github.data.status.state;
+    const coords = this.github.repoCoords;
+    if ((state !== 'connected' && state !== 'stale') || !coords) {
+      this.lastPrPanel = undefined;
+      this.postPrPanel({ type: 'prPanel', data: undefined });
+      return;
+    }
+    const root = this.root;
+    try {
+      const token = await this.getToken();
+      if (!token) throw new Error('GitHub oturumu bulunamadı. GitHub ile yeniden bağlanın.');
+      const branch = this.lastStatus?.branch ?? this.refs?.find((r) => r.kind === 'local' && r.isHead)?.name;
+      const data = await fetchPrPanel(token, coords.owner, coords.repo, branch, fetch);
+      if (this.disposed || this.prPanelRerun || root !== this.root) return; // daha yeni istek ya da kök değişti
+      this.lastPrPanel = data;
+      this.postPrPanel({ type: 'prPanel', data });
+    } catch (err) {
+      if (this.disposed || this.prPanelRerun || root !== this.root) return;
+      const text = err instanceof Error ? err.message : String(err);
+      this.log(`[PR paneli] alınamadı: ${text}`);
+      this.postPrPanel({ type: 'prPanel', data: this.lastPrPanel, error: `PR'lar alınamadı: ${redactSecrets(text, [...this.secrets])}` });
+    }
+  }
+
+  private async loadPrDraft(base: string | undefined): Promise<void> {
+    try {
+      const root = this.root ?? (await this.resolveRoot());
+      const draft = await computePrDraft(root, base, this.lastPrPanel?.defaultBranch);
+      this.broadcast({ type: 'prDraft', draft });
+    } catch (err) {
+      const text = err instanceof Error ? err.message : String(err);
+      this.log(`[PR taslağı] hazırlanamadı: ${text}`);
+      this.broadcast({ type: 'prDraft', draft: undefined, error: `PR taslağı hazırlanamadı: ${text}` });
+    }
   }
 
   private async openChange(relPath: string, staged: boolean): Promise<void> {
@@ -764,8 +982,12 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     try {
       const root = this.root ?? (await this.resolveRoot());
       const refs = await listRefs(root);
+      const headOf = (rs: GitRef[] | undefined): string | undefined => rs?.find((r) => r.kind === 'local' && r.isHead)?.name;
+      // Durum izlenmiyorsa branch değişimini (checkout) PR paneli için buradan yakala.
+      const branchChanged = this.refs !== undefined && headOf(this.refs) !== headOf(refs);
       this.refs = refs;
       if (!this.disposed) this.refsEmitter.fire(refs);
+      if (branchChanged && this.prPanelRequested && !this.statusRequested) void this.refreshPrPanel();
     } catch {
       this.refs = undefined;
       if (!this.disposed) this.refsEmitter.fire(undefined);
@@ -847,6 +1069,7 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
           if (this.lastContrib) void from.postMessage(this.lastContrib);
           if (this.lastStatus) void from.postMessage({ type: 'status', status: this.lastStatus });
           if (this.lastStashes) void from.postMessage({ type: 'stashes', stashes: this.lastStashes });
+          if (this.lastPrPanelMsg) void from.postMessage(this.lastPrPanelMsg);
           if (!this.started) void this.reload();
           break;
         case 'setRange':
@@ -901,6 +1124,16 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
           break;
         case 'showOutput':
           this.showGitOutput();
+          break;
+        case 'loadPrPanel':
+          this.prPanelRequested = true;
+          await this.refreshPrPanel();
+          break;
+        case 'loadPrDraft':
+          await this.loadPrDraft(msg.base);
+          break;
+        case 'githubOp':
+          await this.executeGitHubOp(msg.id, msg.op);
           break;
       }
     } catch (err) {

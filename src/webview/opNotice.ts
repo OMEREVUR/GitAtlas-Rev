@@ -1,11 +1,23 @@
 // Git işlemi bildirimi: çalışıyor / başarılı (6 sn sonra solar) / hata (kalıcı) / iptal.
 import './ops.css';
-import type { GitOpKind, OpResult } from '../types';
+import type { GitHubOpKind, GitOpKind, OpResult } from '../types';
 import type { WebviewToExtension } from '../protocol';
 
 export interface OpNoticeState {
-  running?: { kind: GitOpKind; commands: string[] };
+  running?: { kind: GitOpKind | GitHubOpKind; commands: string[] };
   last?: OpResult;
+}
+
+/** GitHub işlemlerinde komut yerine gösterilen etiket. */
+const GITHUB_LABELS: Record<GitHubOpKind, string> = {
+  createPr: 'PR açılıyor',
+  mergePr: 'PR birleştiriliyor',
+  checkoutPr: "PR branch'ine geçiliyor",
+};
+const GITHUB_URL_RE = /https:\/\/github\.com\/[^\s"'<>()]+/;
+
+function githubLabel(kind: GitOpKind | GitHubOpKind): string | undefined {
+  return kind in GITHUB_LABELS ? GITHUB_LABELS[kind as GitHubOpKind] : undefined;
 }
 
 const FADE_AFTER_MS = 6000;
@@ -51,10 +63,10 @@ export function renderOpNotice(el: HTMLElement, state: OpNoticeState, post: (msg
     el.setAttribute('role', 'status');
     el.setAttribute('aria-live', 'polite');
     const [first = '', ...more] = state.running.commands;
-    const text = h('span', 'rr-op-notice-text', [
-      document.createTextNode('Çalışıyor: '),
-      h('code', 'rr-op-code', first || state.running.kind),
-    ]);
+    const gh = githubLabel(state.running.kind);
+    const text = gh
+      ? h('span', 'rr-op-notice-text', [document.createTextNode(`${gh}…`), ...(first ? [document.createTextNode(' '), h('code', 'rr-op-code', first)] : [])])
+      : h('span', 'rr-op-notice-text', [document.createTextNode('Çalışıyor: '), h('code', 'rr-op-code', first || state.running.kind)]);
     if (more.length > 0) text.append(h('span', 'rr-op-muted', ` (+${more.length} komut)`));
     const bar = h('span', 'rr-op-progress', [h('span', 'rr-op-progress-fill')]);
     bar.setAttribute('aria-hidden', 'true');
@@ -111,13 +123,24 @@ export function renderOpNotice(el: HTMLElement, state: OpNoticeState, post: (msg
     children.push(details);
   }
 
+  const actions: HTMLElement[] = [];
+  // Sonuçta bir GitHub adresi varsa (ör. açılan PR) bağlantı yerine düğme: eklenti adresi doğrulayıp açar.
+  const url = tone !== 'cancelled' ? GITHUB_URL_RE.exec(`${last.message}
+${last.detail ?? ''}`)?.[0].replace(/[.,;:]+$/, '') : undefined;
+  if (url) {
+    const open = h('button', 'rr-p-btn rr-p-btn-primary rr-p-btn-small', url.includes('/pull/') ? "PR'ı aç" : "GitHub'da aç");
+    open.type = 'button';
+    open.title = url;
+    open.addEventListener('click', () => post({ type: 'openUrl', url }));
+    actions.push(open);
+  }
   const output = h('button', 'rr-p-btn rr-p-btn-secondary rr-p-btn-small', 'Çıktıyı göster');
   output.type = 'button';
   output.addEventListener('click', () => post({ type: 'showOutput' }));
   const close = h('button', 'rr-p-btn rr-p-btn-secondary rr-p-btn-small', 'Kapat');
   close.type = 'button';
   close.addEventListener('click', dismiss);
-  children.push(h('div', 'rr-op-notice-actions', [output, close]));
+  children.push(h('div', 'rr-op-notice-actions', [...actions, output, close]));
 
   el.classList.remove('is-fading');
   el.replaceChildren(...children);

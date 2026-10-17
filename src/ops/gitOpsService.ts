@@ -47,15 +47,17 @@ const OPERATION_LABEL: Record<RepoOperation, string> = {
 
 const plural = (n: number, word: string): string => `${n} ${word}`;
 
-/** Bir işlem boyunca kullanılan çalıştırma bağlamı. */
-class OpRun {
+/** Bir işlem boyunca kullanılan çalıştırma bağlamı (komut kaydı, log, askpass yedeği). GitHubOpsService de kullanır. */
+export type OpRunDeps = Pick<OpsDeps, 'root' | 'getToken' | 'log'>;
+
+export class OpRun {
   readonly commands: string[] = [];
   readonly outputs: string[] = [];
   private authEnv?: { env: Record<string, string>; dispose: () => Promise<void> };
   private authTried = false;
 
   constructor(
-    private readonly deps: OpsDeps,
+    private readonly deps: OpRunDeps,
     private readonly network: boolean,
   ) {}
 
@@ -152,10 +154,14 @@ export class GitOpsService {
   }
 
   run(id: string, op: GitOpRequest, onStarted?: (commands: string[]) => void): Promise<OpResult> {
-    return this.queue.run(() => this.execute(id, op, onStarted));
+    return this.queue.run(() => this.runUnqueued(id, op, onStarted));
   }
 
-  private async execute(id: string, op: GitOpRequest, onStarted?: (commands: string[]) => void): Promise<OpResult> {
+  /**
+   * İşlemi kuyruğa girmeden yürütür. Yalnızca aynı OpQueue'da zaten çalışan bir işin içinden
+   * çağrılır (ör. GitHubOpsService'in PR öncesi push'u); aksi hâlde run() kullanılır.
+   */
+  async runUnqueued(id: string, op: GitOpRequest, onStarted?: (commands: string[]) => void): Promise<OpResult> {
     const run = new OpRun(this.deps, NETWORK_OPS.has(op.kind) || (op.kind === 'commit' && op.push));
     let outcome: Outcome;
     try {

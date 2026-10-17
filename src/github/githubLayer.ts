@@ -84,6 +84,17 @@ export class GitHubLayer implements vscode.Disposable {
     };
   }
 
+  /** origin GitHub ise owner/repo. */
+  get repoCoords(): { owner: string; repo: string } | undefined {
+    return this.provider ? { owner: this.provider.owner, repo: this.provider.repo } : undefined;
+  }
+
+  /** PR işlemleri için token; yalnızca connected/stale iken, oturum açma penceresi açmadan. */
+  async getToken(): Promise<string | undefined> {
+    if (this.status.state !== 'connected' && this.status.state !== 'stale') return undefined;
+    return (await this.silentSession())?.accessToken;
+  }
+
   async setRoot(root: string | undefined): Promise<void> {
     const gen = ++this.generation;
     this.stopTimer();

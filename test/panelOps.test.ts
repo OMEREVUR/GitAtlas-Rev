@@ -11,7 +11,16 @@ vi.mock('vscode', () => ({
 
 import { sanitizePullStrategy } from '../src/config';
 import { branchContextValue, refFromCommandArg, validateBranchNameInput } from '../src/panel/branchTree';
-import { opChangesRefs, parseGitOp, parseWebviewMessage, redactSecrets } from '../src/panel/panelProvider';
+import {
+  detailFromBasic,
+  findPrDetail,
+  opChangesRefs,
+  parseGitHubOp,
+  parseGitOp,
+  parseWebviewMessage,
+  redactSecrets,
+} from '../src/panel/panelProvider';
+import type { PrPanelData, PullRequest } from '../src/types';
 import { isRelevantChange } from '../src/panel/workingTreeWatcher';
 
 describe('gitOp mesaj doğrulama', () => {
@@ -126,5 +135,50 @@ describe('v5 yardımcıları', () => {
     expect(refFromCommandArg({ kind: 'ref', section: 'local', ref })).toBe(ref);
     expect(refFromCommandArg({ kind: 'section', section: 'local', refs: [] })).toBeUndefined();
     expect(refFromCommandArg(undefined)).toBeUndefined();
+  });
+});
+
+describe('v5 2. tur: PR mesajları', () => {
+  const pr = (number: number): PullRequest => ({
+    number, title: `PR ${number}`, url: `https://github.com/o/r/pull/${number}`, author: 'a', headRef: `f${number}`,
+    baseRef: 'main', isDraft: false, updatedAt: 0, files: ['a.ts', 'b.ts'], ci: 'success',
+  });
+
+  it('loadPrPanel / loadPrDraft', () => {
+    expect(parseWebviewMessage({ type: 'loadPrPanel' })).toEqual({ type: 'loadPrPanel' });
+    expect(parseWebviewMessage({ type: 'loadPrDraft' })).toEqual({ type: 'loadPrDraft' });
+    expect(parseWebviewMessage({ type: 'loadPrDraft', base: 'develop' })).toEqual({ type: 'loadPrDraft', base: 'develop' });
+    expect(parseWebviewMessage({ type: 'loadPrDraft', base: '-x' })).toBeUndefined();
+  });
+
+  it('githubOp doğrulaması', () => {
+    const ok = { kind: 'createPr', title: 'feat: x', body: '', base: 'main', draft: false };
+    expect(parseWebviewMessage({ type: 'githubOp', id: 'w1', op: ok })).toEqual({ type: 'githubOp', id: 'w1', op: ok });
+    expect(parseGitHubOp({ ...ok, title: '' })).toBeUndefined();
+    expect(parseGitHubOp({ ...ok, title: '   ' })).toBeUndefined();
+    expect(parseGitHubOp({ ...ok, title: 'x'.repeat(257) })).toBeUndefined();
+    expect(parseGitHubOp({ ...ok, body: 'x'.repeat(65537) })).toBeUndefined();
+    expect(parseGitHubOp({ ...ok, base: '--upload-pack=x' })).toBeUndefined();
+    expect(parseGitHubOp({ ...ok, draft: 'no' })).toBeUndefined();
+    expect(parseGitHubOp({ kind: 'mergePr', number: 41, method: 'squash', deleteBranch: true })).toEqual({
+      kind: 'mergePr', number: 41, method: 'squash', deleteBranch: true,
+    });
+    expect(parseGitHubOp({ kind: 'mergePr', number: 41, method: 'octopus', deleteBranch: true })).toBeUndefined();
+    expect(parseGitHubOp({ kind: 'mergePr', number: 0, method: 'merge', deleteBranch: false })).toBeUndefined();
+    expect(parseGitHubOp({ kind: 'checkoutPr', number: 7 })).toEqual({ kind: 'checkoutPr', number: 7 });
+    expect(parseGitHubOp({ kind: 'checkoutPr', number: 1.5 })).toBeUndefined();
+    expect(parseGitHubOp({ kind: 'closePr', number: 7 })).toBeUndefined();
+    expect(parseWebviewMessage({ type: 'githubOp', id: '', op: { kind: 'checkoutPr', number: 7 } })).toBeUndefined();
+  });
+
+  it('PR ayrıntısı: önce PR paneli, yoksa temel listeden nötr alanlarla', () => {
+    const detailed = { ...detailFromBasic(pr(41)), body: 'ayrıntılı', isCrossRepository: true };
+    const panel: PrPanelData = {
+      viewer: 'me', defaultBranch: 'main', mergeMethods: ['merge'], mine: [], reviewRequested: [detailed], fetchedAt: 0,
+    };
+    expect(findPrDetail(41, panel, [pr(41)])?.body).toBe('ayrıntılı');
+    const basic = findPrDetail(42, panel, [pr(42)]);
+    expect(basic).toMatchObject({ number: 42, body: '', isCrossRepository: false, mergeable: 'unknown', changedFiles: 2, checks: [] });
+    expect(findPrDetail(99, undefined, [pr(42)])).toBeUndefined();
   });
 });

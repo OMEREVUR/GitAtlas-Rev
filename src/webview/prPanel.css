@@ -1,0 +1,343 @@
+/* v5 (2. tur): PULL REQUEST'LER bölümü. Renkler yalnızca --vscode-* ve --rr-*.
+   Alanlar ve düğmeler ops.css (.rr-op-input, .rr-op-check, .rr-op-actions) ve panel.css (.rr-p-btn, .rr-p-select) ile. */
+.rr-pr {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.rr-pr [hidden] {
+  display: none !important;
+}
+.rr-pr-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rr-pr-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+}
+.rr-pr-toggle[aria-expanded='false'] .rr-pr-chevron {
+  transform: rotate(-90deg);
+}
+.rr-pr-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.rr-pr-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.rr-pr-text {
+  margin: 0;
+  font-size: 12px;
+}
+.rr-pr-muted {
+  color: var(--vscode-descriptionForeground);
+}
+.rr-pr-small {
+  font-size: 11px;
+}
+.rr-pr-warn-text {
+  color: var(--vscode-editorWarning-foreground, var(--vscode-charts-yellow));
+}
+.rr-pr-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--vscode-errorForeground);
+}
+.rr-pr-error .codicon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+.rr-pr-subheading {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-pr-icon {
+  flex: 0 0 16px;
+  margin-top: 1px;
+  color: var(--vscode-charts-purple);
+}
+.rr-pr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.rr-pr-meta .rr-p-add,
+.rr-pr-meta .rr-p-del {
+  margin-right: 0;
+}
+.rr-pr-sep {
+  opacity: 0.7;
+}
+.rr-pr-refs {
+  font-family: var(--rr-mono);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- mevcut branch'in PR kartı ---------- */
+.rr-pr-current {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-panel-border);
+}
+.rr-pr-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.rr-pr-card-titles {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rr-pr-title-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.rr-pr-title-link:hover {
+  text-decoration: underline;
+}
+.rr-pr-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rr-pr-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  font-size: 11px;
+  border: 1px solid var(--vscode-panel-border);
+}
+.rr-pr-fact .codicon {
+  font-size: 12px;
+}
+.rr-pr-fact.is-approved .codicon,
+.rr-pr-fact.is-ok .codicon {
+  color: var(--vscode-charts-green);
+}
+.rr-pr-fact.is-changesRequested .codicon {
+  color: var(--vscode-editorWarning-foreground, var(--vscode-charts-yellow));
+}
+.rr-pr-fact.is-conflict {
+  font-weight: 700;
+  color: var(--vscode-errorForeground);
+  border-color: var(--vscode-errorForeground);
+}
+.rr-pr-fact.is-unknown .codicon,
+.rr-pr-fact.is-reviewRequired .codicon {
+  color: var(--vscode-descriptionForeground);
+}
+.rr-pr-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rr-pr-check {
+  width: 100%;
+  min-width: 0;
+  min-height: 22px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  font-size: 12px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  color: var(--vscode-foreground);
+  text-align: left;
+  font-family: inherit;
+}
+.rr-pr-check-link {
+  cursor: pointer;
+}
+.rr-pr-check-link:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.rr-pr-check-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rr-pr-more {
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+}
+.rr-pr-merge {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+.rr-pr-merge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rr-pr-merge-row .rr-pr-select {
+  flex: 1 1 160px;
+  max-width: none;
+}
+.rr-pr-merge-row .rr-p-btn {
+  flex: 0 0 auto;
+}
+
+/* ---------- PR açma ---------- */
+.rr-pr-create {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.rr-pr-form {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 4px;
+  background: var(--vscode-textCodeBlock-background);
+}
+.rr-pr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.rr-pr-field-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.rr-pr-field-row .rr-pr-select {
+  flex: 1 1 auto;
+  max-width: none;
+}
+.rr-pr-label {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+}
+.rr-pr-push {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  overflow-wrap: anywhere;
+}
+.rr-pr-push .codicon {
+  flex: 0 0 auto;
+  color: var(--vscode-textLink-foreground);
+}
+
+/* ---------- listeler ---------- */
+.rr-pr-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rr-pr-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  font-size: 12px;
+}
+.rr-pr-row-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rr-pr-row-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+}
+.rr-pr-review.is-approved {
+  color: var(--vscode-charts-green);
+}
+.rr-pr-review.is-changesRequested {
+  color: var(--vscode-editorWarning-foreground, var(--vscode-charts-yellow));
+}
+.rr-pr-review.is-conflict {
+  color: var(--vscode-errorForeground);
+  font-weight: 600;
+}
+
+/* dar alan */
+@container (max-width: 360px) {
+  .rr-pr-row {
+    flex-wrap: wrap;
+  }
+  .rr-pr-row-text {
+    flex-basis: calc(100% - 24px);
+  }
+  .rr-pr-row-actions {
+    margin-left: 24px;
+  }
+  .rr-pr-field-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .rr-pr-merge-row .rr-p-btn {
+    flex: 1 1 auto;
+  }
+}
