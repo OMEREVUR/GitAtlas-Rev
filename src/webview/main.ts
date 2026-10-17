@@ -6,6 +6,7 @@ import './timeMachine.css';
 import './contributors.css';
 import './changes.css';
 import './ops.css';
+import './prPanel.css';
 import './layout.css';
 import type { ExtensionToWebview, WebviewToExtension } from '../protocol';
 import type {
@@ -15,6 +16,9 @@ import type {
   FileStat,
   GitHubData,
   GitHubOpKind,
+  GitHubOpRequest,
+  PrDraft,
+  PrPanelData,
   GitOpKind,
   GitOpRequest,
   GitRef,
@@ -32,6 +36,7 @@ import { renderChanges } from './changes';
 import { renderCommitBox, resetCommitBox } from './commitBox';
 import { renderCommitDetail, type GraphSelection } from './commitDetail';
 import { renderOpNotice } from './opNotice';
+import { renderPrPanel, resetPrForm } from './prPanel';
 import { renderStashList } from './stashList';
 import { renderSyncBar } from './syncBar';
 import { renderContributors } from './contributors';
@@ -115,6 +120,11 @@ let statusRequested = false;
 let running: { id: string; kind: GitOpKind | GitHubOpKind; commands: string[] } | undefined;
 let lastResult: OpResult | undefined;
 let opSeq = 0;
+let prPanel: PrPanelData | undefined;
+let prError: string | undefined;
+let prRequested = false;
+let prDraft: PrDraft | undefined;
+let prDraftError: string | undefined;
 
 function str(v: unknown): string | undefined {
   return typeof v === 'string' ? v : undefined;
@@ -242,7 +252,9 @@ commitHost.setAttribute('aria-label', 'Commit');
 const stashHost = el('section', 'rr-chstash');
 stashHost.setAttribute('aria-label', 'Saklananlar');
 const changesSide = el('div', 'rr-chside');
-changesSide.append(commitHost, stashHost);
+const prHost = el('section', 'rr-chpr');
+prHost.setAttribute('aria-label', "Pull request'ler");
+changesSide.append(commitHost, prHost, stashHost);
 changesBody.append(changesHost, changesSide);
 
 const bannerHost = el('div', 'rr-banner');
@@ -284,6 +296,18 @@ function runOp(op: GitOpRequest): void {
   if (running) return;
   const id = `op-${Date.now()}-${++opSeq}`;
   post({ type: 'gitOp', id, op });
+}
+
+function runGitHubOp(op: GitHubOpRequest): void {
+  if (running) return;
+  const id = `gh-${Date.now()}-${++opSeq}`;
+  post({ type: 'githubOp', id, op });
+}
+
+function ensurePrPanel(): void {
+  if (prRequested || !githubActive()) return;
+  prRequested = true;
+  post({ type: 'loadPrPanel' });
 }
 
 /** Commit edilmemiş dosyalar → harita rozeti. */
@@ -648,6 +672,21 @@ function renderChangesView(): void {
     onToggleTreeView: () => setUi({ changesTree: !ui.changesTree }),
   });
   renderCommitBox(commitHost, { status: wt, busy, onOp: runOp });
+  ensurePrPanel();
+  renderPrPanel(prHost, {
+    connected: githubActive(),
+    data: prPanel,
+    error: prError,
+    draft: prDraft,
+    draftError: prDraftError,
+    status: wt,
+    busy,
+    onOp: runGitHubOp,
+    onLoadDraft: (base) => post({ type: 'loadPrDraft', base }),
+    onOpenUrl: (url) => post({ type: 'openUrl', url }),
+    onConnect: () => post({ type: 'githubConnect' }),
+    onRefresh: () => post({ type: 'loadPrPanel' }),
+  });
   renderStashList(stashHost, stashes, { busy, onOp: runOp, canSave: wt.files.length > 0 });
 }
 
@@ -725,6 +764,17 @@ window.addEventListener('message', (e: MessageEvent<ExtensionToWebview>) => {
       break;
     case 'github':
       github = msg.data;
+      if (!githubActive()) prRequested = false;
+      else if (ui.view === 'changes') ensurePrPanel();
+      break;
+    case 'prPanel':
+      prPanel = msg.data;
+      prError = msg.error;
+      prRequested = true;
+      break;
+    case 'prDraft':
+      prDraft = msg.draft;
+      prDraftError = msg.error;
       break;
     case 'status':
       wt = msg.status;
@@ -741,6 +791,10 @@ window.addEventListener('message', (e: MessageEvent<ExtensionToWebview>) => {
       if (!running || running.id === msg.result.id) running = undefined;
       lastResult = msg.result;
       if (msg.result.ok && msg.result.kind === 'commit') resetCommitBox(commitHost);
+      if (msg.result.ok && msg.result.kind === 'createPr') {
+        resetPrForm(prHost);
+        prDraft = undefined;
+      }
       break;
     case 'timeline':
       timeline = msg.timeline;

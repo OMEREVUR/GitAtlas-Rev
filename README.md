@@ -26,6 +26,14 @@ Repoyu tek bakışta okutan harita. RewiewRev, VS Code'un yan panelinde reponu b
 - Zaman makinesi: kaydırıcıyla ya da oynat düğmesiyle repoyu geçmiş bir tarihte gör; ısı o tarihten önceki 7 günün değişimi, o tarihte henüz olmayan dosyalar kesik çerçeveli.
 - Katkı paneli: modül sahipliği ("tek kişiye bağlı" uyarısıyla), haftalık ritim, "bu dosyayı en iyi kim bilir", yazarlar. Aynı kişinin farklı e-postaları `.mailmap` ile birleşir.
 
+**Değişiklikler: git komutu yazmadan (v5)**
+- **Değişiklikler** sekmesi: değişen dosyaları onay kutularıyla tek tek ya da hepsini commit'e ekle/çıkar, diff'e bak, değişikliği geri al.
+- Commit kutusu: tür seçici (feat, fix…), özet sayacı, "Commit ve gönder", son commit'e ekleme (amend), son commit'i geri alma; altında çalışacak git komutu görünür.
+- Her sekmede eşitleme çubuğu: Getir, Çek, Gönder (yeni branch'te "Yayınla"). Pull önce fast-forward dener, olmazsa merge mi rebase mi diye sorar.
+- Branch'ler panelinde sağ tık: geç, yeni branch, birleştir, yeniden adlandır, sil. Saklananlar (stash): sakla, uygula, sil. Çakışmada "Çözüldü / Devam et / İptal et".
+- GitHub bağlıysa **Pull request'ler**: bu branch'ten PR aç (gerekirse önce gönderir), PR'ı birleştir (merge/squash/rebase), PR branch'ine geç; "Benim PR'larım" ve "Review bekleyenler".
+- Riskli her işlem önce onay ister; komutlar ve çıktıları "RewiewRev Git" çıktı kanalında.
+
 ## Ayarlar
 
 | Ayar | Varsayılan | Açıklama |
@@ -36,12 +44,14 @@ Repoyu tek bakışta okutan harita. RewiewRev, VS Code'un yan panelinde reponu b
 | `rewiewrev.explorer.badges` | `hot` | Explorer rozetleri: `hot` (●● / ●), `all` (1–5 ısı), `off`. |
 | `rewiewrev.github.enabled` | `true` | GitHub katmanı. |
 | `rewiewrev.github.refreshInterval` | `2` | GitHub yenileme aralığı (dakika); yalnızca panel açıkken, limit azalınca otomatik uzar. |
+| `rewiewrev.git.pullStrategy` | `ask` | Pull fast-forward olmazsa: `ask` (sor), `merge`, `rebase`. |
 | `rewiewrev.git.path` | `""` | Git yolu; boşsa VS Code'un `git.path` ayarı ya da PATH'teki `git`. |
 
 ## Gizlilik
 
 - RewiewRev'in **kendi sunucusu yoktur**; hiçbir veri dışarı gönderilmez.
-- Git verisi yalnızca senin makinende, yerel `git` komutlarıyla okunur; sonuçlar VS Code'un eklenti depolama alanında (globalStorage) repo başına bir dosyada cache'lenir.
+- Git verisi yalnızca senin makinende, yerel `git` komutlarıyla okunur; Değişiklikler sekmesindeki işlemler de yerel `git` ile yapılır (pre-commit hook'ların çalışır); sonuçlar VS Code'un eklenti depolama alanında (globalStorage) repo başına bir dosyada cache'lenir.
+- Push/pull için önce git'in kendi kimlik bilgileri kullanılır; başarısız olursa ve GitHub'a bağlıysan bir kez VS Code GitHub oturumuyla denenir (token diske yazılmaz, loglanmaz).
 - GitHub katmanı yalnızca sen bağlandığında çalışır. İstekler doğrudan `api.github.com`'a, VS Code'un GitHub oturumuyla gider; token RewiewRev tarafından saklanmaz. Çekilen PR/CI özeti yine yalnızca yerelde cache'lenir.
 
 ## Geliştirme

@@ -330,8 +330,12 @@ body {
   background: var(--vscode-editorWidget-background, transparent);
 }
 .rr-chcommit,
+.rr-chpr,
 .rr-chstash {
   padding: 10px 12px;
+}
+.rr-chpr {
+  border-top: 1px solid var(--vscode-panel-border);
 }
 .rr-chstash {
   border-top: 1px solid var(--vscode-panel-border);

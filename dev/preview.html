@@ -66,6 +66,33 @@
             }
           }, 30);
         }
+        else if (msg.type === 'loadPrPanel') {
+          setTimeout(function () {
+            if (gh === 'off') { send({ type: 'prPanel', data: undefined }); return; }
+            var prs = (model.github.pullRequests || []).map(function (p, i) {
+              return Object.assign({}, p, {
+                body: '', mergeable: i === 1 ? 'conflicting' : 'mergeable',
+                reviewDecision: i === 0 ? 'approved' : 'reviewRequired', reviewRequested: i === 2,
+                isCrossRepository: false, additions: 12 + i, deletions: 3, changedFiles: p.files.length,
+                checks: [{ name: 'build', state: p.ci }, { name: 'test', state: 'success' }]
+              });
+            });
+            var branch = model.status && model.status.branch;
+            send({ type: 'prPanel', data: {
+              viewer: 'ornek', defaultBranch: 'main', mergeMethods: ['merge', 'squash', 'rebase'],
+              currentBranchPr: prs.filter(function (p) { return p.headRef === branch; })[0],
+              mine: prs.slice(0, 2), reviewRequested: prs.slice(2), fetchedAt: Date.now() - 60000 } });
+          }, 30);
+        }
+        else if (msg.type === 'loadPrDraft') {
+          setTimeout(function () {
+            send({ type: 'prDraft', draft: { head: (model.status && model.status.branch) || 'feature/x', base: msg.base || 'main', title: 'Graph kenarlari', body: '## Değişiklikler\n- feat: graph iskeleti\n- feat: graph şeritleri', commits: 2, needsPush: true } });
+          }, 30);
+        }
+        else if (msg.type === 'githubOp') {
+          send({ type: 'opStarted', id: msg.id, kind: msg.op.kind, commands: ['(önizleme) ' + msg.op.kind] });
+          setTimeout(function () { send({ type: 'opResult', result: { id: msg.id, kind: msg.op.kind, ok: true, commands: [], message: 'Önizleme: işlem çalıştırılmadı.' } }); }, 30);
+        }
         else if (msg.type === 'gitOp') {
           send({ type: 'opStarted', id: msg.id, kind: msg.op.kind, commands: ['(önizleme) ' + msg.op.kind] });
           setTimeout(function () { send({ type: 'opResult', result: { id: msg.id, kind: msg.op.kind, ok: true, commands: [], message: 'Önizleme: işlem çalıştırılmadı.' } }); }, 30);

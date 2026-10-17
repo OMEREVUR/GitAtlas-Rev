@@ -124,6 +124,8 @@ async function main(): Promise<void> {
     { file: `${name}-changes-narrow.png`, query: 'theme=dark&view=changes&gh=off&width=360', size: '600,1500' },
     { file: `${name}-changes-result.png`, query: 'theme=dark&view=changes&gh=off&opdemo=1', size: '1200,820' },
     { file: `${name}-map-dirty.png`, query: 'theme=light&gh=off', size: '1100,820' },
+    { file: `${name}-changes-pr-dark.png`, query: 'theme=dark&view=changes&gh=connected', size: '1200,1100' },
+    { file: `${name}-changes-pr-light.png`, query: 'theme=light&view=changes&gh=connected', size: '1200,1100' },
   ];
   if (sampleBranch) {
     const b = encodeURIComponent(`branch:${sampleBranch}`);
