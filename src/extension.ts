@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import { resolveLang, setLang } from './i18n';
+import { mainText } from './i18n/main';
 import { HeatDecorationProvider } from './decorations/heatDecorations';
 import { GitHubLayer } from './github/githubLayer';
 import { BranchView, branchCommandHandlers } from './panel/branchTree';
@@ -7,6 +9,8 @@ import { GitAtlasRevRevPanelProvider } from './panel/panelProvider';
 import { GitAtlasRevRevStatusBar } from './panel/statusBar';
 
 export function activate(context: vscode.ExtensionContext): void {
+  // Dil her şeyden önce: sağlayıcılar metinlerini kurulumda üretebilir.
+  setLang(resolveLang(vscode.workspace.getConfiguration('gitatlas-revrev').get<string>('language'), vscode.env.language));
   const storageDir = context.globalStorageUri.fsPath;
   const decorations = new HeatDecorationProvider();
   const statusBar = new GitAtlasRevRevStatusBar();
@@ -33,7 +37,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('gitatlas-revrev.github.connect', () => panel.connectGitHub()),
     vscode.commands.registerCommand('gitatlas-revrev.github.refresh', () => github.refresh()),
     // Branch'ler paneli ↔ harita/graph: seçilen branch'in dokunduğu dosyalar haritada yanar.
-    panel.onDidLoadRefs((refs) => branches.update(refs, refs ? undefined : 'Git reposu bulunamadı.')),
+    panel.onDidLoadRefs((refs) => branches.update(refs, refs ? undefined : mainText().noRepo)),
     branches.onDidSelectBranch((ref) => panel.selectBranch(ref?.name)),
     // GitHub PR/CI bilgisi Branch'ler ağacında da görünsün (panel bağlantısını panel kendisi kuruyor).
     github.onDidChange((d) => branches.setGitHub(d.pullRequests, d.branchCi)),
@@ -49,16 +53,14 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('gitatlas-revrev.git.commit', async () => {
       const staged = panel.workingTreeStatus?.files.filter((f) => f.staged).length ?? 0;
       if (staged === 0) {
-        void vscode.window.showInformationMessage(
-          "GitAtlas-RevRev: Commit'e eklenmiş dosya yok. GitAtlas-RevRev panelindeki Değişiklikler sekmesinden dosya seçin.",
-        );
+        void vscode.window.showInformationMessage(mainText().nothingStaged);
         return;
       }
       const message = await vscode.window.showInputBox({
-        title: `Commit oluştur (${staged} dosya)`,
-        prompt: 'Commit mesajı (özet)',
+        title: mainText().commitTitle(staged),
+        prompt: mainText().commitPrompt,
         placeHolder: 'feat: …',
-        validateInput: (v) => (v.trim() ? undefined : 'Bir özet yazın.'),
+        validateInput: (v) => (v.trim() ? undefined : mainText().commitEmpty),
       });
       if (message?.trim()) await panel.runOp({ kind: 'commit', message: message.trim(), amend: false, push: false });
     }),
@@ -72,6 +74,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Eşitleme çubuğundaki branch adı ve "Yeni branch" düğmesi.
   const showBranchMenu = async (): Promise<void> => {
+    const m = mainText();
     const head = branches.branches.find((r) => r.isHead);
     type Item = vscode.QuickPickItem & { action: 'create' | 'switch'; name?: string };
     const toItem = (r: (typeof branches.branches)[number]): Item => ({
@@ -81,15 +84,15 @@ export function activate(context: vscode.ExtensionContext): void {
       name: r.name,
     });
     const items: Item[] = [
-      { label: '$(add) Yeni branch oluştur…', description: head ? `kaynak: ${head.name}` : undefined, action: 'create' },
-      { label: 'Lokal', kind: vscode.QuickPickItemKind.Separator, action: 'switch' },
+      { label: m.newBranchItem, description: head ? m.newBranchSource(head.name) : undefined, action: 'create' },
+      { label: m.local, kind: vscode.QuickPickItemKind.Separator, action: 'switch' },
       ...branches.branches.filter((r) => r.kind === 'local' && !r.isHead).map(toItem),
-      { label: 'Remote', kind: vscode.QuickPickItemKind.Separator, action: 'switch' },
+      { label: m.remote, kind: vscode.QuickPickItemKind.Separator, action: 'switch' },
       ...branches.branches.filter((r) => r.kind === 'remote' && !r.name.endsWith('/HEAD')).map(toItem),
     ];
     const picked = await vscode.window.showQuickPick(items, {
-      title: head ? `Şu anki branch: ${head.name}` : 'Branch',
-      placeHolder: 'Geçmek istediğin branch ya da yeni branch',
+      title: head ? m.currentBranch(head.name) : m.branch,
+      placeHolder: m.branchPickPlaceholder,
       matchOnDescription: true,
     });
     if (!picked) return;
@@ -128,6 +131,19 @@ export function activate(context: vscode.ExtensionContext): void {
         if (timer) clearTimeout(timer);
       },
     },
+  );
+
+  // Dil ayarı değişince: TreeView, durum çubuğu ve diyalog metinleri kurulumda üretildiği için
+  // yeniden yükleme öner (webview'lar bir sonraki açılışta zaten yeni dilde gelir).
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(async (e) => {
+      if (!e.affectsConfiguration('gitatlas-revrev.language')) return;
+      const next = resolveLang(vscode.workspace.getConfiguration('gitatlas-revrev').get<string>('language'), vscode.env.language);
+      setLang(next);
+      const m = mainText();
+      const pick = await vscode.window.showInformationMessage(m.languageChanged, m.reloadWindow);
+      if (pick === m.reloadWindow) await vscode.commands.executeCommand('workbench.action.reloadWindow');
+    }),
   );
 
   // Panel kapalıyken de Explorer rozetleri dolsun.

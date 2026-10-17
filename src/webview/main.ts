@@ -8,6 +8,8 @@ import './changes.css';
 import './ops.css';
 import './prPanel.css';
 import './layout.css';
+import { parseLang, setLang } from '../i18n';
+import { mainText } from '../i18n/main';
 import type { ExtensionToWebview, WebviewToExtension } from '../protocol';
 import type {
   ChangeKind,
@@ -93,6 +95,9 @@ interface UiState {
 let GRAPH_PAGE = 500;
 const DAY = 864e5;
 
+// Eklentinin seçtiği dil (panelProvider body'ye data-lang yazar); ilk render'dan önce.
+setLang(parseLang(document.body.dataset.lang) ?? 'tr');
+
 const vscode = acquireVsCodeApi();
 const post = (msg: WebviewToExtension): void => vscode.postMessage(msg);
 
@@ -169,27 +174,27 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string): H
 
 const progressEl = el('div', 'rr-topprogress');
 progressEl.setAttribute('role', 'progressbar');
-progressEl.setAttribute('aria-label', 'Yenileniyor');
+progressEl.setAttribute('aria-label', mainText().refreshing);
 const progressFill = el('div', 'rr-topprogress-fill');
 progressEl.append(progressFill);
 
 const toolbar = el('div', 'rr-toolbar');
 const tabs = el('nav', 'rr-tabs');
-tabs.setAttribute('aria-label', 'Görünüm');
+tabs.setAttribute('aria-label', mainText().view);
 const tabButtons: Record<View, HTMLButtonElement> = {
-  map: tabButton('Harita', 'map'),
-  graph: tabButton('Graph', 'graph'),
-  time: tabButton('Zaman', 'time'),
-  contrib: tabButton('Katkı', 'contrib'),
-  changes: tabButton('Değişiklikler', 'changes'),
+  map: tabButton(mainText().tabMap, 'map'),
+  graph: tabButton(mainText().tabGraph, 'graph'),
+  time: tabButton(mainText().tabTime, 'time'),
+  contrib: tabButton(mainText().tabContrib, 'contrib'),
+  changes: tabButton(mainText().tabChanges, 'changes'),
 };
 tabs.append(tabButtons.map, tabButtons.graph, tabButtons.time, tabButtons.contrib, tabButtons.changes);
 const rangeHost = el('div', 'rr-range');
 const refreshBtn = document.createElement('button');
 refreshBtn.className = 'rr-iconbtn';
 refreshBtn.type = 'button';
-refreshBtn.title = 'Yenile';
-refreshBtn.setAttribute('aria-label', 'Yenile');
+refreshBtn.title = mainText().refresh;
+refreshBtn.setAttribute('aria-label', mainText().refresh);
 const refreshIcon = el('span', 'codicon codicon-refresh');
 refreshIcon.setAttribute('aria-hidden', 'true');
 refreshBtn.append(refreshIcon);
@@ -200,7 +205,7 @@ ghBtn.className = 'rr-ghbtn';
 const ghIcon = el('span', 'codicon codicon-github');
 ghIcon.setAttribute('aria-hidden', 'true');
 ghBtn.append(ghIcon, document.createTextNode(' GitHub'));
-ghBtn.title = "Açık PR'lar ve çakışma çerçeveleri";
+ghBtn.title = mainText().githubTitle;
 ghBtn.addEventListener('click', () => {
   if (githubActive()) setUi({ githubLayer: !ui.githubLayer });
   else post({ type: 'githubConnect' });
@@ -222,41 +227,41 @@ const body = el('div', 'rr-body');
 const selBar = el('div', 'rr-selbar');
 selBar.setAttribute('role', 'status');
 const mapHost = el('section', 'rr-map');
-mapHost.setAttribute('aria-label', 'Repo haritası');
+mapHost.setAttribute('aria-label', mainText().repoMap);
 const feedHost = el('aside', 'rr-feed');
-feedHost.setAttribute('aria-label', "Son commit'ler");
+feedHost.setAttribute('aria-label', mainText().recentCommits);
 const cardHost = el('section', 'rr-card');
-cardHost.setAttribute('aria-label', 'Dosya kartı');
+cardHost.setAttribute('aria-label', mainText().fileCard);
 body.append(selBar, mapHost, feedHost, cardHost);
 
 // Graph görünümü
 const gbody = el('div', 'rr-gbody');
 const gtoolHost = el('div', 'rr-gtool');
 const glistHost = el('section', 'rr-glist');
-glistHost.setAttribute('aria-label', 'Commit graph');
+glistHost.setAttribute('aria-label', mainText().commitGraph);
 const gdetailHost = el('aside', 'rr-gdetail');
-gdetailHost.setAttribute('aria-label', 'Seçim ayrıntısı');
+gdetailHost.setAttribute('aria-label', mainText().selectionDetail);
 const gnoteHost = el('div', 'rr-gnote');
 gnoteHost.setAttribute('role', 'status');
 gbody.append(gtoolHost, glistHost, gdetailHost);
 
 // Zaman makinesi ve katkı görünümleri
 const timeHost = el('section', 'rr-time');
-timeHost.setAttribute('aria-label', 'Zaman makinesi');
+timeHost.setAttribute('aria-label', mainText().timeMachine);
 const contribHost = el('section', 'rr-contrib');
-contribHost.setAttribute('aria-label', 'Katkı paneli');
+contribHost.setAttribute('aria-label', mainText().contribPanel);
 
 // Değişiklikler: solda liste, sağda commit kutusu + stash
 const changesBody = el('div', 'rr-chbody');
 const changesHost = el('section', 'rr-chlist');
-changesHost.setAttribute('aria-label', 'Değişen dosyalar');
+changesHost.setAttribute('aria-label', mainText().changedFiles);
 const commitHost = el('section', 'rr-chcommit');
-commitHost.setAttribute('aria-label', 'Commit');
+commitHost.setAttribute('aria-label', mainText().commit);
 const stashHost = el('section', 'rr-chstash');
-stashHost.setAttribute('aria-label', 'Saklananlar');
+stashHost.setAttribute('aria-label', mainText().stashes);
 const changesSide = el('div', 'rr-chside');
 const prHost = el('section', 'rr-chpr');
-prHost.setAttribute('aria-label', "Pull request'ler");
+prHost.setAttribute('aria-label', mainText().pullRequests);
 changesSide.append(commitHost, prHost, stashHost);
 changesBody.append(changesHost, changesSide);
 
@@ -467,17 +472,18 @@ function renderSelectionBar(): void {
   const all = highlightSet(selection);
   const inMap = mapHighlight(selection).size;
   const text = el('span', 'rr-selbar-text');
+  const m = mainText();
   const what =
     selection.kind === 'branch'
-      ? `${selection.ref.name} branch'i seçili · ${selection.commits.length} commit`
-      : `${selection.commit.shortHash} commit'i seçili`;
-  let where = ` · haritada ${inMap}/${all.size} dosya`;
-  if (all.size > inMap) where += ` (${all.size - inMap} dosya bu çalışma ağacında yok)`;
+      ? m.selBranch(selection.ref.name, selection.commits.length)
+      : m.selCommit(selection.commit.shortHash);
+  let where = m.selInMap(inMap, all.size);
+  if (all.size > inMap) where += m.selMissing(all.size - inMap);
   text.textContent = what + where;
   const clear = document.createElement('button');
   clear.type = 'button';
   clear.className = 'rr-selbar-clear';
-  clear.textContent = 'Seçimi kaldır';
+  clear.textContent = m.clearSelection;
   clear.addEventListener('click', () => setUi({ selectedHash: undefined, selectedBranch: undefined }));
   selBar.replaceChildren(text, clear);
 }
@@ -549,17 +555,17 @@ function renderGraphView(now: number): void {
       },
     });
     if (visible !== undefined && !ui.filters.plain) {
-      gnoteHost.textContent = 'Filtre açıkken şeritler gizlenir.';
+      gnoteHost.textContent = mainText().lanesHidden;
       glistHost.prepend(gnoteHost);
     }
   } else {
     const msg = el('div', 'rr-gempty');
-    msg.textContent = graphError ? `Graph yüklenemedi: ${graphError}` : 'Graph yükleniyor…';
+    msg.textContent = graphError ? mainText().graphFailed(graphError) : mainText().graphLoading;
     if (graphError) {
       const retry = document.createElement('button');
       retry.type = 'button';
       retry.className = 'rr-gretry';
-      retry.textContent = 'Yeniden dene';
+      retry.textContent = mainText().retry;
       retry.addEventListener('click', () => requestGraph(GRAPH_PAGE));
       msg.append(retry);
     }
@@ -613,7 +619,7 @@ function render(): void {
     });
   }
   const changeCount = wt?.files.length ?? 0;
-  tabButtons.changes.textContent = changeCount > 0 ? `Değişiklikler (${changeCount})` : 'Değişiklikler';
+  tabButtons.changes.textContent = changeCount > 0 ? mainText().tabChangesCount(changeCount) : mainText().tabChanges;
   if (fullState) bannerHost.hidden = true;
   else renderGitHubBanner(bannerHost, github, post);
   ghBtn.hidden = !github || github.status.state === 'noRemote' || github.status.state === 'notGitHub';
@@ -666,7 +672,7 @@ function render(): void {
 
 function renderChangesView(): void {
   if (!wt) {
-    loadingNote(changesHost, 'Çalışma ağacı okunuyor…');
+    loadingNote(changesHost, mainText().readingWorkTree);
     return;
   }
   const busy = running !== undefined;
@@ -712,7 +718,7 @@ function renderTimeView(): void {
   if (!model) return;
   const at = currentTimeAt();
   if (!timeline || at === undefined) {
-    loadingNote(timeHost, timeline ? 'Zaman makinesi için commit yok.' : 'Geçmiş hazırlanıyor…');
+    loadingNote(timeHost, timeline ? mainText().noTimelineCommits : mainText().preparingHistory);
     return;
   }
   const t = timeline;
@@ -739,7 +745,7 @@ function renderTimeView(): void {
 function renderContribView(now: number): void {
   if (!model) return;
   if (!contrib || contrib.range !== model.range) {
-    loadingNote(contribHost, 'Katkılar hesaplanıyor…');
+    loadingNote(contribHost, mainText().computingContrib);
     return;
   }
   renderContributors(contribHost, {

@@ -17,6 +17,7 @@
   var params = new URLSearchParams(location.search);
   var theme = params.get('theme') === 'light' ? 'light' : 'dark';
   document.body.className = 'vscode-' + theme;
+  document.body.dataset.lang = params.get('lang') === 'en' ? 'en' : 'tr';
   // Kullanıcının F5 temasını taklit: çok koyu charts-orange ve panelle aynı ikincil düğme arka planı.
   if (params.get('usertheme') === '1') {
     document.documentElement.style.setProperty('--vscode-charts-orange', '#5C2E10');

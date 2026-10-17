@@ -1,6 +1,7 @@
 // Webview önizlemesi: bir repodan gerçek modeli üretir (dev/out/preview-model.js), dev/preview.html'i
 // headless Chrome ile açıp koyu/açık/vurgulu/dar ekran görüntülerini dev/screenshots/ altına alır.
-// Kullanım: npm run preview -- <repo-yolu> [--name ad] [--no-shots]
+// Kullanım: npm run preview -- <repo-yolu> [--name ad] [--lang en|tr] [--no-shots]
+import { parseLang, setLang } from '../src/i18n';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -29,6 +30,10 @@ async function main(): Promise<void> {
   if (!repo) throw new Error('Repo yolu ver: npm run preview -- <repo-yolu>');
   const nameIdx = args.indexOf('--name');
   const name = nameIdx >= 0 ? args[nameIdx + 1] ?? 'preview' : basename(resolve(repo));
+  // --lang en: model metinleri (dönüm noktaları vb.) ve webview İngilizce.
+  const langIdx = args.indexOf('--lang');
+  const lang = parseLang(langIdx >= 0 ? args[langIdx + 1] : undefined) ?? 'tr';
+  setLang(lang);
   if (!existsSync('dist/webview.js')) throw new Error('Önce npm run build çalıştır.');
 
   let sampleBranch: string | undefined;
@@ -138,7 +143,7 @@ async function main(): Promise<void> {
     const out = resolve('dev/screenshots', s.file);
     const r = spawnSync(chrome, [
       '--headless=new', '--disable-gpu', '--hide-scrollbars', '--allow-file-access-from-files',
-      '--virtual-time-budget=4000', `--window-size=${s.size}`, `--screenshot=${out}`, `${page}?${s.query}`,
+      '--virtual-time-budget=4000', `--window-size=${s.size}`, `--screenshot=${out}`, `${page}?${s.query}&lang=${lang}`,
     ], { encoding: 'utf8' });
     console.log(`${existsSync(out) ? 'görüntü' : 'HATA'}: ${out}${r.status ? ` (çıkış ${r.status})` : ''}`);
   }
