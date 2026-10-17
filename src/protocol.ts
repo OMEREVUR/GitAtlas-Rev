@@ -77,4 +77,11 @@ export type WebviewToExtension =
   | { type: 'loadPrPanel' }
   /** Mevcut branch için PR taslağı; base yoksa repo varsayılan branch'i. */
   | { type: 'loadPrDraft'; base?: string }
-  | { type: 'githubOp'; id: string; op: GitHubOpRequest };
+  | { type: 'githubOp'; id: string; op: GitHubOpRequest }
+  // v5 düzeltmeleri
+  /** origin yokken: VS Code'un "GitHub'da yayınla" akışını başlat. */
+  | { type: 'githubPublish' }
+  /** Eşitleme çubuğundaki branch adı: geç / yeni branch menüsü (QuickPick). */
+  | { type: 'branchMenu' }
+  /** Eşitleme çubuğundaki "Yeni branch" düğmesi. */
+  | { type: 'branchCreate' };
