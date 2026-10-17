@@ -6,6 +6,7 @@ import { createAskpassEnv } from '../git/askpass';
 import { GitError, runGit } from '../git/gitRunner';
 import { formatCommand, isValidBranchName, opCommands } from '../git/opCommands';
 import { getStatus, listStashes } from '../git/status';
+import { text } from '../i18n/ops';
 import type { GitOpRequest, OpResult, RepoOperation, WorkingTreeStatus } from '../types';
 import { OpQueue } from './opQueue';
 
@@ -28,14 +29,6 @@ export interface OpsDeps {
 const NETWORK_TIMEOUT_MS = 120_000;
 const NETWORK_OPS = new Set(['fetch', 'pull', 'push']);
 
-const MSG_CANCELLED = 'İptal edildi.';
-const MSG_CONFLICT = "Çakışma var: dosyaları çözüp 'Çözüldü' deyin ya da işlemi iptal edin.";
-const MSG_AUTH = "Kimlik doğrulama başarısız. Git kimlik bilgilerinizi ayarlayın ya da GitAtlas-RevRev'de GitHub'a bağlanın.";
-const MSG_NETWORK = 'Uzak depoya ulaşılamadı. İnternet bağlantınızı ve uzak deponun adresini kontrol edin.';
-const MSG_DIRTY = 'Commit edilmemiş değişiklikler bu işlemle çakışıyor. Önce commit oluşturun ya da değişiklikleri saklayın (stash).';
-const MSG_REJECTED = "Uzakta yeni commit'ler var; önce Çek (pull) yapın.";
-const MSG_DIVERGED = 'Pull yapılamadı: yerel ve uzak branch ayrışmış. Merge ya da rebase seçin.';
-
 const OPERATION_LABEL: Record<RepoOperation, string> = {
   merge: 'Merge',
   rebase: 'Rebase',
@@ -44,8 +37,7 @@ const OPERATION_LABEL: Record<RepoOperation, string> = {
 };
 
 // Mesajlarda ref adlarına Türkçe ek getirilmez ("master'e" gibi yanlış ekler çıkar); ad ayrı yazılır.
-
-const plural = (n: number, word: string): string => `${n} ${word}`;
+// Kullanıcıya görünen tüm metinler src/i18n/ops.ts sözlüğünden gelir; text() her çağrıda etkin dili okur.
 
 /** Bir işlem boyunca kullanılan çalıştırma bağlamı (komut kaydı, log, askpass yedeği). GitHubOpsService de kullanır. */
 export type OpRunDeps = Pick<OpsDeps, 'root' | 'getToken' | 'log'>;
@@ -74,7 +66,7 @@ export class OpRun {
         const token = await this.deps.getToken?.();
         if (token) {
           this.record(err.stderr);
-          this.deps.log('GitHub oturumuyla yeniden deneniyor…');
+          this.deps.log(text().retryingWithGitHub);
           this.authEnv = await createAskpassEnv(token);
           try {
             const out = await this.exec(args, opts);
@@ -141,7 +133,7 @@ class Outcome {
 }
 const done = (message: string): Outcome => new Outcome(true, message);
 const fail = (message: string): Outcome => new Outcome(false, message);
-const cancelled = (message = MSG_CANCELLED): Outcome => new Outcome(false, message, true);
+const cancelled = (message?: string): Outcome => new Outcome(false, message ?? text().cancelled, true);
 
 export class GitOpsService {
   private readonly queue: OpQueue;
@@ -180,6 +172,7 @@ export class GitOpsService {
 
   private async flow(op: GitOpRequest, run: OpRun, started: (commands: string[]) => void): Promise<Outcome> {
     const { ui } = this.deps;
+    const t = text();
     const status = await getStatus(this.deps.root);
     const plan = async (): Promise<string[][]> => {
       const cmds = opCommands(op, status, await this.context(run));
@@ -194,43 +187,39 @@ export class GitOpsService {
       case 'stage':
       case 'unstage':
       case 'markResolved': {
-        if (op.paths.length === 0) return fail('Dosya seçilmedi.');
+        if (op.paths.length === 0) return fail(t.noFilesSelected);
         await runAll(await plan());
         const n = op.paths.length;
-        if (op.kind === 'stage') return done(`${plural(n, 'dosya')} commit'e eklendi.`);
-        if (op.kind === 'unstage') return done(`${plural(n, 'dosya')} commit'ten çıkarıldı.`);
-        return done(`${plural(n, 'dosya')} çözüldü olarak işaretlendi.`);
+        if (op.kind === 'stage') return done(t.staged(n));
+        if (op.kind === 'unstage') return done(t.unstaged(n));
+        return done(t.markedResolved(n));
       }
 
       case 'stageAll': {
         const n = status.files.filter((f) => f.unstaged !== undefined).length;
-        if (n === 0) return done("Commit'e eklenecek değişiklik yok.");
+        if (n === 0) return done(t.nothingToStage);
         await runAll(await plan());
-        return done(`${plural(n, 'dosya')} commit'e eklendi.`);
+        return done(t.staged(n));
       }
 
       case 'unstageAll': {
         const n = status.files.filter((f) => f.staged !== undefined).length;
-        if (n === 0) return done("Commit'e eklenmiş dosya yok.");
+        if (n === 0) return done(t.nothingStaged);
         await runAll(await plan());
-        return done(`${plural(n, 'dosya')} commit'ten çıkarıldı.`);
+        return done(t.unstaged(n));
       }
 
       case 'discard': {
-        if (op.paths.length === 0) return fail('Dosya seçilmedi.');
+        if (op.paths.length === 0) return fail(t.noFilesSelected);
         const untracked = new Set(status.files.filter((f) => f.unstaged === 'untracked').map((f) => f.path));
         const fresh = op.paths.filter((p) => untracked.has(p)).length;
-        const lines = [op.paths.slice(0, 10).join('\n') + (op.paths.length > 10 ? `\n… ve ${op.paths.length - 10} dosya daha` : '')];
-        if (fresh > 0) lines.push(`Henüz eklenmemiş (untracked) ${plural(fresh, 'dosya')} diskten silinecek.`);
-        lines.push('Bu işlem geri alınamaz.');
-        const ok = await ui.confirm(
-          `${plural(op.paths.length, 'dosyadaki')} değişiklik kalıcı olarak silinecek.`,
-          lines.join('\n\n'),
-          'Geri al',
-        );
+        const lines = [op.paths.slice(0, 10).join('\n') + (op.paths.length > 10 ? t.discardMore(op.paths.length - 10) : '')];
+        if (fresh > 0) lines.push(t.discardUntracked(fresh));
+        lines.push(t.cannotUndo);
+        const ok = await ui.confirm(t.discardConfirm(op.paths.length), lines.join('\n\n'), t.discardAction);
         if (!ok) return cancelled();
         await runAll(await plan());
-        return done(`${plural(op.paths.length, 'dosyadaki')} değişiklik geri alındı.`);
+        return done(t.discarded(op.paths.length));
       }
 
       case 'commit':
@@ -238,26 +227,22 @@ export class GitOpsService {
 
       case 'undoLastCommit': {
         const last = status.lastCommit;
-        if (!last) return fail('Geri alınacak commit yok.');
+        if (!last) return fail(t.noCommitToUndo);
         if (last.pushed) {
-          const ok = await ui.confirm(
-            'Bu commit zaten gönderildi; geri almak geçmişi değiştirir.',
-            `${last.shortHash} ${last.message}\n\nDeğişiklikler kaybolmaz, commit'e eklenmiş olarak kalır. Uzaktaki kopya değişmez; sonra yeniden göndermek için zorla gönderme gerekir.`,
-            'Geri al',
-          );
+          const ok = await ui.confirm(t.undoPushedConfirm, t.undoPushedDetail(`${last.shortHash} ${last.message}`), t.undoAction);
           if (!ok) return cancelled();
         }
         await runAll(await plan());
-        return done(`Son commit geri alındı: ${last.shortHash} ${last.message}. Değişiklikler commit'e eklenmiş olarak duruyor.`);
+        return done(t.undone(`${last.shortHash} ${last.message}`));
       }
 
       case 'fetch': {
         await runAll(await plan());
         const after = await getStatus(this.deps.root);
         if (after.upstream && after.behind > 0) {
-          return done(`Uzaktan güncellemeler alındı: ${after.upstream} ${after.behind} commit ileride; Çek (pull) ile alabilirsiniz.`);
+          return done(t.fetchedBehind(after.upstream, after.behind));
         }
-        return done('Uzaktan güncellemeler alındı; branch güncel.');
+        return done(t.fetchedUpToDate);
       }
 
       case 'pull':
@@ -267,22 +252,22 @@ export class GitOpsService {
         return this.push(op.force === true, status, run, plan);
 
       case 'checkout': {
-        if (op.branch === status.branch) return done(`Zaten bu branch'tesiniz: ${op.branch}.`);
+        if (op.branch === status.branch) return done(t.alreadyOnBranch(op.branch));
         const cmds = await plan();
         try {
           await runAll(cmds);
         } catch (err) {
           if (!(err instanceof GitError && err.kind === 'dirtyTree')) throw err;
-          const choice = await ui.pick(`Commit edilmemiş değişiklikler geçişi engelliyor: ${op.branch}`, [
-            { id: 'stash', label: 'Değişiklikleri sakla (stash) ve geç', detail: 'Değişiklikler stash listesine alınır; sonra geri uygulayabilirsiniz.' },
-            { id: 'cancel', label: 'İptal' },
+          const choice = await ui.pick(t.dirtyBlocksSwitch(op.branch), [
+            { id: 'stash', label: t.stashAndSwitch, detail: t.stashAndSwitchDetail },
+            { id: 'cancel', label: t.cancel },
           ]);
           if (choice !== 'stash') return cancelled();
-          await run.git(['stash', 'push', '-u', '-m', `GitAtlas-RevRev: ${op.branch} geçişinden önce`]);
+          await run.git(['stash', 'push', '-u', '-m', t.stashMessageBeforeSwitch(op.branch)]);
           await runAll(cmds);
-          return done(`Geçildi: ${op.branch}. Değişiklikleriniz saklandı (stash@{0}).`);
+          return done(t.switchedStashed(op.branch));
         }
-        return done(`Geçildi: ${op.branch}.`);
+        return done(t.switched(op.branch));
       }
 
       case 'createBranch': {
@@ -290,17 +275,17 @@ export class GitOpsService {
         try {
           await runAll(await plan());
         } catch (err) {
-          if (err instanceof GitError && /already exists/i.test(err.stderr)) return fail(`"${op.name}" adında bir branch zaten var.`);
+          if (err instanceof GitError && /already exists/i.test(err.stderr)) return fail(t.branchExists(op.name));
           throw err;
         }
-        return done(op.checkout ? `Branch oluşturuldu ve geçildi: ${op.name}.` : `Branch oluşturuldu: ${op.name}.`);
+        return done(op.checkout ? t.branchCreatedSwitched(op.name) : t.branchCreated(op.name));
       }
 
       case 'mergeBranch': {
         let out = '';
         for (const c of await plan()) out += await run.git(c);
-        if (/Already up to date/i.test(out)) return done(`Zaten güncel: ${op.branch} içindeki her şey bu branch'te var.`);
-        return done(`Birleştirildi: ${op.branch} → ${status.branch ?? 'HEAD'}.`);
+        if (/Already up to date/i.test(out)) return done(t.mergeUpToDate(op.branch));
+        return done(t.merged(op.branch, status.branch ?? 'HEAD'));
       }
 
       case 'renameBranch': {
@@ -308,36 +293,32 @@ export class GitOpsService {
         try {
           await runAll(await plan());
         } catch (err) {
-          if (err instanceof GitError && /already exists/i.test(err.stderr)) return fail(`"${op.to}" adında bir branch zaten var.`);
+          if (err instanceof GitError && /already exists/i.test(err.stderr)) return fail(t.branchExists(op.to));
           throw err;
         }
-        return done(`Branch adı değiştirildi: ${op.from} → ${op.to}.`);
+        return done(t.renamed(op.from, op.to));
       }
 
       case 'deleteBranch': {
-        if (op.name === status.branch) return fail('Şu an bu branch\'tesiniz; silmek için önce başka bir branch\'e geçin.');
-        const ok = await ui.confirm(`Branch silinecek: ${op.name}`, 'Uzaktaki kopyası (varsa) silinmez.', 'Sil');
+        if (op.name === status.branch) return fail(t.cannotDeleteCurrent);
+        const ok = await ui.confirm(t.deleteBranchConfirm(op.name), t.deleteBranchDetail, t.deleteAction);
         if (!ok) return cancelled();
         try {
           await runAll(await plan());
         } catch (err) {
           if (!(err instanceof GitError && /not fully merged/i.test(err.stderr))) throw err;
-          const force = await ui.confirm(
-            `Branch hiçbir yere birleştirilmemiş commit'ler içeriyor: ${op.name}`,
-            'Silinirse bu commit\'ler kaybolabilir (git branch -D).',
-            'Yine de sil',
-          );
+          const force = await ui.confirm(t.unmergedConfirm(op.name), t.unmergedDetail, t.forceDeleteAction);
           if (!force) return cancelled();
           await run.git(['branch', '-D', op.name]);
         }
-        return done(`Branch silindi: ${op.name}.`);
+        return done(t.branchDeleted(op.name));
       }
 
       case 'stashSave': {
         const any = status.files.some((f) => f.staged !== undefined || (f.unstaged !== undefined && (op.includeUntracked || f.unstaged !== 'untracked')));
-        if (!any) return fail(op.includeUntracked ? 'Saklanacak değişiklik yok.' : 'Saklanacak değişiklik yok (eklenmemiş yeni dosyalar için "yeni dosyalar dahil" seçin).');
+        if (!any) return fail(op.includeUntracked ? t.nothingToStash : t.nothingToStashUntracked);
         await runAll(await plan());
-        return done('Değişiklikler saklandı (stash@{0}).');
+        return done(t.stashed);
       }
 
       case 'stashApply': {
@@ -346,42 +327,38 @@ export class GitOpsService {
           await runAll(await plan());
         } catch (err) {
           if (err instanceof GitError && err.kind === 'conflict') {
-            return fail(`${ref} uygulanırken çakışma çıktı; stash listede duruyor. Dosyaları çözüp 'Çözüldü' deyin.`);
+            return fail(t.stashApplyConflict(ref));
           }
           throw err;
         }
-        return done(op.pop ? `${ref} uygulandı ve listeden kaldırıldı.` : `${ref} uygulandı.`);
+        return done(op.pop ? t.stashPopped(ref) : t.stashApplied(ref));
       }
 
       case 'stashDrop': {
         const ref = `stash@{${op.index}}`;
         const entry = (await listStashes(this.deps.root)).find((s) => s.index === op.index);
-        const ok = await ui.confirm(`${ref} kalıcı olarak silinecek.`, entry ? entry.message : 'Bu işlem geri alınamaz.', 'Sil');
+        const ok = await ui.confirm(t.stashDropConfirm(ref), entry ? entry.message : t.cannotUndo, t.deleteAction);
         if (!ok) return cancelled();
         await runAll(await plan());
-        return done(`${ref} silindi.`);
+        return done(t.stashDropped(ref));
       }
 
       case 'continueOperation': {
-        if (!status.operation) return fail('Devam ettirilecek bir işlem yok.');
+        if (!status.operation) return fail(t.noOperationToContinue);
         const label = OPERATION_LABEL[status.operation];
         await runAll(await plan());
         const after = await getStatus(this.deps.root);
-        if (after.operation === status.operation) return done(`${label} devam ediyor: sıradaki çakışmaları çözün.`);
-        return done(`${label} tamamlandı.`);
+        if (after.operation === status.operation) return done(t.operationContinues(label));
+        return done(t.operationDone(label));
       }
 
       case 'abortOperation': {
-        if (!status.operation) return fail('İptal edilecek bir işlem yok.');
+        if (!status.operation) return fail(t.noOperationToAbort);
         const label = OPERATION_LABEL[status.operation];
-        const ok = await ui.confirm(
-          `Devam eden ${label.toLowerCase()} iptal edilecek.`,
-          'Bu işlemdeki tüm değişiklikler (çakışma çözümleri dahil) geri alınır ve işlemden önceki duruma dönülür.',
-          'İşlemi iptal et',
-        );
+        const ok = await ui.confirm(t.abortConfirm(label), t.abortDetail, t.abortAction);
         if (!ok) return cancelled();
         await runAll(await plan());
-        return done(`${label} iptal edildi; önceki duruma dönüldü.`);
+        return done(t.aborted(label));
       }
     }
   }
@@ -392,32 +369,33 @@ export class GitOpsService {
     run: OpRun,
     plan: () => Promise<string[][]>,
   ): Promise<Outcome> {
+    const t = text();
     const summary = op.message.trim();
-    if (!op.amend && summary === '') return fail('Commit mesajı boş olamaz.');
-    if (op.amend && !status.lastCommit) return fail('Değiştirilecek bir commit yok.');
+    if (!op.amend && summary === '') return fail(t.emptyCommitMessage);
+    if (op.amend && !status.lastCommit) return fail(t.noCommitToAmend);
     if (!op.amend && !status.files.some((f) => f.staged !== undefined)) {
-      return fail("Commit'e eklenmiş dosya yok — önce dosya seçin.");
+      return fail(t.nothingStagedForCommit);
     }
     if (op.amend && status.lastCommit?.pushed) {
       const ok = await this.deps.ui.confirm(
-        'Bu commit zaten gönderildi; değiştirmek geçmişi değiştirir.',
-        `${status.lastCommit.shortHash} ${status.lastCommit.message}\n\nDeğiştirdikten sonra göndermek için zorla gönderme (force push) gerekir.`,
-        'Değiştir',
+        t.amendPushedConfirm,
+        t.amendPushedDetail(`${status.lastCommit.shortHash} ${status.lastCommit.message}`),
+        t.amendAction,
       );
       if (!ok) return cancelled();
     }
 
     const [commitCmd, ...rest] = await plan();
-    if (!commitCmd) return fail('Commit oluşturulamadı.');
+    if (!commitCmd) return fail(t.commitFailed);
     try {
       await run.git(commitCmd);
     } catch (err) {
       const hook = err instanceof GitError && err.code === 'failed' && !err.kind ? await this.failedHook() : undefined;
-      if (hook) return fail(`${hook} hook'u commit'i durdurdu.`);
+      if (hook) return fail(t.hookStopped(hook));
       throw err;
     }
     const [hash = '', subject = ''] = (await run.quiet(['log', '-1', '--format=%h%x1f%s'])).trim().split('\x1f');
-    const made = op.amend ? `Son commit değiştirildi: ${hash} ${subject}` : `Commit oluşturuldu: ${hash} ${subject}`;
+    const made = op.amend ? t.amended(`${hash} ${subject}`) : t.committed(`${hash} ${subject}`);
     if (!op.push || rest.length === 0) return done(`${made}.`);
 
     const after = await getStatus(this.deps.root);
@@ -431,8 +409,9 @@ export class GitOpsService {
     run: OpRun,
     plan: () => Promise<string[][]>,
   ): Promise<Outcome> {
-    if (!status.branch) return fail('Ayrık HEAD (detached) durumunda çekilemez; önce bir branch\'e geçin.');
-    if (!status.upstream) return fail("Bu branch'in uzak karşılığı (upstream) yok; önce Gönder (push) yapın.");
+    const t = text();
+    if (!status.branch) return fail(t.pullDetached);
+    if (!status.upstream) return fail(t.noUpstream);
     const before = status.head;
     let strategy = op.strategy;
 
@@ -445,16 +424,16 @@ export class GitOpsService {
       const pref = this.deps.pullStrategy();
       let chosen: 'merge' | 'rebase' | undefined;
       if (pref === 'ask') {
-        const pick = await this.deps.ui.pick('Yerel ve uzak branch ayrışmış. Nasıl birleştirilsin?', [
-          { id: 'merge', label: 'Merge', detail: 'Uzak commit\'leri bir merge commit\'iyle birleştirir.' },
-          { id: 'rebase', label: 'Rebase', detail: 'Yerel commit\'lerinizi uzak commit\'lerin üstüne taşır.' },
-          { id: 'cancel', label: 'İptal' },
+        const pick = await this.deps.ui.pick(t.divergedPick, [
+          { id: 'merge', label: 'Merge', detail: t.mergeStrategyDetail },
+          { id: 'rebase', label: 'Rebase', detail: t.rebaseStrategyDetail },
+          { id: 'cancel', label: t.cancel },
         ]);
         chosen = pick === 'merge' || pick === 'rebase' ? pick : undefined;
       } else {
         chosen = pref;
       }
-      if (!chosen) return cancelled(MSG_DIVERGED);
+      if (!chosen) return cancelled(t.diverged);
       strategy = chosen;
       try {
         await run.git(chosen === 'merge' ? ['pull', '--no-rebase'] : ['pull', '--rebase']);
@@ -464,35 +443,30 @@ export class GitOpsService {
     }
 
     const head = (await run.quiet(['rev-parse', 'HEAD'])).trim();
-    if (head === before) return done('Zaten güncel.');
-    if (strategy === 'merge') return done(`Birleştirildi (merge): ${status.upstream} → ${status.branch}.`);
-    if (strategy === 'rebase') return done(`Rebase yapıldı: yerel commit'ler ${status.upstream} üstüne taşındı.`);
+    if (head === before) return done(t.upToDate);
+    if (strategy === 'merge') return done(t.pullMerged(status.upstream, status.branch));
+    if (strategy === 'rebase') return done(t.pullRebased(status.upstream));
     const n = Number((await run.quiet(['rev-list', '--count', `${before ?? head}..${head}`])).trim());
-    return done(`${n} commit çekildi.`);
+    return done(t.pulled(n));
   }
 
   private pullError(err: unknown): Outcome {
     if (err instanceof GitError) {
-      if (err.kind === 'conflict') return fail(MSG_CONFLICT);
-      if (err.kind === 'dirtyTree') {
-        return fail('Pull yapılamadı: commit edilmemiş değişiklikler var. Önce commit oluşturun ya da değişiklikleri saklayın (stash).');
-      }
+      if (err.kind === 'conflict') return fail(text().conflict);
+      if (err.kind === 'dirtyTree') return fail(text().pullDirty);
     }
     throw err;
   }
 
   private async push(force: boolean, status: WorkingTreeStatus, run: OpRun, plan: () => Promise<string[][]>): Promise<Outcome> {
+    const t = text();
     const branch = status.branch;
-    if (!branch) return fail('Ayrık HEAD (detached) durumunda gönderilemez; önce bir branch\'e geçin.');
+    if (!branch) return fail(t.pushDetached);
     if (force) {
-      const ok = await this.deps.ui.confirm(
-        `Zorla gönderilecek: ${branch}. Uzak branch'teki commit'lerin üzerine yazılır.`,
-        '--force-with-lease kullanılır: bu arada başka biri göndermişse işlem durur ve hiçbir şey silinmez.',
-        'Zorla gönder',
-      );
+      const ok = await this.deps.ui.confirm(t.forcePushConfirm(branch), t.forcePushDetail, t.forcePushAction);
       if (!ok) return cancelled();
     }
-    if (!force && status.upstream && status.ahead === 0) return done(`Gönderilecek commit yok; ${status.upstream} güncel.`);
+    if (!force && status.upstream && status.ahead === 0) return done(t.nothingToPush(status.upstream));
 
     const count = status.upstream
       ? status.ahead
@@ -503,15 +477,15 @@ export class GitOpsService {
     } catch (err) {
       if (err instanceof GitError && err.kind === 'noUpstream') {
         await run.git(['push', '-u', ...(force ? ['--force-with-lease'] : []), 'origin', branch]);
-        return done(`Gönderildi → origin/${branch} (${count} commit); takip ayarlandı.`);
+        return done(t.pushedTracking(branch, count));
       }
       if (err instanceof GitError && err.kind === 'nonFastForward') {
-        return fail(force ? 'Zorla gönderme durduruldu: uzakta sizin görmediğiniz yeni commit\'ler var. Önce Al (fetch) yapın.' : MSG_REJECTED);
+        return fail(force ? t.forcePushStopped : t.rejected);
       }
       throw err;
     }
-    if (!status.upstream) return done(`Gönderildi → origin/${branch} (${count} commit); takip ayarlandı.`);
-    return done(`${force ? 'Zorla gönderildi' : 'Gönderildi'} → ${status.upstream} (${count} commit).`);
+    if (!status.upstream) return done(t.pushedTracking(branch, count));
+    return done(force ? t.forcePushed(status.upstream, count) : t.pushed(status.upstream, count));
   }
 
   /** Başarısız commit'te hangi hook'un çalıştığını bulur (pre-commit öncelikli). */
@@ -539,50 +513,27 @@ export class GitOpsService {
 }
 
 function invalidBranchMessage(name: string): string {
-  return `Geçersiz branch adı: "${name}". Boşluk, ~ ^ : ? * [ \\ ve ".." kullanılamaz; "/" ile başlayıp bitemez.`;
+  return text().invalidBranch(name);
 }
 
-const OP_LABEL: Record<GitOpRequest['kind'], string> = {
-  stage: 'Dosyalar eklenemedi',
-  stageAll: 'Dosyalar eklenemedi',
-  unstage: "Dosyalar commit'ten çıkarılamadı",
-  unstageAll: "Dosyalar commit'ten çıkarılamadı",
-  discard: 'Değişiklikler geri alınamadı',
-  commit: 'Commit oluşturulamadı',
-  undoLastCommit: 'Son commit geri alınamadı',
-  fetch: 'Uzaktan güncellemeler alınamadı',
-  pull: 'Pull yapılamadı',
-  push: 'Gönderilemedi',
-  checkout: "Branch'e geçilemedi",
-  createBranch: 'Branch oluşturulamadı',
-  mergeBranch: 'Birleştirilemedi',
-  renameBranch: 'Branch adı değiştirilemedi',
-  deleteBranch: 'Branch silinemedi',
-  stashSave: 'Değişiklikler saklanamadı',
-  stashApply: 'Stash uygulanamadı',
-  stashDrop: 'Stash silinemedi',
-  markResolved: 'Dosyalar çözüldü olarak işaretlenemedi',
-  continueOperation: 'İşleme devam edilemedi',
-  abortOperation: 'İşlem iptal edilemedi',
-};
-
 function errorMessage(op: GitOpRequest, err: unknown): string {
-  if (!(err instanceof GitError)) return `${OP_LABEL[op.kind]}: ${err instanceof Error ? err.message : String(err)}`;
+  const t = text();
+  if (!(err instanceof GitError)) return t.opFailedWith(op.kind, err instanceof Error ? err.message : String(err));
   if (err.code !== 'failed') return err.message;
   switch (err.kind) {
     case 'auth':
-      return MSG_AUTH;
+      return t.auth;
     case 'network':
-      return MSG_NETWORK;
+      return t.network;
     case 'conflict':
-      return MSG_CONFLICT;
+      return t.conflict;
     case 'dirtyTree':
-      return MSG_DIRTY;
+      return t.dirtyTree;
     case 'nonFastForward':
-      return MSG_REJECTED;
+      return t.rejected;
     case 'noUpstream':
-      return "Bu branch'in uzak karşılığı (upstream) yok; önce Gönder (push) yapın.";
+      return t.noUpstream;
   }
-  if (/zaman aşımı/.test(err.message)) return `${OP_LABEL[op.kind]}: ${err.message}`;
-  return `${OP_LABEL[op.kind]}. Ayrıntı için çıktıya bakın.`;
+  if (err.timedOut) return t.opFailedWith(op.kind, err.message);
+  return t.opFailedSeeOutput(op.kind);
 }

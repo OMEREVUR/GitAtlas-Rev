@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { text } from '../i18n/ops';
 
 export type GitErrorCode = 'notFound' | 'notRepo' | 'failed';
 
@@ -10,6 +11,8 @@ export class GitError extends Error {
   readonly stdout: string;
   /** Yalnızca 'failed' hatalarda: stderr + stdout'tan çıkarılan sınıf (merge çakışması stdout'a yazılır). */
   readonly kind?: GitErrorKind;
+  /** Süre dolduğu için öldürüldü (mesaj dile göre değiştiğinden metin yerine bu bayrak okunur). */
+  timedOut?: boolean;
 
   constructor(code: GitErrorCode, message: string, stderr = '', stdout = '') {
     super(message);
@@ -98,24 +101,24 @@ export function runGit(args: string[], cwd: string, opts: RunGitOptions = {}): P
         }
         const e = err as NodeJS.ErrnoException & { killed?: boolean };
         if (e.code === 'ENOENT') {
-          const message =
-            gitPath === 'git'
-              ? 'Git bulunamadı. Git kurulu ve PATH üzerinde olmalı.'
-              : `Git bulunamadı: ${gitPath}. gitatlas-revrev.git.path ayarını kontrol edin.`;
+          const t = text();
+          const message = gitPath === 'git' ? t.gitNotFound : t.gitNotFoundAt(gitPath);
           reject(new GitError('notFound', message, stderr, stdout));
           return;
         }
         if (e.killed && opts.timeoutMs !== undefined) {
           const sec = Math.round(opts.timeoutMs / 1000);
-          reject(new GitError('failed', `Git işlemi zaman aşımına uğradı (${sec} sn).`, stderr, stdout));
+          const timeout = new GitError('failed', text().gitTimedOut(sec), stderr, stdout);
+          timeout.timedOut = true;
+          reject(timeout);
           return;
         }
         if (/not a git repository/i.test(stderr)) {
-          reject(new GitError('notRepo', 'Bu klasör bir git reposu değil.', stderr, stdout));
+          reject(new GitError('notRepo', text().notRepo, stderr, stdout));
           return;
         }
         const detail = stderr.trim() || err.message;
-        reject(new GitError('failed', `Git komutu başarısız oldu (git ${args.join(' ')}): ${detail}`, stderr, stdout));
+        reject(new GitError('failed', text().gitCommandFailed(`git ${args.join(' ')}`, detail), stderr, stdout));
       },
     );
     // stdin hep kapatılır; git hiçbir şey beklemez.

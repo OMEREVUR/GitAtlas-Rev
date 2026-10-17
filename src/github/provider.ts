@@ -1,3 +1,4 @@
+import { text } from '../i18n/github';
 import type { CiState, PullRequest } from '../types';
 import { GitHubApiError, fetchPulls } from './graphql';
 import type { PullsResult } from './graphql';
@@ -54,7 +55,7 @@ export class GitHubProvider implements RemoteProvider {
 
   private async load(): Promise<PullsResult> {
     const token = await this.getToken();
-    if (token === undefined) throw new GitHubApiError('unauthorized', 'GitHub oturumu yok.');
+    if (token === undefined) throw new GitHubApiError('unauthorized', text().noSession);
     return fetchPulls(token, this.owner, this.repo, this.fetchFn);
   }
 }

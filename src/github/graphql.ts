@@ -1,3 +1,4 @@
+import { text } from '../i18n/github';
 import type { BranchCi, CiState, PullRequest, RateLimitInfo } from '../types';
 
 export const GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql';
@@ -114,11 +115,12 @@ export function throwGraphqlErrors(root: Record<string, unknown>, rateLimit?: Ra
   if (Array.isArray(root.errors) && root.errors.length > 0) {
     const first = rec(root.errors[0]);
     const type = str(first.type);
-    const message = str(first.message, 'bilinmeyen hata');
-    if (type === 'RATE_LIMITED') throw new GitHubApiError('rateLimited', 'GitHub istek limiti doldu.', rateLimit);
-    if (type === 'NOT_FOUND') throw new GitHubApiError('notFound', `GitHub'da depo bulunamadı ya da erişim izni yok: ${message}`, rateLimit);
-    if (type === 'FORBIDDEN') throw new GitHubApiError('unauthorized', `GitHub erişimi reddedildi: ${message}`, rateLimit);
-    throw new GitHubApiError('other', `GitHub API hatası: ${message}`, rateLimit);
+    const t = text();
+    const message = str(first.message, t.unknownError);
+    if (type === 'RATE_LIMITED') throw new GitHubApiError('rateLimited', t.rateLimited, rateLimit);
+    if (type === 'NOT_FOUND') throw new GitHubApiError('notFound', t.repoNotFoundWith(message), rateLimit);
+    if (type === 'FORBIDDEN') throw new GitHubApiError('unauthorized', t.forbiddenWith(message), rateLimit);
+    throw new GitHubApiError('other', t.apiError(message), rateLimit);
   }
 }
 
@@ -128,7 +130,7 @@ export function parsePullsResponse(json: unknown): PullsResult {
   const data = rec(root.data);
   const rateLimit = parseRateLimit(data.rateLimit);
   throwGraphqlErrors(root, rateLimit);
-  if (!isRecord(data.repository)) throw new GitHubApiError('notFound', "GitHub'da depo bulunamadı ya da erişim izni yok.", rateLimit);
+  if (!isRecord(data.repository)) throw new GitHubApiError('notFound', text().repoNotFound, rateLimit);
   const repo = data.repository;
   const pullRequests = nodes(repo.pullRequests)
     .map(parsePull)
@@ -154,17 +156,21 @@ export function rateLimitFromHeaders(headers: Headers): RateLimitInfo | undefine
   };
 }
 
-export const NETWORK_MESSAGE = "GitHub'a ulaşılamadı. İnternet bağlantısını kontrol edin.";
+/** Ağ hatası mesajı (etkin dilde). */
+export function networkMessage(): string {
+  return text().network;
+}
 
 /** GraphQL ve REST için ortak HTTP durum eşlemesi (401/403/429/404/diğer). */
 export function throwForStatus(res: Response, rateLimit: RateLimitInfo | undefined): void {
-  if (res.status === 401) throw new GitHubApiError('unauthorized', 'GitHub oturumu geçersiz ya da süresi doldu.', rateLimit);
+  const t = text();
+  if (res.status === 401) throw new GitHubApiError('unauthorized', t.sessionInvalid, rateLimit);
   if ((res.status === 403 || res.status === 429) && (rateLimit?.remaining === 0 || res.status === 429)) {
-    throw new GitHubApiError('rateLimited', 'GitHub istek limiti doldu.', rateLimit);
+    throw new GitHubApiError('rateLimited', t.rateLimited, rateLimit);
   }
-  if (res.status === 403) throw new GitHubApiError('unauthorized', 'GitHub erişimi reddedildi (izin ya da SSO yetkisi eksik olabilir).', rateLimit);
-  if (res.status === 404) throw new GitHubApiError('notFound', "GitHub'da depo bulunamadı ya da erişim izni yok.", rateLimit);
-  if (!res.ok) throw new GitHubApiError('other', `GitHub isteği başarısız oldu (HTTP ${res.status}).`, rateLimit);
+  if (res.status === 403) throw new GitHubApiError('unauthorized', t.forbidden, rateLimit);
+  if (res.status === 404) throw new GitHubApiError('notFound', t.repoNotFound, rateLimit);
+  if (!res.ok) throw new GitHubApiError('other', t.requestFailed(res.status), rateLimit);
 }
 
 /** GraphQL isteği; HTTP hatalarını GitHubApiError'a çevirir, ham JSON'u döner ("errors" kontrolü çağırana kalır). */
@@ -187,7 +193,7 @@ export async function graphqlRequest(
       body: JSON.stringify({ query, variables }),
     });
   } catch {
-    throw new GitHubApiError('network', NETWORK_MESSAGE);
+    throw new GitHubApiError('network', networkMessage());
   }
   const rateLimit = rateLimitFromHeaders(res.headers);
   throwForStatus(res, rateLimit);
@@ -195,7 +201,7 @@ export async function graphqlRequest(
   try {
     json = await res.json();
   } catch {
-    throw new GitHubApiError('network', 'GitHub yanıtı okunamadı.');
+    throw new GitHubApiError('network', text().unreadableResponse);
   }
   return rateLimit ? { json, rateLimit } : { json };
 }

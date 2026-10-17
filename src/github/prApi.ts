@@ -3,13 +3,14 @@ import type { CiState, Mergeable, MergeMethod, PrCheck, PrPanelData, PullRequest
 import {
   GitHubApiError,
   graphqlRequest,
-  NETWORK_MESSAGE,
+  networkMessage,
   parseRateLimit,
   rateLimitFromHeaders,
   throwForStatus,
   throwGraphqlErrors,
   toCi,
 } from './graphql';
+import { text } from '../i18n/github';
 
 const API = 'https://api.github.com';
 
@@ -144,7 +145,7 @@ export function parsePrPanelResponse(json: unknown, now = Date.now()): PrPanelDa
   const root = rec(json);
   const data = rec(root.data);
   throwGraphqlErrors(root, parseRateLimit(data.rateLimit));
-  if (!isRecord(data.repository)) throw new GitHubApiError('notFound', "GitHub'da depo bulunamadı ya da erişim izni yok.");
+  if (!isRecord(data.repository)) throw new GitHubApiError('notFound', text().repoNotFound);
   const repo = data.repository;
 
   const reviewList = nodes(rec(data.review))
@@ -219,7 +220,7 @@ async function rest(token: string, method: string, url: string, body: unknown, f
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
   } catch {
-    throw new GitHubApiError('network', NETWORK_MESSAGE);
+    throw new GitHubApiError('network', networkMessage());
   }
   let json: unknown;
   try {
@@ -253,13 +254,14 @@ export async function createPullRequest(
   const { res, json } = await rest(token, 'POST', `${repoPath(owner, repo)}/pulls`, input, fetchFn);
   if (res.status === 422) {
     const msg = githubMessage(json);
-    if (/already exists/i.test(msg)) throw new GitHubApiError('other', 'Bu branch için zaten açık bir PR var.');
-    if (/No commits between/i.test(msg)) throw new GitHubApiError('other', 'PR açılamadı: base ile head arasında fark yok.');
-    throw new GitHubApiError('other', `PR açılamadı: ${msg || 'GitHub isteği reddetti.'}`);
+    const t = text();
+    if (/already exists/i.test(msg)) throw new GitHubApiError('other', t.prAlreadyOpen);
+    if (/No commits between/i.test(msg)) throw new GitHubApiError('other', t.prNoDiff);
+    throw new GitHubApiError('other', t.prCreateFailed(msg || t.requestRejected));
   }
   throwForStatus(res, rateLimitFromHeaders(res.headers));
   const r = rec(json);
-  if (typeof r.number !== 'number') throw new GitHubApiError('other', 'GitHub yanıtı beklenmedik biçimde.');
+  if (typeof r.number !== 'number') throw new GitHubApiError('other', text().unexpectedResponse);
   return { number: r.number, url: str(r.html_url) };
 }
 
@@ -276,11 +278,11 @@ export async function mergePullRequest(
   if (res.status === 405) {
     throw new GitHubApiError(
       'other',
-      `PR birleştirilemedi: check'ler, zorunlu onaylar ya da çakışma engelliyor olabilir.${msg ? ` (GitHub: ${msg})` : ''}`,
+      text().mergeBlocked(msg),
     );
   }
-  if (res.status === 409) throw new GitHubApiError('other', "PR'ın head'i değişti, yenileyip tekrar deneyin.");
-  if (res.status === 422) throw new GitHubApiError('other', `PR birleştirilemedi.${msg ? ` (GitHub: ${msg})` : ''}`);
+  if (res.status === 409) throw new GitHubApiError('other', text().headChanged);
+  if (res.status === 422) throw new GitHubApiError('other', text().mergeFailed(msg));
   throwForStatus(res, rateLimitFromHeaders(res.headers));
   return { sha: str(rec(json).sha) };
 }

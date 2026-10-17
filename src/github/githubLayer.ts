@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
+import { text } from '../i18n/github';
 import type { BranchCi, GitHubData, GitHubStatus, PullRequest, RateLimitInfo } from '../types';
 import { GitHubApiError } from './graphql';
 import { GitHubProvider } from './provider';
@@ -249,7 +250,7 @@ export class GitHubLayer implements vscode.Disposable {
         this.setStatus({ state: 'stale', repo, fetchedAt: this.fetchedAt, reason: 'offline', ...(this.rateLimit ? { rateLimit: this.rateLimit } : {}) });
         return;
       default: {
-        const message = err instanceof Error ? err.message : 'GitHub verisi alınamadı.';
+        const message = err instanceof Error ? err.message : text().dataUnavailable;
         this.setStatus({ state: 'error', message });
       }
     }
