@@ -14,6 +14,7 @@
 - Ayarlar: `gitatlas-revrev.ignore`, `defaultRange`, `graph.initialCommits`, `explorer.badges` (hot/all/off), `github.enabled`, `github.refreshInterval`, `git.path`. README'de gizlilik notu var.
 - **v5 tamam** (Ekim 2026, kullanıcının isteğiyle rapor dışı ek — GitAtlas-RevRev artık repoya da yazar): "Değişiklikler" sekmesi (onay kutularıyla seçerek/tümünü add, diff, geri al; commit kutusu: tür çipleri, 50/72 sayacı, amend, commit ve gönder, son commit'i geri al; stash; çakışma bandı: Çözüldü/Devam et/İptal et), her sekmede eşitleme çubuğu (Getir/Çek/Gönder; pull önce --ff-only, olmazsa sor; yeni branch'te -u), Branch'ler ağacında sağ tık (geç, yeni, birleştir, yeniden adlandır, sil), PULL REQUEST'LER bölümü (bu branch'ten PR aç — gerekirse önce push —, mevcut PR kartı: review/çakışma/check'ler/birleştir (merge/squash/rebase, uzak branch'i sil), Benim PR'larım, Review bekleyenler, checkout), işlem bildirimi + "GitAtlas-RevRev Git" çıktı kanalı, haritada commit edilmemiş dosya rozeti.
   - Güvenlik kuralları: riskli işlemler (geri al, sil, zorla gönder, gönderilmiş commit'i değiştir, stash sil, işlemi iptal, PR birleştir) eklentide modal onaylı; --no-verify yok; aynı anda tek yazma işlemi (OpQueue; GitHub işlemleri aynı kuyrukta, iç adımlar runUnqueued); git asla terminal/editör beklemez (GIT_TERMINAL_PROMPT=0, GIT_EDITOR=true); auth hatasında bir kez GitHub oturumuyla askpass + `-c credential.helper=`; token log/commands/detail'de yok (redactSecrets). Mesajlarda ref adlarına Türkçe ek eklenmez ("Geçildi: x").
+- **v6 / 0.2.0 tamam** (Ekim 2026): İngilizce arayüz. Dil `gitatlas-revrev.language` (auto/en/tr; auto = VS Code dili 'tr' ise Türkçe, değilse İngilizce). Menü/komut/ayar adları `package.nls.json` (en) + `package.nls.tr.json`. README.md İngilizce, README.tr.md Türkçe, CHANGELOG.md. Dil değişince eklenti pencereyi yeniden yüklemeyi önerir. Build'ler `extension-versions/` (git dışı).
 - Sıradaki (raporda kalanlar): gerçek kullanıcı geri bildirimi, Marketplace yayını, demo GIF, rakiplerin güncel hâlinin kontrolü. v3: GitHub katmanı (PR çakışma uyarısı). v4: zaman makinesi + katkı paneli.
 - Kapsam dışı iş yapılmaz. Tipler ileriye uygun tutulur (ör. commit'lerde `parents`).
 
@@ -34,7 +35,7 @@
 - Test: `npm test` (= `npx vitest run`)
 - Fixture reposu: `npm run fixture` (= `bash scripts/make-fixture.sh`; repo yolunu stdout'a basar; beklenen sayılar scriptin başındaki yorumda: main 34 commit, 16 izlenen dosya (lineCounts 15), graph 43 commit / 7 ref, `.mailmap` ile 3 yazar, branch'ler, bayat branch, origin `<repo>/.git/fixture-origin.git`)
 - Fixture'da uçtan uca deneme (loadSnapshot + computeFileStats; 7g/30g/tümü, rename, binary, ignore, cache süresi): `npm run try-fixture -- <repo-yolu>`
-- Webview önizlemesi (gerçek model + headless Chrome ekran görüntüleri): `npm run preview -- <repo-yolu> [--name ad] [--no-shots]` → `dev/out/preview-model.js`, `dev/preview.html` (`?theme=dark|light`, `?autoselect=1` ya da `?autoselect=branch:<ad>`, `?view=graph|time|contrib|changes`, `?opdemo=1`, `?gh=connected|stale|off` (sahte PR'lar), `?select=<yol>`, `?timeback=<gün>`, `?width=360`, `?range=7d|30d|all`), görüntüler `dev/screenshots/<ad>-*.png`
+- Webview önizlemesi (gerçek model + headless Chrome ekran görüntüleri): `npm run preview -- <repo-yolu> [--name ad] [--lang en|tr] [--no-shots]` → `dev/out/preview-model.js`, `dev/preview.html` (`?lang=en|tr`, `?theme=dark|light`, `?autoselect=1` ya da `?autoselect=branch:<ad>`, `?view=graph|time|contrib|changes`, `?opdemo=1`, `?gh=connected|stale|off` (sahte PR'lar), `?select=<yol>`, `?timeback=<gün>`, `?width=360`, `?range=7d|30d|all`), görüntüler `dev/screenshots/<ad>-*.png`
 - Bileşen önizlemeleri (sahte veri): `npm run build:dev`, sonra tarayıcıda `dev/treemap.html`, `dev/panel.html`, `dev/graph.html`, `dev/graphside.html`, `dev/timemachine.html`, `dev/contrib.html`, `dev/github.html`, `dev/changes.html`, `dev/ops.html`, `dev/prpanel.html` (`?gh=…` tüm bant durumları; `?theme=…`, `?state=…`, `?root=…`, `?highlight=1`, `?n=2000`, `?sel=commit|merge|branch` …)
 - Bir TS scriptini çalıştırma: `node scripts/run-ts.mjs <dosya.ts>` (esbuild ile bundle eder, `vscode` modülünü taklit eder)
 - Extension Development Host: VS Code'da F5 (`.vscode/launch.json`, önce `npm: build` çalışır).
@@ -47,6 +48,7 @@
 - `src/decorations/` — Explorer rozeti (`FileDecorationProvider`; ısı modları + PR sayısı).
 - `src/ops/` — v5: `opQueue.ts`, `gitOpsService.ts` (git işlemleri, onaylar, Türkçe sonuçlar; vscode'suz, gerçek git'e karşı testli), `githubOpsService.ts` (PR aç/birleştir/checkout), `prDraft.ts`.
 - `src/github/` — `prApi.ts` (PR paneli sorgusu, PR oluştur/birleştir, uzak branch sil), `remote.ts` (origin → owner/repo), `graphql.ts` (sorgu + ayrıştırma, fetch enjekte), `provider.ts` (`RemoteProvider`, `GitHubProvider`; vscode'suz), `githubLayer.ts` (oturum, durum makinesi, cache, yenileme).
+- `src/i18n/` — `index.ts` (dil durumu, `defineText`, `resolveLang`, `plural`), alan sözlükleri: `main` (main.ts + extension.ts), `map`, `graph`, `changes`, `ops`, `github`, `panel`.
 - `src/config.ts` — ayarlar (`gitatlas-revrev.ignore` + varsayılan hariçler).
 - `src/webview/` — webview: `main.ts` (düzen + durum), `layout.css`, `treemap.ts`, `rangeFilter.ts`, `fileCard.ts`, `commitFeed.ts`, `states.ts`, `heat.ts` (ortak ısı seviyesi), `format.ts` (Türkçe biçimleyiciler), `base.css` (`--rr-*` tokenları); v2: `graphView.ts` + `graph.css`, `graphToolbar.ts`, `commitDetail.ts`; treemap'in `compact` modu mini harita içindir; v3: `githubBanner.ts` (+ `conflictFiles`), treemap `prCounts/prStale`; v4: `timeMachine.ts` (+ treemap `missing`), `contributors.ts`.
 - `test/` — vitest testleri. `scripts/` — fixture, deneme ve önizleme scriptleri. `dev/` — önizleme sayfaları (`themes.css` sahte `--vscode-*` değişkenleri; eklentiye girmez). `dev/out/`, `dev/screenshots/` git'e girmez.
@@ -58,7 +60,7 @@
 - strict; `any` yok (gerekirse `unknown` + daraltma).
 - Yeni bağımlılık eklemeden önce sor.
 - Webview'da yalnızca `--vscode-*` renkleri (ve onlardan türeyen `--rr-*`); sabit hex yok. Açık, koyu ve yüksek kontrast temada okunur olmalı.
-- Kullanıcıya görünen metinler Türkçe.
+- Kullanıcıya görünen metinler koda gömülmez: alanın sözlüğünde (`src/i18n/<alan>.ts`, `defineText({ tr, en })`) Türkçe + İngilizce yazılır, `text()` fonksiyon/render içinde çağrılır (modül seviyesinde sabite bağlanmaz). Sayı/tarih `src/webview/format.ts` ile (dile göre). İngilizcede tekil/çoğul `plural`. Git stderr regex'leri ve git argümanları çevrilmez. `test/i18n-all.test.ts` yeni sözlüğe eklenir.
 - Tıklanan her şey gerçek `<button>`/`<a>`; renk tek başına bilgi taşımaz.
 
 ## Doğrulama kuralı
