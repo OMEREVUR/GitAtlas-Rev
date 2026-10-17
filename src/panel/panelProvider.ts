@@ -11,6 +11,8 @@ import { computeFileStats } from '../model/aggregate';
 import { computeContrib } from '../model/contrib';
 import { loadGraph } from '../model/graphService';
 import { loadSnapshot, NoCommitsError } from '../model/repoService';
+import { getLang } from '../i18n';
+import { panelText } from '../i18n/panel';
 import { buildTimeline } from '../model/timeline';
 import { fetchPrPanel } from '../github/prApi';
 import { GitHubOpsService } from '../ops/githubOpsService';
@@ -349,15 +351,16 @@ export function parseWebviewMessage(raw: unknown): WebviewToExtension | undefine
 
 /** Hata → panel durum kodu + kısa durum çubuğu metni. */
 export function mapError(err: unknown): { code: ErrorCode; message: string; short: string } {
+  const t = panelText();
   if (err instanceof GitError) {
-    if (err.code === 'notFound') return { code: 'noGit', message: err.message, short: 'Git bulunamadı' };
-    if (err.code === 'notRepo') return { code: 'noRepo', message: err.message, short: 'git reposu yok' };
+    if (err.code === 'notFound') return { code: 'noGit', message: err.message, short: t.errNoGitShort };
+    if (err.code === 'notRepo') return { code: 'noRepo', message: err.message, short: t.errNoRepoShort };
   }
   if (err instanceof NoCommitsError) {
-    return { code: 'noCommits', message: err.message || 'Bu repoda henüz commit yok.', short: 'henüz commit yok' };
+    return { code: 'noCommits', message: err.message || t.errNoCommits, short: t.errNoCommitsShort };
   }
   const message = err instanceof Error ? err.message : String(err);
-  return { code: 'unknown', message, short: 'tarama başarısız' };
+  return { code: 'unknown', message, short: t.errScanFailedShort };
 }
 
 class NoWorkspaceError extends Error {}
@@ -490,7 +493,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     }
     const panel = vscode.window.createWebviewPanel(
       GitAtlasRevRevPanelProvider.editorViewType,
-      'GitAtlas-RevRev: Harita',
+      panelText().editorTitle,
       vscode.ViewColumn.Active,
       { retainContextWhenHidden: true },
     );
@@ -606,7 +609,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
       this.refsEmitter.fire(undefined);
       this.decorations.update([], this.root ?? '');
       const e = err instanceof NoWorkspaceError
-        ? { code: 'noWorkspace' as const, message: 'Açık bir klasör yok.', short: 'klasör açık değil' }
+        ? { code: 'noWorkspace' as const, message: panelText().errNoWorkspace, short: panelText().errNoWorkspaceShort }
         : mapError(err);
       this.post({ type: 'error', code: e.code, message: e.message });
       this.statusBar.setError(e.short);
@@ -687,25 +690,21 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
   async connectGitHub(): Promise<void> {
     const enabled = vscode.workspace.getConfiguration('gitatlas-revrev').get<unknown>('github.enabled') !== false;
     const status = this.github.data.status;
+    const t = panelText();
     switch (githubConnectAction(status, enabled)) {
       case 'disabled': {
-        const choice = await vscode.window.showInformationMessage('GitAtlas-RevRev: GitHub katmanı ayarlardan kapalı.', 'Ayarı aç');
+        const choice = await vscode.window.showInformationMessage(t.githubDisabled, t.openSetting);
         if (choice) await vscode.commands.executeCommand('workbench.action.openSettings', 'gitatlas-revrev.github.enabled');
         return;
       }
       case 'publish-prompt': {
-        const choice = await vscode.window.showInformationMessage(
-          "GitAtlas-RevRev: Bu repo henüz GitHub'da değil (origin remote'u yok).",
-          "GitHub'da yayınla",
-        );
+        const choice = await vscode.window.showInformationMessage(t.notOnGitHub, t.publishToGitHub);
         if (choice) await this.publishToGitHub();
         return;
       }
       case 'not-github': {
         const url = status.state === 'notGitHub' ? status.remoteUrl : '';
-        void vscode.window.showInformationMessage(
-          `GitAtlas-RevRev: origin bir GitHub reposu değil: ${redactSecrets(url)}. GitHub katmanı yalnızca github.com repolarıyla çalışır.`,
-        );
+        void vscode.window.showInformationMessage(t.notGitHub(redactSecrets(url)));
         return;
       }
       case 'connect':
@@ -713,7 +712,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
           await this.github.connect(); // iptal edilirse durum 'off' kalır; bir şey göstermeyiz
         } catch (err) {
           const text = err instanceof Error ? err.message : String(err);
-          void vscode.window.showErrorMessage(`GitAtlas-RevRev: GitHub'a bağlanılamadı: ${text}`);
+          void vscode.window.showErrorMessage(t.connectFailed(text));
         }
         return;
     }
@@ -724,16 +723,14 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     const commands = await vscode.commands.getCommands(true);
     const cmd = commands.includes('github.publish') ? 'github.publish' : commands.includes('git.publish') ? 'git.publish' : undefined;
     if (!cmd) {
-      void vscode.window.showErrorMessage(
-        "GitAtlas-RevRev: GitHub'da yayınlama komutu bulunamadı. VS Code'un yerleşik Git ve GitHub eklentileri etkin olmalı.",
-      );
+      void vscode.window.showErrorMessage(panelText().publishCommandMissing);
       return;
     }
     try {
       await vscode.commands.executeCommand(cmd);
     } catch (err) {
       const text = err instanceof Error ? err.message : String(err);
-      void vscode.window.showErrorMessage(`GitAtlas-RevRev: GitHub'da yayınlanamadı: ${text}`);
+      void vscode.window.showErrorMessage(panelText().publishFailed(text));
     }
     await this.redetectRemote();
     void this.reload();
@@ -832,7 +829,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
       this.broadcast({ type: 'status', status });
       this.broadcast({ type: 'stashes', stashes });
     } catch (err) {
-      this.log(`[durum] okunamadı: ${err instanceof Error ? err.message : String(err)}`);
+      this.log(panelText().logStatusFailed(err instanceof Error ? err.message : String(err)));
     }
   }
 
@@ -905,7 +902,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
   /** Komutlardan gelen işlem başarısız olursa "Çıktıyı göster" düğmeli hata bildirimi. */
   private notifyFailure(result: OpResult): void {
     if (result.ok || result.cancelled) return;
-    void vscode.window.showErrorMessage(`GitAtlas-RevRev: ${result.message}`, 'Çıktıyı göster').then((choice) => {
+    void vscode.window.showErrorMessage(`GitAtlas-RevRev: ${result.message}`, panelText().showOutput).then((choice) => {
       if (choice) this.showGitOutput();
     });
   }
@@ -941,14 +938,14 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
       root = undefined;
     }
     if (!root) {
-      result = { id, kind, ok: false, commands: [], message: 'Açık bir git reposu yok.' };
+      result = { id, kind, ok: false, commands: [], message: panelText().noRepoOpen };
     } else {
       try {
         result = await run(root, (commands) => this.broadcast({ type: 'opStarted', id, kind, commands }));
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        this.log(`[hata] ${kind}: ${message}`);
-        result = { id, kind, ok: false, commands: [], message: `İşlem tamamlanamadı: ${message}` };
+        this.log(panelText().logOpError(kind, message));
+        result = { id, kind, ok: false, commands: [], message: panelText().opFailed(message) };
       }
     }
     if (!this.disposed) this.broadcast({ type: 'opResult', result });
@@ -1013,7 +1010,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     const root = this.root;
     try {
       const token = await this.getToken();
-      if (!token) throw new Error('GitHub oturumu bulunamadı. GitHub ile yeniden bağlanın.');
+      if (!token) throw new Error(panelText().noGitHubSession);
       const branch = this.lastStatus?.branch ?? this.refs?.find((r) => r.kind === 'local' && r.isHead)?.name;
       const data = await fetchPrPanel(token, coords.owner, coords.repo, branch, fetch);
       if (this.disposed || this.prPanelRerun || root !== this.root) return; // daha yeni istek ya da kök değişti
@@ -1022,8 +1019,8 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     } catch (err) {
       if (this.disposed || this.prPanelRerun || root !== this.root) return;
       const text = err instanceof Error ? err.message : String(err);
-      this.log(`[PR paneli] alınamadı: ${text}`);
-      this.postPrPanel({ type: 'prPanel', data: this.lastPrPanel, error: `PR'lar alınamadı: ${redactSecrets(text, [...this.secrets])}` });
+      this.log(panelText().logPrPanelFailed(text));
+      this.postPrPanel({ type: 'prPanel', data: this.lastPrPanel, error: panelText().prPanelFailed(redactSecrets(text, [...this.secrets])) });
     }
   }
 
@@ -1034,8 +1031,8 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
       this.broadcast({ type: 'prDraft', draft });
     } catch (err) {
       const text = err instanceof Error ? err.message : String(err);
-      this.log(`[PR taslağı] hazırlanamadı: ${text}`);
-      this.broadcast({ type: 'prDraft', draft: undefined, error: `PR taslağı hazırlanamadı: ${text}` });
+      this.log(panelText().logPrDraftFailed(text));
+      this.broadcast({ type: 'prDraft', draft: undefined, error: panelText().prDraftFailed(text) });
     }
   }
 
@@ -1051,7 +1048,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     if (staged) {
       const left = file?.staged === 'added' ? makeGitUri(root, '', relPath) : makeGitUri(root, 'HEAD', file?.oldPath ?? relPath);
       const right = makeGitUri(root, file?.staged === 'deleted' ? '' : INDEX_REF, relPath);
-      await vscode.commands.executeCommand('vscode.diff', left, right, `${name} (HEAD ↔ Index)`);
+      await vscode.commands.executeCommand('vscode.diff', left, right, panelText().diffHeadIndex(name));
       return;
     }
     const left = makeGitUri(root, file?.unstaged === 'untracked' ? '' : INDEX_REF, relPath);
@@ -1059,7 +1056,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
       file?.unstaged === 'deleted'
         ? makeGitUri(root, '', relPath)
         : vscode.Uri.joinPath(vscode.Uri.file(root), ...relPath.split('/'));
-    await vscode.commands.executeCommand('vscode.diff', left, right, `${name} (Index ↔ Çalışma ağacı)`);
+    await vscode.commands.executeCommand('vscode.diff', left, right, panelText().diffIndexWorking(name));
   }
 
   // ---- v4: zaman makinesi ve katkı ----
@@ -1076,7 +1073,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
         this.lastTimeline = { type: 'timeline', timeline };
         this.broadcast(this.lastTimeline);
       } catch (err) {
-        this.reportDerivedError('Zaman makinesi', err);
+        this.reportDerivedError(panelText().timeMachine, err);
       }
     }
     if (this.contribRange) {
@@ -1086,14 +1083,14 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
         this.lastContrib = { type: 'contrib', contrib };
         this.broadcast(this.lastContrib);
       } catch (err) {
-        this.reportDerivedError('Katkı paneli', err);
+        this.reportDerivedError(panelText().contribPanel, err);
       }
     }
   }
 
   private reportDerivedError(what: string, err: unknown): void {
     const text = err instanceof Error ? err.message : String(err);
-    void vscode.window.showErrorMessage(`GitAtlas-RevRev: ${what} hazırlanamadı: ${text}`);
+    void vscode.window.showErrorMessage(panelText().derivedFailed(what, text));
   }
 
   // ---- branch'ler ve graph ----
@@ -1153,7 +1150,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
       this.postGraph({ type: 'graph', graph });
     } catch (err) {
       if (this.disposed || this.graphRerun) return;
-      const message = err instanceof NoWorkspaceError ? 'Açık bir klasör yok.' : mapError(err).message;
+      const message = err instanceof NoWorkspaceError ? panelText().errNoWorkspace : mapError(err).message;
       this.postGraph({ type: 'graphError', message });
     }
   }
@@ -1289,7 +1286,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     const match = (c: { hash: string }): boolean => c.hash === hash || c.hash.startsWith(hash);
     const commit = this.snapshot?.commits.find(match) ?? this.graph?.commits.find(match);
     if (!root || !commit) {
-      void vscode.window.showWarningMessage('GitAtlas-RevRev: commit bulunamadı. Haritayı yenileyip tekrar deneyin.');
+      void vscode.window.showWarningMessage(panelText().commitNotFound);
       return;
     }
     const change = commit.files.find((f) => f.path === relPath || f.oldPath === relPath);
@@ -1335,8 +1332,9 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
       `font-src ${webview.cspSource}`,
       `script-src 'nonce-${nonce}'`,
     ].join('; ');
+    const lang = getLang();
     return `<!DOCTYPE html>
-<html lang="tr">
+<html lang="${lang}">
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="${csp}">
@@ -1345,7 +1343,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
 <link rel="stylesheet" href="${asset('webview.css')}">
 <title>GitAtlas-RevRev</title>
 </head>
-<body>
+<body data-lang="${lang}">
 <div id="app"></div>
 <script nonce="${nonce}" src="${asset('webview.js')}"></script>
 </body>

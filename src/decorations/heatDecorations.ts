@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { type BadgeMode, getBadgeMode } from '../config';
+import { panelText } from '../i18n/panel';
 import type { FileStat, PullRequest } from '../types';
 import { heatLevels } from '../webview/heat';
 
@@ -23,11 +24,10 @@ export function computeHeatTiers(files: readonly Pick<FileStat, 'path' | 'change
   return tiers;
 }
 
-/** Rozet metni ve Türkçe tooltip. VS Code rozeti en fazla 2 karakter kabul eder. */
+/** Rozet metni ve (etkin dilde) tooltip. VS Code rozeti en fazla 2 karakter kabul eder. */
 export function heatBadge(tier: HeatTier, changes: number): { badge: string; tooltip: string } {
-  return tier === 2
-    ? { badge: '●●', tooltip: `GitAtlas-RevRev: çok sık değişiyor · ${changes} commit` }
-    : { badge: '●', tooltip: `GitAtlas-RevRev: sık değişiyor · ${changes} commit` };
+  const t = panelText();
+  return tier === 2 ? { badge: '●●', tooltip: t.badgeHot(changes) } : { badge: '●', tooltip: t.badgeWarm(changes) };
 }
 
 /** Bu kadar ve üstü açık PR aynı dosyaya dokunursa PR rozeti ısının önüne geçer. */
@@ -77,7 +77,7 @@ export function computeBadges(
     for (const f of files) {
       const level = levels.get(f.path) ?? 0;
       if (level > 0) {
-        out.set(f.path, { kind: 'heat', badge: String(level), tooltip: `GitAtlas-RevRev: ısı ${level}/5 · ${f.changes} commit` });
+        out.set(f.path, { kind: 'heat', badge: String(level), tooltip: panelText().badgeHeat(level, f.changes) });
       }
     }
   }
@@ -89,7 +89,7 @@ export function computeBadges(
         out.set(f.path, {
           kind: 'pr',
           badge: prBadgeText(n),
-          tooltip: `GitAtlas-RevRev: ${n} açık PR bu dosyaya dokunuyor (çakışma riski)`,
+          tooltip: panelText().badgePrs(n),
         });
       }
     }

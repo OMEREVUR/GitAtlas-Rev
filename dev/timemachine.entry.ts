@@ -4,6 +4,10 @@ import '../src/webview/base.css';
 import { renderTimeMachine } from '../src/webview/timeMachine';
 import { timelineFrame, timelineSteps } from '../src/model/timeline';
 import type { FileStat, TimelineData, TimelineEvent, TimelineMark } from '../src/types';
+import { parseLang, setLang } from '../src/i18n';
+import { text } from '../src/i18n/map';
+// ?lang=en|tr (varsayılan tr); ilk render'dan önce.
+setLang(parseLang(new URLSearchParams(location.search).get('lang')) ?? 'tr');
 
 const params = new URLSearchParams(location.search);
 const theme = params.get('theme') === 'light' ? 'vscode-light' : 'vscode-dark';
@@ -66,7 +70,7 @@ function makeTimeline(): TimelineData {
   }
   events.sort((a, b) => a.date - b.date);
   const marks: TimelineMark[] = [
-    { date: events[0].date, label: 'İlk commit', kind: 'first' },
+    { date: events[0].date, label: text().firstCommit('ilk'), kind: 'first' },
     { date: START + 44 * DAY, label: 'v0.1.0', kind: 'tag' },
     { date: START + 61 * DAY, label: "Merge branch 'feat/graph'", kind: 'merge' },
     { date: START + 79 * DAY, label: 'v0.2.0', kind: 'tag' },

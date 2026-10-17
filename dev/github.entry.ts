@@ -5,8 +5,12 @@ import '../src/webview/panel.css';
 import type { GitHubData, GitHubStatus, PullRequest } from '../src/types';
 import type { WebviewToExtension } from '../src/protocol';
 import { conflictFiles, renderGitHubBanner } from '../src/webview/githubBanner';
+import { parseLang, setLang } from '../src/i18n';
 
 const params = new URLSearchParams(location.search);
+// ?lang=en|tr (varsayılan tr); ilk render'dan önce.
+const lang = parseLang(params.get('lang')) ?? 'tr';
+setLang(lang);
 document.body.className = params.get('theme') === 'light' ? 'vscode-light' : 'vscode-dark';
 const width = Number(params.get('width'));
 if (width > 0) document.body.style.setProperty('width', `${width}px`);
@@ -39,7 +43,8 @@ const STATES: Record<string, GitHubStatus> = {
   ratelimited: { state: 'stale', repo: 'ornek/gitatlas-revrev', fetchedAt: NOW - 50 * MIN, reason: 'rateLimited', rateLimit: { remaining: 0, limit: 5000, resetAt } },
   notGitHub: { state: 'notGitHub', remoteUrl: 'gitlab.com/ornek/gitatlas-revrev' },
   noRemote: { state: 'noRemote' },
-  error: { state: 'error', message: 'GraphQL isteği 502 döndü.' },
+  // Hata metni eklentiden (githubLayer) gelir; burada yalnızca örnek.
+  error: { state: 'error', message: lang === 'en' ? 'GraphQL request returned 502.' : 'GraphQL isteği 502 döndü.' },
 };
 
 const logEl = document.getElementById('log') as HTMLElement;
@@ -62,7 +67,7 @@ for (const [name, status] of Object.entries(STATES)) {
   if (host.hidden) {
     const note = document.createElement('div');
     note.className = 'rr-p-muted';
-    note.textContent = '(gizli — bant gösterilmez)';
+    note.textContent = lang === 'en' ? '(hidden — no banner shown)' : '(gizli — bant gösterilmez)';
     list.append(label, note);
   } else {
     list.append(label, host);

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { isValidBranchName } from '../git/opCommands';
+import { panelText } from '../i18n/panel';
 import type { BranchCi, CiState, GitOpRequest, GitRef, OpResult, PullRequest } from '../types';
 import { formatDate, formatRelative } from '../webview/format';
 
@@ -41,7 +42,10 @@ export interface BranchGitHub {
 }
 
 const CI_SYMBOL: Record<CiState, string> = { success: '✓', failure: '✗', pending: '…', none: '' };
-const CI_TEXT: Record<CiState, string> = { success: 'başarılı', failure: 'başarısız', pending: 'sürüyor', none: 'yok' };
+function ciText(ci: CiState): string {
+  const t = panelText();
+  return ci === 'success' ? t.ciSuccess : ci === 'failure' ? t.ciFailure : ci === 'pending' ? t.ciPending : t.ciNone;
+}
 
 /**
  * GitHub'daki branch adı: remote'ta 'origin/x' → 'x' (yalnızca origin; GitHub katmanı origin'i okur),
@@ -82,16 +86,18 @@ export function githubDescription(gh: BranchGitHub | undefined): string {
 /** Tooltip satırları: "PR #41 (taslak): başlık · CI başarılı", "CI (main): başarısız". */
 export function githubTooltipLines(gh: BranchGitHub | undefined): string[] {
   if (!gh) return [];
-  const lines = gh.prs.map(
-    (p) => `PR #${p.number}${p.isDraft ? ' (taslak)' : ''}: ${p.title} → ${p.baseRef}${p.ci !== 'none' ? ` · CI ${CI_TEXT[p.ci]}` : ''}`,
-  );
-  if (gh.ci && gh.ci !== 'none') lines.push(`Branch CI: ${CI_TEXT[gh.ci]}`);
+  const t = panelText();
+  const lines = gh.prs.map((p) => t.prLine(p.number, p.isDraft, p.title, p.baseRef, p.ci !== 'none' ? ciText(p.ci) : undefined));
+  if (gh.ci && gh.ci !== 'none') lines.push(t.branchCi(ciText(gh.ci)));
   return lines;
 }
 
 /** Ekran okuyucu için ✓/✗/… yerine sözcük. */
 function speakable(text: string): string {
-  return text.replace(/✓/g, 'CI başarılı').replace(/✗/g, 'CI başarısız').replace(/…/g, 'CI sürüyor');
+  return text
+    .replace(/✓/g, `CI ${ciText('success')}`)
+    .replace(/✗/g, `CI ${ciText('failure')}`)
+    .replace(/…/g, `CI ${ciText('pending')}`);
 }
 
 /** Ağaç öğesinin açıklaması: "HEAD · #41 ✓ · bayat · 3 gün önce · ↑2 ↓0" (olmayan parçalar atlanır). */
@@ -100,7 +106,7 @@ export function branchDescription(ref: GitRef, now: number, gh?: BranchGitHub): 
   if (ref.isHead) parts.push('HEAD');
   const ghText = githubDescription(gh);
   if (ghText) parts.push(ghText);
-  if (isStale(ref, now)) parts.push('bayat');
+  if (isStale(ref, now)) parts.push(panelText().stale);
   if (ref.date > 0) parts.push(formatRelative(ref.date, now));
   const ab = aheadBehindText(ref);
   if (ab) parts.push(ab);
@@ -110,11 +116,12 @@ export function branchDescription(ref: GitRef, now: number, gh?: BranchGitHub): 
 /** "Karşılaştırma: origin/main · 2 ileride, 0 geride"; karşılaştırma yoksa undefined. */
 export function aheadBehindSentence(ref: GitRef): string | undefined {
   if (ref.ahead === undefined && ref.behind === undefined) return undefined;
+  const t = panelText();
   const base = ref.compareTo ?? ref.upstream;
   const parts: string[] = [];
-  if (ref.ahead !== undefined) parts.push(`${ref.ahead} ileride`);
-  if (ref.behind !== undefined) parts.push(`${ref.behind} geride`);
-  return base ? `Karşılaştırma: ${base} · ${parts.join(', ')}` : parts.join(', ');
+  if (ref.ahead !== undefined) parts.push(t.ahead(ref.ahead));
+  if (ref.behind !== undefined) parts.push(t.behind(ref.behind));
+  return base ? t.comparedTo(base, parts.join(', ')) : parts.join(', ');
 }
 
 /** Tooltip satırları (düz metin; markdown'a kaçışlanarak eklenir). */
@@ -125,10 +132,10 @@ export function branchTooltipLines(ref: GitRef, now: number): string[] {
     .filter(Boolean)
     .join(' · ');
   if (who) lines.push(who);
-  if (ref.upstream) lines.push(`Takip ettiği: ${ref.upstream}`);
+  if (ref.upstream) lines.push(panelText().tracking(ref.upstream));
   const ab = aheadBehindSentence(ref);
   if (ab) lines.push(ab);
-  if (isStale(ref, now)) lines.push('Bayat: 30 günden uzun süredir dokunulmamış');
+  if (isStale(ref, now)) lines.push(panelText().staleNote);
   return lines;
 }
 
@@ -143,12 +150,11 @@ export function branchContextValue(ref: Pick<GitRef, 'kind' | 'isHead'>): Branch
 
 /** Yeni/yeniden adlandırılan branch adı için showInputBox doğrulaması; geçerliyse undefined. */
 export function validateBranchNameInput(value: string, existing: ReadonlySet<string>, current?: string): string | undefined {
+  const t = panelText();
   const name = value.trim();
-  if (name === '') return 'Bir branch adı yazın.';
-  if (!isValidBranchName(name)) {
-    return 'Geçersiz branch adı: boşluk, "..", "~ ^ : ? * [ \\" kullanılamaz; "-" ya da "/" ile başlayamaz, "/" ya da ".lock" ile bitemez.';
-  }
-  if (name !== current && existing.has(name)) return `"${name}" adında bir branch zaten var.`;
+  if (name === '') return t.branchNameEmpty;
+  if (!isValidBranchName(name)) return t.branchNameInvalid;
+  if (name !== current && existing.has(name)) return t.branchNameExists(name);
   return undefined;
 }
 
@@ -158,7 +164,9 @@ type BranchNode =
   | { kind: 'section'; section: Section; refs: GitRef[] }
   | { kind: 'ref'; section: Section; ref: GitRef };
 
-const SECTION_LABEL: Record<Section, string> = { local: 'Lokal', remote: 'Remote' };
+function sectionLabel(section: Section): string {
+  return section === 'local' ? panelText().sectionLocal : panelText().sectionRemote;
+}
 
 class BranchTreeProvider implements vscode.TreeDataProvider<BranchNode> {
   private readonly emitter = new vscode.EventEmitter<void>();
@@ -211,7 +219,7 @@ class BranchTreeProvider implements vscode.TreeDataProvider<BranchNode> {
 
   getTreeItem(node: BranchNode): vscode.TreeItem {
     if (node.kind === 'section') {
-      const item = new vscode.TreeItem(SECTION_LABEL[node.section], vscode.TreeItemCollapsibleState.Expanded);
+      const item = new vscode.TreeItem(sectionLabel(node.section), vscode.TreeItemCollapsibleState.Expanded);
       item.id = `section:${node.section}`;
       item.description = String(node.refs.length);
       return item;
@@ -282,7 +290,7 @@ export class BranchView implements vscode.Disposable {
     if (prs || branchCi) this.provider.setGitHub(prs ?? [], branchCi ?? []);
     this.provider.setRefs(refs ?? []);
     const empty = this.provider.sections.length === 0;
-    this.treeView.message = message ?? (empty && refs ? 'Bu repoda branch yok.' : undefined);
+    this.treeView.message = message ?? (empty && refs ? panelText().noBranches : undefined);
   }
 
   /** Görünümdeki lokal ve remote branch'ler (tag'ler hariç). */
@@ -356,13 +364,13 @@ export function branchCommandHandlers(runner: BranchOpsRunner, view: BranchView)
   const pick = async (title: string, filter: (r: GitRef) => boolean): Promise<GitRef | undefined> => {
     const candidates = view.branches.filter(filter);
     if (candidates.length === 0) {
-      void vscode.window.showInformationMessage('GitAtlas-RevRev: uygun branch yok.');
+      void vscode.window.showInformationMessage(panelText().noEligibleBranch);
       return undefined;
     }
     const picked = await vscode.window.showQuickPick(
       candidates.map((r) => ({
         label: r.name,
-        description: r.isHead ? 'HEAD' : r.kind === 'remote' ? 'remote' : undefined,
+        description: r.isHead ? 'HEAD' : r.kind === 'remote' ? panelText().remoteTag : undefined,
         detail: r.subject,
         ref: r,
       })),
@@ -380,26 +388,27 @@ export function branchCommandHandlers(runner: BranchOpsRunner, view: BranchView)
 
   return {
     async checkout(arg) {
-      const ref = resolve(arg, notHead) ?? (await pick('Hangi branch\'e geçilsin?', notHead));
+      const ref = resolve(arg, notHead) ?? (await pick(panelText().pickCheckout, notHead));
       if (ref) await runner.runOp({ kind: 'checkout', branch: ref.name });
     },
 
     async create(arg) {
+      const t = panelText();
       const from = refFromCommandArg(arg) ?? (arg === undefined ? undefined : view.selectedRef);
       const existing = localNames();
       const name = await vscode.window.showInputBox({
-        title: 'Yeni branch',
-        prompt: from ? `"${from.name}" üzerinden yeni branch` : 'Mevcut HEAD üzerinden yeni branch',
+        title: t.newBranchTitle,
+        prompt: from ? t.newBranchFrom(from.name) : t.newBranchFromHead,
         placeHolder: 'feature/yeni-ozellik',
         validateInput: (v) => validateBranchNameInput(v, existing),
       });
       if (name === undefined) return;
       const choice = await vscode.window.showQuickPick(
         [
-          { label: 'Evet', description: 'Oluştur ve yeni branch\'e geç', checkout: true },
-          { label: 'Hayır', description: 'Yalnızca oluştur', checkout: false },
+          { label: t.yes, description: t.yesCreateDetail, checkout: true },
+          { label: t.no, description: t.noCreateDetail, checkout: false },
         ],
-        { placeHolder: `"${name.trim()}" oluşturulduktan sonra bu branch'e geçilsin mi?` },
+        { placeHolder: t.switchAfterCreate(name.trim()) },
       );
       if (!choice) return;
       await runner.runOp({
@@ -411,28 +420,29 @@ export function branchCommandHandlers(runner: BranchOpsRunner, view: BranchView)
     },
 
     async merge(arg) {
+      const t = panelText();
       const current = head();
       if (!current) {
-        void vscode.window.showWarningMessage('GitAtlas-RevRev: birleştirmek için bir branch\'te olmalısınız (HEAD ayrık).');
+        void vscode.window.showWarningMessage(t.mergeDetached);
         return;
       }
-      const ref = resolve(arg, notHead) ?? (await pick(`"${current.name}" üzerine hangi branch birleştirilsin?`, notHead));
+      const ref = resolve(arg, notHead) ?? (await pick(t.pickMerge(current.name), notHead));
       if (!ref) return;
       const ok = await vscode.window.showWarningMessage(
-        `"${ref.name}" branch'i "${current.name}" üzerine birleştirilsin mi?`,
-        { modal: true, detail: 'Çakışma çıkarsa Değişiklikler sekmesinden çözebilir ya da birleştirmeyi iptal edebilirsiniz.' },
-        'Birleştir',
+        t.confirmMerge(ref.name, current.name),
+        { modal: true, detail: t.mergeDetail },
+        t.mergeAction,
       );
-      if (ok === 'Birleştir') await runner.runOp({ kind: 'mergeBranch', branch: ref.name });
+      if (ok === t.mergeAction) await runner.runOp({ kind: 'mergeBranch', branch: ref.name });
     },
 
     async rename(arg) {
       const isLocal = (r: GitRef): boolean => r.kind === 'local';
-      const ref = resolve(arg, isLocal) ?? (await pick('Hangi branch yeniden adlandırılsın?', isLocal));
+      const ref = resolve(arg, isLocal) ?? (await pick(panelText().pickRename, isLocal));
       if (!ref) return;
       const existing = localNames();
       const to = await vscode.window.showInputBox({
-        title: `"${ref.name}" branch'ini yeniden adlandır`,
+        title: panelText().renameTitle(ref.name),
         value: ref.name,
         validateInput: (v) => validateBranchNameInput(v, existing, ref.name),
       });
@@ -442,7 +452,7 @@ export function branchCommandHandlers(runner: BranchOpsRunner, view: BranchView)
 
     async delete(arg) {
       const deletable = (r: GitRef): boolean => r.kind === 'local' && !r.isHead;
-      const ref = resolve(arg, deletable) ?? (await pick('Hangi branch silinsin?', deletable));
+      const ref = resolve(arg, deletable) ?? (await pick(panelText().pickDelete, deletable));
       // Onay (ve birleşmemişse ikinci onay) GitOpsService'te.
       if (ref) await runner.runOp({ kind: 'deleteBranch', name: ref.name });
     },

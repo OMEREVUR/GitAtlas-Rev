@@ -6,12 +6,18 @@ import type { CommitFileChange, CommitSummary, GitRef, PullRequest } from '../sr
 import type { WebviewToExtension } from '../src/protocol';
 import { renderGraphToolbar, type GraphFilters } from '../src/webview/graphToolbar';
 import { renderCommitDetail, type GraphSelection } from '../src/webview/commitDetail';
+import { parseLang, setLang } from '../src/i18n';
 
 const NOW = Date.UTC(2026, 9, 17, 12, 0);
 const HOUR = 3600_000;
 const DAY = 24 * HOUR;
 
 const params = new URLSearchParams(location.search);
+// ?lang=en|tr (varsayılan tr); ilk render'dan önce.
+const lang = parseLang(params.get('lang')) ?? 'tr';
+setLang(lang);
+/** Sahte veri metni dile göre (İngilizce ekran görüntüsünde Türkçe kelime kalmasın). */
+const L = (tr: string, en: string): string => (lang === 'en' ? en : tr);
 document.body.className = params.get('theme') === 'light' ? 'vscode-light' : 'vscode-dark';
 const width = Number(params.get('width'));
 if (width > 0) {
@@ -44,27 +50,27 @@ function commit(
 }
 
 const COMMITS: CommitSummary[] = [
-  commit(1, 'feat: graph şeritlerinde merge noktaları içi boş çiziliyor', 'deniz', 0.5, [
+  commit(1, L('feat: graph şeritlerinde merge noktaları içi boş çiziliyor', 'feat: draw merge dots hollow in graph lanes'), 'deniz', 0.5, [
     { path: 'src/webview/graphView.ts', added: 84, deleted: 12 },
     { path: 'src/webview/graph.css', added: 22, deleted: 3 },
     { path: 'src/model/graphLayout.ts', added: 40, deleted: 18 },
   ]),
   commit(2, "Merge branch 'feature/graph' into main", 'mert', 5, [], 2),
-  commit(3, 'fix: <script>alert(1)</script> gibi mesajlar düz metin', 'ayse', 20, [
+  commit(3, L('fix: <script>alert(1)</script> gibi mesajlar düz metin', 'fix: messages like <script>alert(1)</script> stay plain text'), 'ayse', 20, [
     { path: 'src/webview/commitDetail.ts', added: 6, deleted: 2 },
   ]),
-  commit(4, 'refactor: ref ayrıştırıcı', 'deniz', 30, [
+  commit(4, L('refactor: ref ayrıştırıcı', 'refactor: ref parser'), 'deniz', 30, [
     { path: 'src/git/refs.ts', added: 120, deleted: 0 },
     { path: 'src/git/gitRunner.ts', added: 4, deleted: 4 },
     { path: 'test/refs.test.ts', added: 66, deleted: 0 },
   ]),
-  commit(5, 'feat: branch paneli', 'mert', 52, [
+  commit(5, L('feat: branch paneli', 'feat: branch panel'), 'mert', 52, [
     { path: 'src/webview/branchPanel.ts', added: 210, deleted: 0 },
     { path: 'src/webview/graph.css', added: 40, deleted: 6 },
     { path: 'src/model/graphLayout.ts', added: 15, deleted: 9 },
   ]),
   commit(6, 'chore: README', 'can', 80, [{ path: 'README.md', added: 12, deleted: 4 }]),
-  commit(7, 'deneme: eski yaklaşım', 'can', 24 * 95, [
+  commit(7, L('deneme: eski yaklaşım', 'spike: old approach'), 'can', 24 * 95, [
     { path: 'src/experiment/old.ts', added: 300, deleted: 0 },
   ]),
 ];
@@ -134,8 +140,8 @@ function fakeMiniMap(host: HTMLElement, hot: Set<string>): void {
 }
 
 const FAKE_PRS: PullRequest[] = [
-  { number: 41, title: 'Graph görünümü', url: 'https://github.com/ornek/gitatlas-revrev/pull/41', author: 'mert', headRef: 'feature/graph', baseRef: 'main', isDraft: false, updatedAt: NOW, files: [], ci: 'success' },
-  { number: 42, title: 'main üzerinde sürüm hazırlığı', url: 'https://github.com/ornek/gitatlas-revrev/pull/42', author: 'deniz', headRef: 'main', baseRef: 'release', isDraft: true, updatedAt: NOW, files: [], ci: 'pending' },
+  { number: 41, title: L('Graph görünümü', 'Graph view'), url: 'https://github.com/ornek/gitatlas-revrev/pull/41', author: 'mert', headRef: 'feature/graph', baseRef: 'main', isDraft: false, updatedAt: NOW, files: [], ci: 'success' },
+  { number: 42, title: L('main üzerinde sürüm hazırlığı', 'Release prep on main'), url: 'https://github.com/ornek/gitatlas-revrev/pull/42', author: 'deniz', headRef: 'main', baseRef: 'release', isDraft: true, updatedAt: NOW, files: [], ci: 'pending' },
 ];
 
 // ---------- sayfa ----------

@@ -1,34 +1,35 @@
 import * as vscode from 'vscode';
+import { panelText } from '../i18n/panel';
 import type { GitHubData } from '../types';
 import { formatRelative } from '../webview/format';
 
-const STALE_REASON: Record<'sessionExpired' | 'offline' | 'rateLimited', string> = {
-  sessionExpired: 'GitHub oturumu sona erdi',
-  offline: 'GitHub\'a ulaşılamıyor',
-  rateLimited: 'GitHub istek limiti doldu',
-};
+function staleReason(reason: 'sessionExpired' | 'offline' | 'rateLimited'): string {
+  const t = panelText();
+  return reason === 'sessionExpired' ? t.staleSessionExpired : reason === 'offline' ? t.staleOffline : t.staleRateLimited;
+}
 
 /** Durum çubuğu metnine eklenecek GitHub parçası ve tooltip ayrıntısı; gösterilecek bir şey yoksa undefined. */
 export function githubStatusText(data: GitHubData | undefined, now: number): { suffix: string; detail: string } | undefined {
   if (!data) return undefined;
+  const t = panelText();
   const s = data.status;
   const n = data.pullRequests.length;
   switch (s.state) {
     case 'connected': {
-      let detail = `GitHub: ${s.repo} · ${n} açık PR · ${formatRelative(s.fetchedAt, now)} güncellendi`;
-      if (s.intervalMin > s.baseIntervalMin) detail += ` · istek limiti düşük, ${s.intervalMin} dk'da bir yenileniyor`;
-      if (s.rateLimit) detail += ` · kalan istek ${s.rateLimit.remaining}/${s.rateLimit.limit}`;
-      return { suffix: `GitHub: ${n} PR`, detail };
+      let detail = t.ghConnectedDetail(s.repo, n, formatRelative(s.fetchedAt, now));
+      if (s.intervalMin > s.baseIntervalMin) detail += t.ghRateLow(s.intervalMin);
+      if (s.rateLimit) detail += t.ghRemaining(s.rateLimit.remaining, s.rateLimit.limit);
+      return { suffix: t.ghConnected(n), detail };
     }
     case 'stale':
       return {
-        suffix: 'GitHub: eski veri',
-        detail: `${STALE_REASON[s.reason]}. ${s.repo} için PR ve CI bilgileri ${formatRelative(s.fetchedAt, now)} alınmış hâliyle gösteriliyor.`,
+        suffix: t.ghStale,
+        detail: t.ghStaleDetail(staleReason(s.reason), s.repo, formatRelative(s.fetchedAt, now)),
       };
     case 'connecting':
-      return { suffix: 'GitHub: bağlanıyor', detail: 'GitHub: açık PR\'lar ve CI sonuçları alınıyor…' };
+      return { suffix: t.ghConnecting, detail: t.ghConnectingDetail };
     case 'error':
-      return { suffix: 'GitHub: hata', detail: `GitHub: ${s.message}` };
+      return { suffix: t.ghError, detail: `GitHub: ${s.message}` };
     default:
       return undefined;
   }
@@ -43,24 +44,24 @@ export class GitAtlasRevRevStatusBar implements vscode.Disposable {
   constructor() {
     this.item = vscode.window.createStatusBarItem('gitatlas-revrev.status', vscode.StatusBarAlignment.Left, 0);
     this.item.name = 'GitAtlas-RevRev';
-    this.item.command = { title: 'GitAtlas-RevRev panelini aç', command: 'gitatlas-revrev.panel.focus' };
+    this.item.command = { title: panelText().openPanel, command: 'gitatlas-revrev.panel.focus' };
   }
 
   /** progress 0..1 */
   setScanning(progress: number): void {
     const pct = Math.round(Math.min(1, Math.max(0, progress)) * 100);
-    this.set(`$(sync~spin) GitAtlas-RevRev: taranıyor %${pct}`, 'GitAtlas-RevRev git geçmişini tarıyor');
+    const t = panelText();
+    this.set(`$(sync~spin) ${t.scanning(pct)}`, t.scanningTooltip);
   }
 
   setReady(fileCount: number, fromCache: boolean): void {
-    this.set(
-      `$(flame) GitAtlas-RevRev: tarama tamam · ${fromCache ? 'cache güncel' : 'güncellendi'}`,
-      `GitAtlas-RevRev: ${fileCount} dosya · haritayı açmak için tıklayın`,
-    );
+    const t = panelText();
+    this.set(`$(flame) ${t.ready(fromCache)}`, t.readyTooltip(fileCount));
   }
 
   setError(text: string): void {
-    this.set(`$(warning) GitAtlas-RevRev: ${text}`, `GitAtlas-RevRev: ${text} · ayrıntı için tıklayın`);
+    const t = panelText();
+    this.set(`$(warning) ${t.errorText(text)}`, t.errorTooltip(text));
   }
 
   /** GitHub durumu; bağlıyken " · GitHub: N PR", eski veride " · GitHub: eski veri" eklenir. */
