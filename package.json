@@ -1,8 +1,8 @@
 {
   "name": "gitatlas-revrev",
   "displayName": "GitAtlas-RevRev",
-  "description": "Repoyu tek bakışta okutan harita: dosyalar satır sayısına göre boyutlanır, değişim sıklığına göre renklenir.",
-  "version": "0.1.0",
+  "description": "%description%",
+  "version": "0.2.0",
   "publisher": "OmerCayir43",
   "icon": "icons/icon.png",
   "license": "UNLICENSED",
@@ -34,102 +34,102 @@
         {
           "type": "webview",
           "id": "gitatlas-revrev.panel",
-          "name": "Harita"
+          "name": "%view.panel%"
         },
         {
           "id": "gitatlas-revrev.branches",
-          "name": "Branch'ler"
+          "name": "%view.branches%"
         }
       ]
     },
     "commands": [
       {
         "command": "gitatlas-revrev.refresh",
-        "title": "Yenile",
+        "title": "%command.refresh%",
         "category": "GitAtlas-RevRev",
         "icon": "$(refresh)"
       },
       {
         "command": "gitatlas-revrev.openInEditor",
-        "title": "Haritayı düzenleyicide aç",
+        "title": "%command.openInEditor%",
         "category": "GitAtlas-RevRev",
         "icon": "$(open-preview)"
       },
       {
         "command": "gitatlas-revrev.refreshBranches",
-        "title": "Branch'leri yenile",
+        "title": "%command.refreshBranches%",
         "category": "GitAtlas-RevRev",
         "icon": "$(refresh)"
       },
       {
         "command": "gitatlas-revrev.github.connect",
-        "title": "GitHub ile bağlan",
+        "title": "%command.github.connect%",
         "category": "GitAtlas-RevRev",
         "icon": "$(github)"
       },
       {
         "command": "gitatlas-revrev.github.refresh",
-        "title": "GitHub verisini yenile",
+        "title": "%command.github.refresh%",
         "category": "GitAtlas-RevRev",
         "icon": "$(sync)"
       },
       {
         "command": "gitatlas-revrev.git.fetch",
-        "title": "Getir (fetch)",
+        "title": "%command.git.fetch%",
         "category": "GitAtlas-RevRev",
         "icon": "$(cloud-download)"
       },
       {
         "command": "gitatlas-revrev.git.pull",
-        "title": "Çek (pull)",
+        "title": "%command.git.pull%",
         "category": "GitAtlas-RevRev",
         "icon": "$(arrow-down)"
       },
       {
         "command": "gitatlas-revrev.git.push",
-        "title": "Gönder (push)",
+        "title": "%command.git.push%",
         "category": "GitAtlas-RevRev",
         "icon": "$(arrow-up)"
       },
       {
         "command": "gitatlas-revrev.git.commit",
-        "title": "Commit oluştur",
+        "title": "%command.git.commit%",
         "category": "GitAtlas-RevRev",
         "icon": "$(check)"
       },
       {
         "command": "gitatlas-revrev.branch.checkout",
-        "title": "Bu branch'e geç",
+        "title": "%command.branch.checkout%",
         "category": "GitAtlas-RevRev",
         "icon": "$(check)"
       },
       {
         "command": "gitatlas-revrev.branch.create",
-        "title": "Yeni branch…",
+        "title": "%command.branch.create%",
         "category": "GitAtlas-RevRev",
         "icon": "$(git-branch-create)"
       },
       {
         "command": "gitatlas-revrev.branch.merge",
-        "title": "Mevcut branch'e birleştir (merge)",
+        "title": "%command.branch.merge%",
         "category": "GitAtlas-RevRev",
         "icon": "$(git-merge)"
       },
       {
         "command": "gitatlas-revrev.branch.rename",
-        "title": "Yeniden adlandır…",
+        "title": "%command.branch.rename%",
         "category": "GitAtlas-RevRev",
         "icon": "$(edit)"
       },
       {
         "command": "gitatlas-revrev.branch.delete",
-        "title": "Sil…",
+        "title": "%command.branch.delete%",
         "category": "GitAtlas-RevRev",
         "icon": "$(trash)"
       },
       {
         "command": "gitatlas-revrev.showGitOutput",
-        "title": "Git çıktısını göster",
+        "title": "%command.showGitOutput%",
         "category": "GitAtlas-RevRev",
         "icon": "$(output)"
       }
@@ -212,7 +212,7 @@
             "type": "string"
           },
           "default": [],
-          "markdownDescription": "Haritadan ve rozetlerden hariç tutulacak ek glob desenleri (ör. `src/generated/**`). Varsayılan olarak `node_modules`, `dist`, `out`, `build`, `*.lock`, `package-lock.json` ve `*.min.js` zaten hariçtir."
+          "markdownDescription": "%config.ignore%"
         },
         "gitatlas-revrev.defaultRange": {
           "type": "string",
@@ -222,19 +222,19 @@
             "all"
           ],
           "enumItemLabels": [
-            "7 gün",
-            "30 gün",
-            "Tümü"
+            "%config.defaultRange.7d%",
+            "%config.defaultRange.30d%",
+            "%config.defaultRange.all%"
           ],
           "default": "30d",
-          "markdownDescription": "Panel açıldığında seçili olan zaman aralığı."
+          "markdownDescription": "%config.defaultRange%"
         },
         "gitatlas-revrev.graph.initialCommits": {
           "type": "number",
           "default": 500,
           "minimum": 100,
           "maximum": 5000,
-          "markdownDescription": "Graph'ta ilk yüklenecek commit sayısı. Daha eskileri kaydırdıkça yüklenir."
+          "markdownDescription": "%config.graph.initialCommits%"
         },
         "gitatlas-revrev.explorer.badges": {
           "type": "string",
@@ -244,34 +244,34 @@
             "off"
           ],
           "enumItemLabels": [
-            "Sıcaklar",
-            "Hepsi",
-            "Kapalı"
+            "%config.explorer.badges.hot%",
+            "%config.explorer.badges.all%",
+            "%config.explorer.badges.off%"
           ],
           "enumDescriptions": [
-            "Yalnızca en sık değişen dosyalarda ●● / ● rozeti.",
-            "Değişen her dosyada 1–5 ısı seviyesi.",
-            "Rozet yok."
+            "%config.explorer.badges.hot.desc%",
+            "%config.explorer.badges.all.desc%",
+            "%config.explorer.badges.off.desc%"
           ],
           "default": "hot",
-          "markdownDescription": "Gezgin'deki dosya adlarının yanında hangi rozetlerin görüneceği. GitHub bağlıyken aynı dosyaya 2+ açık PR dokunuyorsa PR sayısı ısının önüne geçer."
+          "markdownDescription": "%config.explorer.badges%"
         },
         "gitatlas-revrev.github.enabled": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "GitHub katmanı (açık PR'lar, çakışma uyarısı, CI). Token gerekmez; VS Code'daki GitHub oturumu kullanılır."
+          "markdownDescription": "%config.github.enabled%"
         },
         "gitatlas-revrev.github.refreshInterval": {
           "type": "number",
           "default": 2,
           "minimum": 1,
           "maximum": 60,
-          "markdownDescription": "GitHub verisinin yenilenme aralığı, dakika. Sadece panel açıkken yenilenir; istek limiti azalınca otomatik uzar."
+          "markdownDescription": "%config.github.refreshInterval%"
         },
         "gitatlas-revrev.git.path": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Git yolu. Boş bırakılırsa VS Code'un `git.path` ayarı, o da boşsa PATH'teki `git` kullanılır."
+          "markdownDescription": "%config.git.path%"
         },
         "gitatlas-revrev.git.pullStrategy": {
           "type": "string",
@@ -281,12 +281,27 @@
             "rebase"
           ],
           "enumItemLabels": [
-            "Sor",
-            "Merge",
-            "Rebase"
+            "%config.git.pullStrategy.ask%",
+            "%config.git.pullStrategy.merge%",
+            "%config.git.pullStrategy.rebase%"
           ],
           "default": "ask",
-          "markdownDescription": "Pull fast-forward ile yapılamadığında ne yapılacağı. Varsayılan: her seferinde sor."
+          "markdownDescription": "%config.git.pullStrategy%"
+        },
+        "gitatlas-revrev.language": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "en",
+            "tr"
+          ],
+          "enumItemLabels": [
+            "%config.language.auto%",
+            "%config.language.en%",
+            "%config.language.tr%"
+          ],
+          "default": "auto",
+          "markdownDescription": "%config.language%"
         }
       }
     }

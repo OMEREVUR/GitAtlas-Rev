@@ -3,7 +3,7 @@ import type { CommitSummary, FileStat, PullRequest, TimeRange } from '../types';
 import type { WebviewToExtension } from '../protocol';
 import { HEAT_LABELS, heatVar, type HeatLevel } from './heat';
 import { prRow } from './githubBanner';
-import { RANGE_SHORT, baseName, formatDate, formatNumber, formatRelative } from './format';
+import { baseName, formatDate, formatNumber, formatRelative, rangeShort } from './format';
 
 export interface FileCardOptions {
   range: TimeRange;
@@ -56,7 +56,7 @@ export function renderFileCard(
     return;
   }
 
-  const range = RANGE_SHORT[opts.range];
+  const range = rangeShort(opts.range);
 
   const close = h('button', 'rr-p-icon-btn', [icon('close')]);
   close.type = 'button';
