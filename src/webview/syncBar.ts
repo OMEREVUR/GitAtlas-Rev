@@ -3,6 +3,8 @@
 import './ops.css';
 import type { GitOpKind, GitOpRequest, WorkingTreeStatus } from '../types';
 import { formatCommand, opCommands } from '../git/opCommands';
+import { getLang, type Lang } from '../i18n/index';
+import { text } from '../i18n/changes';
 
 export interface SyncBarOptions {
   status: WorkingTreeStatus | undefined;
@@ -24,6 +26,8 @@ interface SyncButton {
 
 interface BarState {
   opts: SyncBarOptions;
+  /** İskeletin kurulduğu dil; değişirse yeniden kurulur. */
+  lang: Lang;
   branch: HTMLElement;
   refStatic: HTMLElement;
   refBtn: HTMLButtonElement;
@@ -39,20 +43,21 @@ const states = new WeakMap<HTMLElement, BarState>();
 
 export function renderSyncBar(el: HTMLElement, opts: SyncBarOptions): void {
   let st = states.get(el);
-  if (!st || !el.contains(st.refBtn)) st = build(el, opts);
+  if (!st || !el.contains(st.refBtn) || st.lang !== getLang()) st = build(el, opts);
   st.opts = opts;
   const { status, busy, busyKind } = opts;
+  const t = text();
 
   // Branch
   if (!status) {
-    st.branch.textContent = 'Durum yükleniyor…';
+    st.branch.textContent = t.sbLoading;
     st.branch.title = '';
   } else if (status.branch) {
     st.branch.textContent = status.branch;
     st.branch.title = status.upstream ? `${status.branch} → ${status.upstream}` : status.branch;
   } else {
-    st.branch.textContent = `ayrık HEAD${status.head ? ` · ${status.head.slice(0, 7)}` : ''}`;
-    st.branch.title = 'Bir branch üzerinde değilsiniz (detached HEAD).';
+    st.branch.textContent = `${t.sbDetached}${status.head ? ` · ${status.head.slice(0, 7)}` : ''}`;
+    st.branch.title = t.sbDetachedTitle;
   }
 
   // Branch menüsü / yeni branch düğmeleri (verilmezse eski düz görünüm)
@@ -60,8 +65,8 @@ export function renderSyncBar(el: HTMLElement, opts: SyncBarOptions): void {
   st.refBtn.hidden = !opts.onBranchMenu;
   st.refStatic.hidden = !!opts.onBranchMenu;
   st.refBtn.disabled = busy || !status;
-  st.refBtn.setAttribute('aria-label', `Branch: ${st.branch.textContent ?? ''}. Branch'e geç ya da yeni branch oluştur`);
-  st.refBtn.title = st.branch.title ? `Branch'e geç ya da yeni branch oluştur\n${st.branch.title}` : "Branch'e geç ya da yeni branch oluştur";
+  st.refBtn.setAttribute('aria-label', t.sbBranchAria(st.branch.textContent ?? ''));
+  st.refBtn.title = st.branch.title ? `${t.sbBranchMenu}\n${st.branch.title}` : t.sbBranchMenu;
   st.create.hidden = !opts.onBranchCreate;
   st.create.disabled = busy || !status;
 
@@ -72,13 +77,13 @@ export function renderSyncBar(el: HTMLElement, opts: SyncBarOptions): void {
     st.counts.removeAttribute('aria-label');
   } else if (status.upstream) {
     st.counts.textContent = `↑${status.ahead} ↓${status.behind}`;
-    st.counts.setAttribute('aria-label', `${status.ahead} commit gönderilecek, ${status.behind} commit çekilecek`);
-    st.counts.title = `${status.upstream} ile karşılaştırma`;
+    st.counts.setAttribute('aria-label', t.sbAheadBehindAria(status.ahead, status.behind));
+    st.counts.title = t.sbCompare(status.upstream);
   } else if (status.branch) {
-    st.counts.textContent = 'yayınlanmadı';
+    st.counts.textContent = t.sbUnpublished;
     st.counts.classList.add('is-tag');
     st.counts.removeAttribute('aria-label');
-    st.counts.title = "Bu branch'in uzak karşılığı yok.";
+    st.counts.title = t.sbNoUpstreamTitle;
   } else {
     st.counts.textContent = '';
     st.counts.removeAttribute('aria-label');
@@ -88,8 +93,8 @@ export function renderSyncBar(el: HTMLElement, opts: SyncBarOptions): void {
   const detached = !!status && !status.branch;
 
   configure(st.fetch, {
-    label: 'Getir',
-    aria: 'Getir (fetch): uzak değişiklikleri indir, birleştirme',
+    label: t.sbFetch,
+    aria: t.sbFetchAria,
     op: { kind: 'fetch' },
     status,
     disabled: !status || busy,
@@ -97,26 +102,26 @@ export function renderSyncBar(el: HTMLElement, opts: SyncBarOptions): void {
     accent: false,
   });
   configure(st.pull, {
-    label: 'Çek',
-    aria: status?.behind ? `Çek (pull): ${status.behind} commit al` : 'Çek (pull)',
+    label: t.sbPull,
+    aria: status?.behind ? t.sbPullCountAria(status.behind) : t.sbPullAria,
     op: { kind: 'pull' },
     status,
     disabled: !status || busy || !hasUpstream,
-    why: status && !hasUpstream ? "Upstream yok; önce branch'i yayınlayın." : undefined,
+    why: status && !hasUpstream ? t.sbPullNoUpstream : undefined,
     spinning: busy && busyKind === 'pull',
     accent: (status?.behind ?? 0) > 0,
   });
   configure(st.push, {
-    label: hasUpstream || !status ? 'Gönder' : 'Yayınla',
+    label: hasUpstream || !status ? t.sbPush : t.sbPublish,
     aria: hasUpstream
       ? status?.ahead
-        ? `Gönder (push): ${status.ahead} commit gönder`
-        : 'Gönder (push)'
-      : "Yayınla: branch'i uzak sunucuya gönder",
+        ? t.sbPushCountAria(status.ahead)
+        : t.sbPushAria
+      : t.sbPublishAria,
     op: { kind: 'push' },
     status,
     disabled: !status || busy || detached,
-    why: detached ? 'Ayrık HEAD gönderilemez; önce bir branch oluşturun.' : undefined,
+    why: detached ? t.sbDetachedPushWhy : undefined,
     spinning: busy && busyKind === 'push',
     accent: (status?.ahead ?? 0) > 0 || (!!status?.branch && !hasUpstream),
     iconOverride: hasUpstream || !status ? undefined : 'cloud-upload',
@@ -125,6 +130,7 @@ export function renderSyncBar(el: HTMLElement, opts: SyncBarOptions): void {
 
 function build(el: HTMLElement, opts: SyncBarOptions): BarState {
   el.classList.add('rr-op-sync');
+  const t = text();
   const branch = h('span', 'rr-op-sync-branch');
   const refStatic = h('span', 'rr-op-sync-ref', [icon('git-branch'), branch]);
   const refBtnLabel = h('span', 'rr-op-sync-branch');
@@ -133,8 +139,8 @@ function build(el: HTMLElement, opts: SyncBarOptions): BarState {
   refBtn.setAttribute('aria-haspopup', 'menu');
   const create = h('button', 'rr-op-sync-icon', [icon('add')]);
   create.type = 'button';
-  create.setAttribute('aria-label', 'Yeni branch');
-  create.title = 'Yeni branch oluştur';
+  create.setAttribute('aria-label', t.sbNewBranch);
+  create.title = t.sbNewBranchTitle;
   const counts = h('span', 'rr-op-sync-counts');
   const fetch = makeButton('cloud-download');
   const pull = makeButton('arrow-down');
@@ -145,10 +151,10 @@ function build(el: HTMLElement, opts: SyncBarOptions): BarState {
     h('span', 'rr-op-sync-buttons', [fetch.btn, pull.btn, push.btn]),
   ]);
   row.setAttribute('role', 'toolbar');
-  row.setAttribute('aria-label', 'Eşitleme');
+  row.setAttribute('aria-label', t.sbToolbar);
   el.replaceChildren(row);
 
-  const st: BarState = { opts, branch, refStatic, refBtn, refBtnLabel, create, counts, fetch, pull, push };
+  const st: BarState = { opts, lang: getLang(), branch, refStatic, refBtn, refBtnLabel, create, counts, fetch, pull, push };
   refBtn.addEventListener('click', () => st.opts.onBranchMenu?.());
   create.addEventListener('click', () => st.opts.onBranchCreate?.());
   states.set(el, st);

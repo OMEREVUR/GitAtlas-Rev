@@ -3,6 +3,8 @@
 import './ops.css';
 import type { GitOpRequest, WorkingTreeStatus } from '../types';
 import { formatCommand, opCommands } from '../git/opCommands';
+import { getLang, type Lang } from '../i18n/index';
+import { text } from '../i18n/changes';
 
 export interface CommitBoxOptions {
   status: WorkingTreeStatus;
@@ -18,6 +20,8 @@ const PREFIX_RE = /^([a-z]+)(\([^)]*\))?!?:\s*/;
 
 interface BoxState {
   opts: CommitBoxOptions;
+  /** İskeletin kurulduğu dil; değişirse yeniden kurulur. */
+  lang: Lang;
   chips: Map<string, HTMLButtonElement>;
   summary: HTMLInputElement;
   counter: HTMLElement;
@@ -41,7 +45,18 @@ const states = new WeakMap<HTMLElement, BoxState>();
 
 export function renderCommitBox(el: HTMLElement, opts: CommitBoxOptions): void {
   let st = states.get(el);
-  if (!st || !el.contains(st.summary)) st = build(el, opts);
+  if (!st || !el.contains(st.summary) || st.lang !== getLang()) {
+    // Dil değiştiyse yazılanlar yeni iskelete taşınır.
+    const keep = st && el.contains(st.summary) ? { summary: st.summary.value, body: st.body.value, amend: st.amend.checked, saved: st.saved, amendHash: st.amendHash } : undefined;
+    st = build(el, opts);
+    if (keep) {
+      st.summary.value = keep.summary;
+      st.body.value = keep.body;
+      st.amend.checked = keep.amend;
+      st.saved = keep.saved;
+      st.amendHash = keep.amendHash;
+    }
+  }
   st.opts = opts;
 
   const lc = opts.status.lastCommit;
@@ -72,16 +87,17 @@ export function resetCommitBox(el: HTMLElement): void {
 function build(el: HTMLElement, opts: CommitBoxOptions): BoxState {
   el.classList.add('rr-op-commit');
   const uid = Math.random().toString(36).slice(2, 8);
+  const tx = text();
 
   const chipRow = h('div', 'rr-op-chips');
   chipRow.setAttribute('role', 'group');
-  chipRow.setAttribute('aria-label', 'Commit türü');
+  chipRow.setAttribute('aria-label', tx.cbTypeGroup);
   const chips = new Map<string, HTMLButtonElement>();
   for (const t of [...TYPES, '']) {
-    const b = h('button', 'rr-op-chip', t || 'yok');
+    const b = h('button', 'rr-op-chip', t || tx.cbNoType);
     b.type = 'button';
     b.dataset.type = t;
-    b.title = t ? `Özetin başına "${t}: " ekler` : 'Tür önekini kaldırır';
+    b.title = t ? tx.cbTypeTitle(t) : tx.cbNoTypeTitle;
     chips.set(t, b);
     chipRow.append(b);
   }
@@ -91,35 +107,35 @@ function build(el: HTMLElement, opts: CommitBoxOptions): BoxState {
   const summary = h('input', 'rr-op-input');
   summary.type = 'text';
   summary.id = summaryId;
-  summary.placeholder = 'Özet (ör. fix: boş repoda çökme)';
+  summary.placeholder = tx.cbSummaryPlaceholder;
   summary.autocomplete = 'off';
   summary.spellcheck = true;
   summary.setAttribute('aria-describedby', counterId);
   const counter = h('span', 'rr-op-counter');
   counter.id = counterId;
-  const summaryLabel = h('label', 'rr-op-label', 'Özet');
+  const summaryLabel = h('label', 'rr-op-label', tx.cbSummary);
   summaryLabel.htmlFor = summaryId;
 
   const bodyId = `rr-op-body-${uid}`;
   const body = h('textarea', 'rr-op-input rr-op-textarea');
   body.id = bodyId;
   body.rows = 3;
-  body.placeholder = 'Açıklama (isteğe bağlı): neden, nasıl…';
-  const bodyLabel = h('label', 'rr-visually-hidden', 'Açıklama');
+  body.placeholder = tx.cbBodyPlaceholder;
+  const bodyLabel = h('label', 'rr-visually-hidden', tx.cbBody);
   bodyLabel.htmlFor = bodyId;
 
   const amend = h('input', '');
   amend.type = 'checkbox';
-  const amendWarn = h('div', 'rr-op-warn', [icon('warning'), h('span', '', 'Bu commit gönderilmiş; değiştirmek geçmişi yeniden yazar.')]);
+  const amendWarn = h('div', 'rr-op-warn', [icon('warning'), h('span', '', tx.cbAmendWarn)]);
   amendWarn.setAttribute('role', 'note');
   const amendRow = h('div', 'rr-op-amend', [
-    h('label', 'rr-op-check', [amend, h('span', '', "Son commit'e ekle (amend)")]),
+    h('label', 'rr-op-check', [amend, h('span', '', tx.cbAmend)]),
     amendWarn,
   ]);
 
-  const commit = h('button', 'rr-p-btn rr-p-btn-primary', 'Commit');
+  const commit = h('button', 'rr-p-btn rr-p-btn-primary', tx.cbCommit);
   commit.type = 'button';
-  const commitPush = h('button', 'rr-p-btn rr-p-btn-secondary', 'Commit ve gönder');
+  const commitPush = h('button', 'rr-p-btn rr-p-btn-secondary', tx.cbCommitPush);
   commitPush.type = 'button';
   const hint = h('div', 'rr-op-hint');
   hint.id = `rr-op-hint-${uid}`;
@@ -127,15 +143,15 @@ function build(el: HTMLElement, opts: CommitBoxOptions): BoxState {
   commitPush.setAttribute('aria-describedby', hint.id);
 
   const cmd = h('div', 'rr-op-cmd');
-  cmd.setAttribute('aria-label', 'Çalışacak komut');
+  cmd.setAttribute('aria-label', tx.cbCommandAria);
 
   const lastText = h('span', 'rr-op-last-text');
-  const undo = h('button', 'rr-p-btn rr-p-btn-secondary rr-p-btn-small', "Son commit'i geri al");
+  const undo = h('button', 'rr-p-btn rr-p-btn-secondary rr-p-btn-small', tx.cbUndo);
   undo.type = 'button';
-  undo.title = "Değişiklikler kaybolmaz, commit'e girecekler listesine döner.";
+  undo.title = tx.cbUndoTitle;
   const last = h('div', 'rr-op-last', [
-    h('div', 'rr-op-last-line', [h('span', 'rr-op-muted', 'Son commit:'), lastText]),
-    h('div', 'rr-op-last-line', [undo, h('span', 'rr-op-muted', "değişiklikler kaybolmaz, commit'e girecekler listesine döner")]),
+    h('div', 'rr-op-last-line', [h('span', 'rr-op-muted', tx.cbLast), lastText]),
+    h('div', 'rr-op-last-line', [undo, h('span', 'rr-op-muted', tx.cbUndoNote)]),
   ]);
 
   el.replaceChildren(
@@ -151,6 +167,7 @@ function build(el: HTMLElement, opts: CommitBoxOptions): BoxState {
 
   const st: BoxState = {
     opts,
+    lang: getLang(),
     chips,
     summary,
     counter,
@@ -220,10 +237,11 @@ function message(st: BoxState): string {
 /** Commit'i engelleyen sebep; yoksa undefined. */
 function blocker(st: BoxState): string | undefined {
   const { status, busy } = st.opts;
-  if (busy) return 'Bir işlem sürüyor…';
+  const tx = text();
+  if (busy) return tx.busy;
   const staged = status.files.some((f) => f.staged !== undefined);
-  if (!staged && !st.amend.checked) return "Önce commit'e girecek dosyaları seçin.";
-  if (!st.summary.value.trim()) return 'Bir özet yazın.';
+  if (!staged && !st.amend.checked) return tx.cbNothingStaged;
+  if (!st.summary.value.trim()) return tx.cbNoSummary;
   return undefined;
 }
 
@@ -234,16 +252,17 @@ function submit(st: BoxState, push: boolean): void {
 
 function update(st: BoxState): void {
   const { status } = st.opts;
+  const tx = text();
   const len = st.summary.value.length;
   st.counter.textContent = `${len}/${SOFT_LIMIT}`;
   st.counter.classList.toggle('is-warn', len > SOFT_LIMIT && len <= HARD_LIMIT);
   st.counter.classList.toggle('is-strong', len > HARD_LIMIT);
   st.counter.title =
     len > HARD_LIMIT
-      ? `${HARD_LIMIT} karakteri geçti; çoğu araç özeti keser.`
+      ? tx.cbOverHard(HARD_LIMIT)
       : len > SOFT_LIMIT
-        ? `Özet ${SOFT_LIMIT} karakteri geçti; kısa tutmak önerilir.`
-        : `Özet ${SOFT_LIMIT} karakterin altında.`;
+        ? tx.cbOverSoft(SOFT_LIMIT)
+        : tx.cbUnderSoft(SOFT_LIMIT);
 
   const current = PREFIX_RE.exec(st.summary.value)?.[1] ?? '';
   const known = (TYPES as readonly string[]).includes(current) ? current : '';
@@ -255,14 +274,14 @@ function update(st: BoxState): void {
   const reason = blocker(st);
   st.commit.disabled = reason !== undefined;
   st.commitPush.disabled = reason !== undefined || status.branch === undefined;
-  st.commitPush.title = status.branch === undefined ? 'Ayrık HEAD gönderilemez' : '';
+  st.commitPush.title = status.branch === undefined ? tx.cbDetachedPush : '';
   st.hint.textContent = reason && !st.opts.busy ? reason : '';
   st.hint.hidden = !st.hint.textContent;
   st.undo.disabled = st.opts.busy;
 
-  const msg = message(st) || (st.amend.checked ? '' : '<özet>');
+  const msg = message(st) || (st.amend.checked ? '' : tx.cbSummaryToken);
   const lines = opCommands({ kind: 'commit', message: msg, amend: st.amend.checked, push: false }, status).map(formatCommand);
-  st.cmd.replaceChildren(h('span', 'rr-op-muted', 'Çalışacak komut:'), ...lines.map((l) => h('code', 'rr-op-cmd-line', l)));
+  st.cmd.replaceChildren(h('span', 'rr-op-muted', tx.cbCommand), ...lines.map((l) => h('code', 'rr-op-cmd-line', l)));
   st.cmd.title = lines.join('\n');
 }
 

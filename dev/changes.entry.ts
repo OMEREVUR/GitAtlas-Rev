@@ -1,11 +1,13 @@
 // YALNIZCA dev önizlemesi: sahte WorkingTreeStatus ile "Değişiklikler" listesi.
-// URL: ?theme=dark|light  ?width=360  ?tree=1  ?clean=1  ?merge=1  ?busy=1  ?selftest=1
+// URL: ?lang=tr|en  ?theme=dark|light  ?width=360  ?tree=1  ?clean=1  ?merge=1  ?busy=1  ?selftest=1
 //      ?big=1 (tek klasörde 300 untracked dosya; katlanma ve "daha göster" testi)  ?n=2000  ?scroll=end
 import '../src/webview/base.css';
 import { renderChanges } from '../src/webview/changes';
 import type { GitOpRequest, WorkingFile, WorkingTreeStatus } from '../src/types';
+import { parseLang, setLang } from '../src/i18n';
 
 const params = new URLSearchParams(location.search);
+setLang(parseLang(params.get('lang')) ?? 'tr');
 const theme = params.get('theme') === 'light' ? 'vscode-light' : 'vscode-dark';
 document.body.classList.remove('vscode-dark', 'vscode-light');
 document.body.classList.add(theme);

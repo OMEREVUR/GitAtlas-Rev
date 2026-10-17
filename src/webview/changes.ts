@@ -4,6 +4,7 @@ import './changes.css';
 import type { ChangeKind, GitOpRequest, RepoOperation, WorkingFile, WorkingTreeStatus } from '../types';
 import { baseName, formatNumber } from './format';
 import { formatCommand, opCommands } from '../git/opCommands';
+import { text } from '../i18n/changes';
 
 export interface ChangesOptions {
   status: WorkingTreeStatus;
@@ -24,20 +25,26 @@ type Section = 'conflicts' | 'staged' | 'changes';
 const KIND_LETTER: Record<ChangeKind | 'conflicted', string> = {
   modified: 'M', added: 'A', deleted: 'D', renamed: 'R', copied: 'C', typechange: 'T', untracked: '?', conflicted: 'U',
 };
-const KIND_TEXT: Record<ChangeKind | 'conflicted', string> = {
-  modified: 'Değişti', added: 'Yeni', deleted: 'Silindi', renamed: 'Adı değişti', copied: 'Kopyalandı',
-  typechange: 'Türü değişti', untracked: 'İzlenmiyor', conflicted: 'Çakışma',
-};
-const OP_TEXT: Record<RepoOperation, string> = {
-  merge: 'Birleştirme sürüyor', rebase: 'Rebase sürüyor', cherryPick: 'Cherry-pick sürüyor', revert: 'Revert sürüyor',
-};
+function kindText(kind: ChangeKind | 'conflicted'): string {
+  const t = text();
+  const map: Record<ChangeKind | 'conflicted', string> = {
+    modified: t.kindModified, added: t.kindAdded, deleted: t.kindDeleted, renamed: t.kindRenamed, copied: t.kindCopied,
+    typechange: t.kindTypechange, untracked: t.kindUntracked, conflicted: t.kindConflicted,
+  };
+  return map[kind];
+}
+function opText(op: RepoOperation): string {
+  const t = text();
+  const map: Record<RepoOperation, string> = { merge: t.opMerge, rebase: t.opRebase, cherryPick: t.opCherryPick, revert: t.opRevert };
+  return map[op];
+}
 
 /** Harf + Türkçe ad (treemap rozetinde de kullanılır). */
 export function changeLetter(kind: ChangeKind | 'conflicted'): string {
   return KIND_LETTER[kind];
 }
 export function changeText(kind: ChangeKind | 'conflicted'): string {
-  return KIND_TEXT[kind];
+  return kindText(kind);
 }
 
 interface Entry {
@@ -97,6 +104,7 @@ const views = new WeakMap<HTMLElement, ViewState>();
 
 export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
   const { status, busy } = opts;
+  const t = text();
   let view = views.get(el);
   if (!view) {
     view = { expanded: new Map(), collapsedSections: new Set(), shown: new Map() };
@@ -148,22 +156,22 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
   const bar = h('div', 'rr-ch-toolbar');
   const seg = h('div', 'rr-ch-seg');
   seg.setAttribute('role', 'group');
-  seg.setAttribute('aria-label', 'Görünüm');
-  for (const [label, tree, ic] of [['Liste', false, 'codicon-list-flat'], ['Ağaç', true, 'codicon-list-tree']] as const) {
+  seg.setAttribute('aria-label', t.viewGroup);
+  for (const [id, label, tree, ic] of [['list', t.viewList, false, 'codicon-list-flat'], ['tree', t.viewTree, true, 'codicon-list-tree']] as const) {
     const b = h('button', 'rr-ch-seg-btn');
     b.type = 'button';
     b.setAttribute('aria-pressed', opts.treeView === tree ? 'true' : 'false');
     b.append(icon(ic), document.createTextNode(label));
-    key(b, `view:${label}`);
+    key(b, `view:${id}`);
     b.onclick = () => {
       if (opts.treeView !== tree) opts.onToggleTreeView();
     };
     seg.append(b);
   }
   bar.append(seg);
-  const addAll = toolButton('Tümünü ekle', 'codicon-add', title("Tüm değişiklikleri commit'e ekle", cmd({ kind: 'stageAll' })), busy || changes.length === 0, () => opts.onOp({ kind: 'stageAll' }));
+  const addAll = toolButton(t.stageAllBtn, 'codicon-add', title(t.stageAllTitle, cmd({ kind: 'stageAll' })), busy || changes.length === 0, () => opts.onOp({ kind: 'stageAll' }));
   key(addAll, 'tool:stageAll');
-  const rmAll = toolButton('Tümünü çıkar', 'codicon-remove', title("Tümünü commit'ten çıkar (değişiklikler kaybolmaz)", cmd({ kind: 'unstageAll' })), busy || staged.length === 0, () => opts.onOp({ kind: 'unstageAll' }));
+  const rmAll = toolButton(t.unstageAllBtn, 'codicon-remove', title(t.unstageAllTitle, cmd({ kind: 'unstageAll' })), busy || staged.length === 0, () => opts.onOp({ kind: 'unstageAll' }));
   key(rmAll, 'tool:unstageAll');
   bar.append(addAll, rmAll);
   el.append(bar);
@@ -178,22 +186,20 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     const text = h('div', 'rr-ch-band-text');
     text.append(icon(conflicts.length > 0 ? 'codicon-warning' : 'codicon-info'));
     const msg = h('span');
-    msg.append(h('strong', undefined, OP_TEXT[status.operation]));
-    msg.append(document.createTextNode(conflicts.length > 0
-      ? ` · ${formatNumber(conflicts.length)} çakışma. Dosyaları çözüp "Çözüldü" ile işaretleyin.`
-      : ' · çakışma kalmadı. Devam edebilirsiniz.'));
+    msg.append(h('strong', undefined, opText(status.operation)));
+    msg.append(document.createTextNode(conflicts.length > 0 ? t.bandConflicts(conflicts.length) : t.bandNoConflicts));
     text.append(msg);
     const actions = h('div', 'rr-ch-band-actions');
-    const cont = h('button', 'rr-ch-btn rr-ch-btn-primary', 'Devam et');
+    const cont = h('button', 'rr-ch-btn rr-ch-btn-primary', t.continueBtn);
     cont.type = 'button';
     cont.disabled = busy || conflicts.length > 0;
-    cont.title = title(conflicts.length > 0 ? 'Önce tüm çakışmaları çözün' : 'İşleme devam et', cmd({ kind: 'continueOperation' }));
+    cont.title = title(conflicts.length > 0 ? t.continueBlocked : t.continueTitle, cmd({ kind: 'continueOperation' }));
     cont.onclick = () => opts.onOp({ kind: 'continueOperation' });
     key(cont, 'band:continue');
-    const abort = h('button', 'rr-ch-btn', 'İptal et');
+    const abort = h('button', 'rr-ch-btn', t.abortBtn);
     abort.type = 'button';
     abort.disabled = busy;
-    abort.title = title('İşlemi iptal et ve başlamadan önceki hâline dön', cmd({ kind: 'abortOperation' }));
+    abort.title = title(t.abortTitle, cmd({ kind: 'abortOperation' }));
     abort.onclick = () => opts.onOp({ kind: 'abortOperation' });
     key(abort, 'band:abort');
     actions.append(cont, abort);
@@ -203,15 +209,15 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
 
   if (conflicts.length + staged.length + changes.length === 0) {
     const empty = h('div', 'rr-ch-empty');
-    empty.append(icon('codicon-check'), h('span', undefined, 'Değişiklik yok. Çalışma ağacı temiz.'));
+    empty.append(icon('codicon-check'), h('span', undefined, t.cleanTree));
     scroller.append(empty);
     finish();
     return;
   }
 
-  if (conflicts.length) scroller.append(section('conflicts', 'ÇAKIŞMALAR', conflicts));
-  if (staged.length) scroller.append(section('staged', "COMMIT'E GİRECEKLER", staged));
-  if (changes.length) scroller.append(section('changes', 'DEĞİŞENLER', changes));
+  if (conflicts.length) scroller.append(section('conflicts', t.secConflicts, conflicts));
+  if (staged.length) scroller.append(section('staged', t.secStaged, staged));
+  if (changes.length) scroller.append(section('changes', t.secChanges, changes));
   finish();
 
   // ---- yardımcılar (kapanış: opts, busy, rowsList) ----
@@ -320,7 +326,7 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
       const cb = checkbox(
         kind === 'staged',
         entries.some((e) => (kind === 'staged' ? e.file.unstaged : e.file.staged) !== undefined),
-        kind === 'staged' ? "Tümünü commit'ten çıkar" : "Tümünü seç (commit'e ekle)",
+        kind === 'staged' ? t.headUnstageAll : t.headStageAll,
         () => opts.onOp(kind === 'staged' ? { kind: 'unstageAll' } : { kind: 'stageAll' }),
       );
       cb.classList.add('rr-ch-headcheck');
@@ -367,7 +373,7 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     const b = h('button', 'rr-ch-morebtn');
     b.type = 'button';
     const add = Math.min(rest, 500);
-    b.textContent = `${formatNumber(add)} dosya daha göster (${formatNumber(rest)} kalan)`;
+    b.textContent = t.showMore(add, rest);
     key(b, `more:${pageKey}`);
     b.onclick = () => {
       vs.shown.set(pageKey, limit + add);
@@ -429,7 +435,7 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     const paths = all.map((e) => e.file.path);
     if (kind !== 'conflicts') {
       const partial = all.some((e) => (kind === 'staged' ? e.file.unstaged : e.file.staged) !== undefined);
-      const cb = checkbox(kind === 'staged', partial, `${name} klasörü: ${kind === 'staged' ? "commit'ten çıkar" : "commit'e ekle"}`, () =>
+      const cb = checkbox(kind === 'staged', partial, kind === 'staged' ? t.folderUnstage(name) : t.folderStage(name), () =>
         opts.onOp(kind === 'staged' ? { kind: 'unstage', paths } : { kind: 'stage', paths }));
       key(cb, `cb:${li.dataset.rowkey}`);
       li.append(cb);
@@ -451,16 +457,16 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
         hasStat = true;
       }
     }
-    const aria = [`${name} klasörü`, `${formatNumber(all.length)} dosya`];
-    if (hasStat) aria.push(`${formatNumber(added)} eklenen, ${formatNumber(deleted)} silinen satır`);
+    const aria = [t.folderAria(name), t.fileCount(all.length)];
+    if (hasStat) aria.push(t.lineStatAria(added, deleted));
     main.setAttribute('aria-label', aria.join(', '));
     main.setAttribute('aria-expanded', open ? 'true' : 'false');
-    main.title = open ? 'Klasörü kapat' : 'Klasörü aç';
+    main.title = open ? t.folderClose : t.folderOpen;
     main.append(
       icon(open ? 'codicon-chevron-down' : 'codicon-chevron-right'),
       icon(open ? 'codicon-folder-opened' : 'codicon-folder'),
       h('span', 'rr-ch-name', name),
-      h('span', 'rr-ch-dir', `${formatNumber(all.length)} dosya`),
+      h('span', 'rr-ch-dir', t.fileCount(all.length)),
       h('span', 'rr-ch-spacer'),
     );
     if (hasStat) {
@@ -495,9 +501,9 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
 
     if (e.section !== 'conflicts') {
       const partial = stagedView ? f.unstaged !== undefined : f.staged !== undefined;
-      const cb = checkbox(stagedView, partial, stagedView ? `${baseName(f.path)}: commit'ten çıkar` : `${baseName(f.path)}: commit'e ekle`, () =>
+      const cb = checkbox(stagedView, partial, stagedView ? t.fileUnstage(baseName(f.path)) : t.fileStage(baseName(f.path)), () =>
         opts.onOp(stagedView ? { kind: 'unstage', paths: [f.path] } : { kind: 'stage', paths: [f.path] }));
-      lazyTitle(cb, stagedView ? "Commit'ten çıkar" : "Commit'e ekle", stagedView ? { kind: 'unstage', paths: [f.path] } : { kind: 'stage', paths: [f.path] });
+      lazyTitle(cb, stagedView ? t.unstageTitle : t.stageTitle, stagedView ? { kind: 'unstage', paths: [f.path] } : { kind: 'stage', paths: [f.path] });
       key(cb, `cb:${rk}`);
       li.append(cb);
     } else {
@@ -510,8 +516,8 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     const stat = entryStat(e);
     const aria = [baseName(f.path), changeText(e.kind)];
     if (dirName(f.path)) aria.push(dirName(f.path));
-    if (f.oldPath) aria.push(`eski adı ${f.oldPath}`);
-    if (stat) aria.push(`${formatNumber(stat.added)} eklenen, ${formatNumber(stat.deleted)} silinen satır`);
+    if (f.oldPath) aria.push(t.oldName(f.oldPath));
+    if (stat) aria.push(t.lineStatAria(stat.added, stat.deleted));
     main.setAttribute('aria-label', aria.join(', '));
     main.title = f.oldPath ? `${f.oldPath} → ${f.path}` : f.path;
 
@@ -541,23 +547,23 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     if (e.section === 'conflicts') {
       const done = h('button', 'rr-ch-btn rr-ch-resolve');
       done.type = 'button';
-      done.append(icon('codicon-check'), document.createTextNode('Çözüldü'));
-      done.setAttribute('aria-label', `${baseName(f.path)}: çözüldü olarak işaretle`);
-      done.title = title('Çakışma çözüldü olarak işaretle', cmd({ kind: 'markResolved', paths: [f.path] }));
+      done.append(icon('codicon-check'), document.createTextNode(t.resolvedBtn));
+      done.setAttribute('aria-label', t.resolvedAria(baseName(f.path)));
+      done.title = title(t.resolvedTitle, cmd({ kind: 'markResolved', paths: [f.path] }));
       done.disabled = busy;
       done.onclick = () => opts.onOp({ kind: 'markResolved', paths: [f.path] });
       key(done, `act:resolve:${rk}`);
       acts.append(done);
     } else {
-      acts.append(iconButton('codicon-diff', `${baseName(f.path)}: diff'i gör`, "Diff'i gör", false, `act:diff:${rk}`, () => opts.onOpenChange(f.path, stagedView)));
+      acts.append(iconButton('codicon-diff', t.diffAria(baseName(f.path)), t.diffTitle, false, `act:diff:${rk}`, () => opts.onOpenChange(f.path, stagedView)));
     }
     if (e.kind !== 'deleted') {
-      acts.append(iconButton('codicon-go-to-file', `${baseName(f.path)}: dosyayı aç`, 'Dosyayı aç', false, `act:open:${rk}`, () => opts.onOpenFile(f.path)));
+      acts.append(iconButton('codicon-go-to-file', t.openFileAria(baseName(f.path)), t.openFileTitle, false, `act:open:${rk}`, () => opts.onOpenFile(f.path)));
     }
     if (e.section === 'changes') {
       const op: GitOpRequest = { kind: 'discard', paths: [f.path] };
-      const discard = iconButton('codicon-discard', `${baseName(f.path)}: değişikliği geri al`, '', busy, `act:discard:${rk}`, () => opts.onOp(op));
-      lazyTitle(discard, e.kind === 'untracked' ? 'Geri al (dosya silinir)' : 'Değişikliği geri al', op);
+      const discard = iconButton('codicon-discard', t.discardAria(baseName(f.path)), '', busy, `act:discard:${rk}`, () => opts.onOp(op));
+      lazyTitle(discard, e.kind === 'untracked' ? t.discardUntrackedTitle : t.discardTitle, op);
       acts.append(discard);
     }
     li.append(acts);
@@ -582,7 +588,7 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     cb.checked = checked;
     cb.indeterminate = indeterminate;
     cb.disabled = busy;
-    cb.setAttribute('aria-label', indeterminate ? `${label} (kısmen eklendi)` : label);
+    cb.setAttribute('aria-label', indeterminate ? t.partial(label) : label);
     // Değer yerine bölüme göre karar verilir (kısmi durumda tarayıcının çevirdiği değer yanıltıcı).
     cb.onchange = () => onChange();
     return cb;

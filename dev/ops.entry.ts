@@ -1,5 +1,5 @@
 // YALNIZCA dev önizlemesi: commit kutusu, eşitleme çubuğu, işlem bildirimi ve stash listesi.
-// URL: ?theme=dark|light  ?width=360  ?state=clean|ahead|behind|diverged|noUpstream|detached
+// URL: ?lang=tr|en  ?theme=dark|light  ?width=360  ?state=clean|ahead|behind|diverged|noUpstream|detached
 //      ?notice=running|ok|error|cancelled  ?amend=1  ?selftest=1
 //      ?flat=1 (ikincil düğme zemini = panel zemini; kullanıcının temasındaki sorun)  ?nobranch=1 (branch düğmeleri olmadan eski görünüm)
 import '../src/webview/base.css';
@@ -11,8 +11,10 @@ import { renderSyncBar } from '../src/webview/syncBar';
 import { renderOpNotice, type OpNoticeState } from '../src/webview/opNotice';
 import { renderStashList } from '../src/webview/stashList';
 import { formatCommand, opCommands } from '../src/git/opCommands';
+import { parseLang, setLang } from '../src/i18n';
 
 const params = new URLSearchParams(location.search);
+setLang(parseLang(params.get('lang')) ?? 'tr');
 document.body.className = params.get('theme') === 'light' ? 'vscode-light' : 'vscode-dark';
 const width = Number(params.get('width'));
 if (width > 0) {

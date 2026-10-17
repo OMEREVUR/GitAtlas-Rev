@@ -1,5 +1,5 @@
 // YALNIZCA dev önizlemesi: PULL REQUEST'LER bölümü + GitHub işlem bildirimi, sahte veriyle.
-// URL: ?theme=dark|light  ?width=360
+// URL: ?lang=tr|en  ?theme=dark|light  ?width=360
 //      ?case=off|noRemote|notGitHub|connecting|error|loading|feature|default|detached|current|conflict|draft|empty
 //      ?notice=running|ok  ?selftest=1
 import '../src/webview/base.css';
@@ -8,8 +8,10 @@ import type { GitHubOpRequest, GitHubStatus, OpResult, PrDraft, PrPanelData, Pul
 import type { WebviewToExtension } from '../src/protocol';
 import { renderPrPanel, resetPrForm } from '../src/webview/prPanel';
 import { renderOpNotice, type OpNoticeState } from '../src/webview/opNotice';
+import { parseLang, setLang } from '../src/i18n';
 
 const params = new URLSearchParams(location.search);
+setLang(parseLang(params.get('lang')) ?? 'tr');
 document.body.className = params.get('theme') === 'light' ? 'vscode-light' : 'vscode-dark';
 const width = Number(params.get('width'));
 if (width > 0) document.body.style.setProperty('width', `${width}px`);

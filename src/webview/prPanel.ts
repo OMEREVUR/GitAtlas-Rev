@@ -15,9 +15,10 @@ import type {
   ReviewDecision,
   WorkingTreeStatus,
 } from '../types';
-import { CI_LABELS } from './githubBanner';
 import { formatDate, formatNumber, formatRelative } from './format';
 import { formatCommand, opCommands } from '../git/opCommands';
+import { getLang, type Lang } from '../i18n/index';
+import { text } from '../i18n/changes';
 
 export interface PrPanelOptions {
   /** GitHub bağlı mı (status connected/stale). */
@@ -41,18 +42,26 @@ export interface PrPanelOptions {
 }
 
 const CHECK_LIMIT = 6;
-const REVIEW_LABELS: Record<ReviewDecision, string> = {
-  approved: 'Onaylandı',
-  changesRequested: 'Değişiklik istendi',
-  reviewRequired: 'Review bekliyor',
-  none: '',
-};
-const METHOD_LABELS: Record<MergeMethod, string> = {
-  squash: 'Squash ve birleştir',
-  merge: 'Merge commit',
-  rebase: 'Rebase ve birleştir',
-};
-const CHECK_SHORT: Record<CiState, string> = { success: 'geçti', failure: 'başarısız', pending: 'sürüyor', none: 'yok' };
+function reviewLabel(r: ReviewDecision): string {
+  const t = text();
+  const map: Record<ReviewDecision, string> = { approved: t.prReviewApproved, changesRequested: t.prReviewChanges, reviewRequired: t.prReviewRequired, none: '' };
+  return map[r];
+}
+function methodLabel(m: MergeMethod): string {
+  const t = text();
+  const map: Record<MergeMethod, string> = { squash: t.prMethodSquash, merge: t.prMethodMerge, rebase: t.prMethodRebase };
+  return map[m];
+}
+function checkShort(s: CiState): string {
+  const t = text();
+  const map: Record<CiState, string> = { success: t.prCheckSuccess, failure: t.prCheckFailure, pending: t.prCheckPending, none: t.prCheckNone };
+  return map[s];
+}
+function ciLabel(s: CiState): string {
+  const t = text();
+  const map: Record<CiState, string> = { success: t.ciSuccess, failure: t.ciFailure, pending: t.ciPending, none: t.ciNone };
+  return map[s];
+}
 
 interface FormState {
   open: boolean;
@@ -77,6 +86,8 @@ interface FormState {
 
 interface PanelState {
   opts: PrPanelOptions;
+  /** İskeletin kurulduğu dil; değişirse yeniden kurulur. */
+  lang: Lang;
   toggle: HTMLButtonElement;
   title: HTMLElement;
   body: HTMLElement;
@@ -95,14 +106,24 @@ const states = new WeakMap<HTMLElement, PanelState>();
 
 export function renderPrPanel(el: HTMLElement, opts: PrPanelOptions): void {
   let st = states.get(el);
-  if (!st || !el.contains(st.toggle)) st = build(el, opts);
+  if (!st || !el.contains(st.toggle) || st.lang !== getLang()) {
+    // Dil değiştiyse açık/kapalı durumu ve seçimler korunur (form yeniden boş kurulur).
+    const prev = st;
+    st = build(el, opts);
+    if (prev) {
+      st.expanded = prev.expanded;
+      st.method = prev.method;
+      st.deleteBranch = prev.deleteBranch;
+    }
+  }
   st.opts = opts;
   const { connected, data, error, status } = opts;
+  const t = text();
 
   st.toggle.setAttribute('aria-expanded', String(st.expanded));
   st.body.hidden = !st.expanded;
   const counts = connected && !error && data ? ` · ${data.mine.length + data.reviewRequested.length}` : '';
-  st.title.textContent = `PULL REQUEST'LER${counts}`;
+  st.title.textContent = `${t.prTitle}${counts}`;
 
   // Bağlantı / hata / yükleniyor
   if (!connected) {
@@ -111,35 +132,35 @@ export function renderPrPanel(el: HTMLElement, opts: PrPanelOptions): void {
     if (gs?.state === 'noRemote') {
       keyed(st.notice, `noRemote:${opts.onPublish ? 1 : 0}`, () => {
         const out: HTMLElement[] = [
-          h('p', 'rr-pr-text', "Bu repo henüz GitHub'da değil (origin yok). Yayınlayınca PR açabilir, birleştirebilir ve checkout edebilirsin."),
+          h('p', 'rr-pr-text', t.prNoRemote),
         ];
-        if (opts.onPublish) out.push(button("GitHub'da yayınla", 'primary', () => st?.opts.onPublish?.()));
+        if (opts.onPublish) out.push(button(t.prPublish, 'primary', () => st?.opts.onPublish?.()));
         return out;
       });
     } else if (gs?.state === 'notGitHub') {
       const url = gs.remoteUrl;
       keyed(st.notice, `notGitHub:${url}`, () => [
         h('p', 'rr-pr-text', [
-          document.createTextNode('origin bir GitHub reposu değil ('),
+          document.createTextNode(t.prNotGitHubBefore),
           h('code', 'rr-p-code', url),
-          document.createTextNode('). PR işlemleri yalnızca github.com repolarında çalışır.'),
+          document.createTextNode(t.prNotGitHubAfter),
         ]),
       ]);
     } else if (state === 'connecting') {
-      keyed(st.notice, 'connecting', () => [h('p', 'rr-pr-text rr-pr-muted', 'Bağlanılıyor…')]);
+      keyed(st.notice, 'connecting', () => [h('p', 'rr-pr-text rr-pr-muted', t.prConnecting)]);
     } else {
       keyed(st.notice, 'off', () => {
-        const btn = button('GitHub ile bağlan', 'primary', () => st?.opts.onConnect());
-        return [h('p', 'rr-pr-text', "GitHub'a bağlanınca bu branch'ten PR açabilir, PR'ları birleştirip checkout edebilirsin."), btn];
+        const btn = button(t.prConnect, 'primary', () => st?.opts.onConnect());
+        return [h('p', 'rr-pr-text', t.prConnectText), btn];
       });
     }
   } else if (error) {
     keyed(st.notice, `err:${error}`, () => [
       h('div', 'rr-pr-error', [icon('error'), h('span', '', error)]),
-      button('Yeniden dene', 'secondary', () => st?.opts.onRefresh()),
+      button(t.prRetry, 'secondary', () => st?.opts.onRefresh()),
     ]);
   } else if (!data) {
-    keyed(st.notice, 'loading', () => [h('p', 'rr-pr-text rr-pr-muted', "PR'lar yükleniyor…")]);
+    keyed(st.notice, 'loading', () => [h('p', 'rr-pr-text rr-pr-muted', t.prLoading)]);
   } else {
     keyed(st.notice, '', () => []);
   }
@@ -166,10 +187,10 @@ export function renderPrPanel(el: HTMLElement, opts: PrPanelOptions): void {
   // Listeler
   const branch = status?.branch;
   keyed(st.mine, JSON.stringify([data.mine, branch, opts.busy]), () =>
-    list(st as PanelState, `BENİM PR'LARIM (${data.mine.length})`, data.mine, 'Açık PR yok.'),
+    list(st as PanelState, t.prMine(data.mine.length), data.mine, t.prMineEmpty),
   );
   keyed(st.review, JSON.stringify([data.reviewRequested, branch, opts.busy]), () =>
-    list(st as PanelState, `REVIEW BEKLEYENLER (${data.reviewRequested.length})`, data.reviewRequested, 'Review bekleyen PR yok.'),
+    list(st as PanelState, t.prReview(data.reviewRequested.length), data.reviewRequested, t.prReviewEmpty),
   );
 }
 
@@ -192,6 +213,7 @@ export function resetPrForm(el: HTMLElement): void {
 function build(el: HTMLElement, opts: PrPanelOptions): PanelState {
   el.classList.add('rr-pr');
   const uid = Math.random().toString(36).slice(2, 8);
+  const t = text();
 
   const chevron = icon('chevron-down', 'rr-pr-chevron');
   const title = h('span', '');
@@ -201,12 +223,12 @@ function build(el: HTMLElement, opts: PrPanelOptions): PanelState {
   toggle.setAttribute('aria-controls', bodyId);
   const refresh = h('button', 'rr-p-icon-btn', [icon('refresh')]);
   refresh.type = 'button';
-  refresh.setAttribute('aria-label', "PR'ları yenile");
-  refresh.title = "PR'ları yenile";
+  refresh.setAttribute('aria-label', t.prRefresh);
+  refresh.title = t.prRefresh;
 
   const notice = h('div', 'rr-pr-notice');
   const current = h('section', 'rr-pr-current');
-  current.setAttribute('aria-label', "Bu branch'in PR'ı");
+  current.setAttribute('aria-label', t.prCurrentAria);
   const form = buildForm(uid);
   const mine = h('section', 'rr-pr-list-section');
   const review = h('section', 'rr-pr-list-section');
@@ -217,6 +239,7 @@ function build(el: HTMLElement, opts: PrPanelOptions): PanelState {
 
   const st: PanelState = {
     opts,
+    lang: getLang(),
     toggle,
     title,
     body,
@@ -289,30 +312,31 @@ function build(el: HTMLElement, opts: PrPanelOptions): PanelState {
 }
 
 function buildForm(uid: string): FormState {
-  const openBtn = button("Bu branch'ten PR aç", 'secondary');
+  const t = text();
+  const openBtn = button(t.prOpenForm, 'secondary');
   const note = h('p', 'rr-pr-text rr-pr-muted');
 
   const baseId = `rr-pr-base-${uid}`;
   const base = h('select', 'rr-p-select rr-pr-select');
   base.id = baseId;
-  const baseLabel = h('label', 'rr-pr-label', 'Hedef branch');
+  const baseLabel = h('label', 'rr-pr-label', t.prBase);
   baseLabel.htmlFor = baseId;
 
   const titleId = `rr-pr-title-${uid}`;
   const title = h('input', 'rr-op-input rr-pr-input');
   title.type = 'text';
   title.id = titleId;
-  title.placeholder = 'PR başlığı';
+  title.placeholder = t.prTitlePlaceholder;
   title.autocomplete = 'off';
-  const titleLabel = h('label', 'rr-pr-label', 'Başlık');
+  const titleLabel = h('label', 'rr-pr-label', t.prTitleLabel);
   titleLabel.htmlFor = titleId;
 
   const bodyId = `rr-pr-desc-${uid}`;
   const body = h('textarea', 'rr-op-input rr-op-textarea rr-pr-input');
   body.id = bodyId;
   body.rows = 5;
-  body.placeholder = 'Açıklama (isteğe bağlı)';
-  const bodyLabel = h('label', 'rr-pr-label', 'Açıklama');
+  body.placeholder = t.prBodyPlaceholder;
+  const bodyLabel = h('label', 'rr-pr-label', t.prBodyLabel);
   bodyLabel.htmlFor = bodyId;
 
   const draft = h('input', '');
@@ -322,8 +346,8 @@ function buildForm(uid: string): FormState {
   push.setAttribute('role', 'note');
   const error = h('div', 'rr-pr-error');
   error.setAttribute('role', 'alert');
-  const submit = button('PR aç', 'primary');
-  const cancel = button('Vazgeç', 'secondary');
+  const submit = button(t.prCreate, 'primary');
+  const cancel = button(t.prCancel, 'secondary');
   cancel.classList.add('rr-pr-cancel');
   const reason = h('div', 'rr-pr-muted rr-pr-small');
   reason.id = `rr-pr-reason-${uid}`;
@@ -334,14 +358,14 @@ function buildForm(uid: string): FormState {
     info,
     h('div', 'rr-pr-field', [titleLabel, title]),
     h('div', 'rr-pr-field', [bodyLabel, body]),
-    h('label', 'rr-op-check', [draft, h('span', '', 'Taslak (draft) olarak aç')]),
+    h('label', 'rr-op-check', [draft, h('span', '', t.prDraftCheck)]),
     push,
     error,
     h('div', 'rr-op-actions', [submit, cancel]),
     reason,
   ]);
   form.setAttribute('role', 'group');
-  form.setAttribute('aria-label', 'Yeni pull request');
+  form.setAttribute('aria-label', t.prFormAria);
 
   const section = h('section', 'rr-pr-create', [openBtn, note, form]);
   return {
@@ -368,6 +392,7 @@ function buildForm(uid: string): FormState {
 function updateForm(st: PanelState, data: PrPanelData | undefined, status: WorkingTreeStatus | undefined): void {
   const f = st.form;
   const { draft, draftError, busy } = st.opts;
+  const t = text();
   if (!data || data.currentBranchPr) {
     f.section.hidden = true;
     return;
@@ -379,8 +404,8 @@ function updateForm(st: PanelState, data: PrPanelData | undefined, status: Worki
   f.openBtn.hidden = !canCreate || f.open;
   f.form.hidden = !canCreate || !f.open;
   f.note.hidden = canCreate;
-  if (!branch) f.note.textContent = "Ayrık HEAD üzerinde PR açılamaz; önce bir branch oluştur.";
-  else if (!canCreate) f.note.textContent = `Şu an varsayılan branch üzerindesin: ${branch}. PR açmak için önce yeni bir branch oluştur.`;
+  if (!branch) f.note.textContent = t.prDetached;
+  else if (!canCreate) f.note.textContent = t.prOnDefault(branch);
   if (!canCreate) return;
 
   // Hedef branch seçenekleri: varsayılan + taslağın hedefi + mevcut seçim (aynı ad bir kez; mevcut branch hariç).
@@ -403,9 +428,9 @@ function updateForm(st: PanelState, data: PrPanelData | undefined, status: Worki
       if (!f.bodyTouched) f.body.value = draft.body;
       f.filledKey = key;
     }
-    f.info.textContent = `${formatNumber(draft.commits)} commit · ${branch} → ${draft.base}`;
+    f.info.textContent = t.prDraftInfo(draft.commits, branch, draft.base);
   } else {
-    f.info.textContent = draftError ? '' : f.open ? 'Taslak hazırlanıyor…' : '';
+    f.info.textContent = draftError ? '' : f.open ? t.prDraftLoading : '';
   }
   f.info.hidden = !f.info.textContent;
 
@@ -414,7 +439,7 @@ function updateForm(st: PanelState, data: PrPanelData | undefined, status: Worki
   if (needsPush && status) {
     const cmd = opCommands({ kind: 'push' }, status).map(formatCommand).join(' && ');
     const span = f.push.querySelector('span:last-child');
-    if (span) span.textContent = `Önce branch gönderilecek (${cmd}).`;
+    if (span) span.textContent = t.prPushFirst(cmd);
   }
   f.error.hidden = !draftError;
   f.error.replaceChildren(...(draftError ? [icon('error'), h('span', '', draftError)] : []));
@@ -428,11 +453,12 @@ function updateForm(st: PanelState, data: PrPanelData | undefined, status: Worki
 function formBlocker(st: PanelState): string | undefined {
   const f = st.form;
   const { draft, busy, status } = st.opts;
-  if (busy) return 'Bir işlem sürüyor…';
-  if (!f.base.value) return 'Hedef branch seçin.';
-  if (!f.title.value.trim()) return 'Bir başlık yazın.';
+  const t = text();
+  if (busy) return t.busy;
+  if (!f.base.value) return t.prPickBase;
+  if (!f.title.value.trim()) return t.prNoTitle;
   if (draft && draft.head === status?.branch && draft.base === f.base.value && draft.commits === 0) {
-    return 'Hedef branch ile arasında commit yok.';
+    return t.prNoCommits;
   }
   return undefined;
 }
@@ -440,9 +466,10 @@ function formBlocker(st: PanelState): string | undefined {
 // ---------- mevcut branch'in PR kartı ----------
 function currentCard(st: PanelState, pr: PullRequestDetail, data: PrPanelData): HTMLElement[] {
   const { busy } = st.opts;
+  const t = text();
   const titleBtn = h('button', 'rr-pr-title-link', `#${pr.number} ${pr.title}`);
   titleBtn.type = 'button';
-  titleBtn.title = "GitHub'da aç";
+  titleBtn.title = t.prOpenOnGitHub;
   titleBtn.addEventListener('click', () => st.opts.onOpenUrl(pr.url));
 
   const head = h('div', 'rr-pr-card-head', [icon('git-pull-request', 'rr-pr-icon'), h('div', 'rr-pr-card-titles', [titleBtn])]);
@@ -450,33 +477,33 @@ function currentCard(st: PanelState, pr: PullRequestDetail, data: PrPanelData): 
     h('span', 'rr-pr-refs', `${pr.headRef} → ${pr.baseRef}`),
     h('span', 'rr-p-add', `+${formatNumber(pr.additions)}`),
     h('span', 'rr-p-del', `−${formatNumber(pr.deletions)}`),
-    h('span', '', `${formatNumber(pr.changedFiles)} dosya`),
+    h('span', '', t.prFiles(pr.changedFiles)),
   ]);
-  if (pr.isDraft) meta.prepend(h('span', 'rr-p-tag', 'taslak'));
+  if (pr.isDraft) meta.prepend(h('span', 'rr-p-tag', t.prDraftTag));
   (head.querySelector('.rr-pr-card-titles') as HTMLElement).append(meta);
 
   const facts = h('div', 'rr-pr-facts');
-  const review = REVIEW_LABELS[pr.reviewDecision];
+  const review = reviewLabel(pr.reviewDecision);
   if (review) facts.append(fact(reviewIcon(pr.reviewDecision), review, `is-${pr.reviewDecision}`));
-  if (pr.mergeable === 'conflicting') facts.append(fact('warning', 'Çakışma var!', 'is-conflict'));
-  else if (pr.mergeable === 'mergeable') facts.append(fact('check', 'Birleştirilebilir', 'is-ok'));
-  else facts.append(fact('sync', 'Birleştirilebilirlik hesaplanıyor', 'is-unknown'));
+  if (pr.mergeable === 'conflicting') facts.append(fact('warning', t.prConflict, 'is-conflict'));
+  else if (pr.mergeable === 'mergeable') facts.append(fact('check', t.prMergeable, 'is-ok'));
+  else facts.append(fact('sync', t.prMergeableUnknown, 'is-unknown'));
 
   const out: HTMLElement[] = [head, facts];
 
   if (pr.checks.length > 0) {
     const failing = pr.checks.filter((c) => c.state === 'failure').length;
-    const heading = h('h4', 'rr-pr-subheading', `CHECK'LER · ${pr.checks.length}${failing ? ` · ${failing} başarısız` : ''}`);
+    const heading = h('h4', 'rr-pr-subheading', t.prChecksHeading(pr.checks.length, failing));
     const ul = h('ul', 'rr-pr-checks', pr.checks.slice(0, CHECK_LIMIT).map((c) => checkRow(st, c)));
     if (pr.checks.length > CHECK_LIMIT) {
-      const more = h('button', 'rr-pr-more', `+${pr.checks.length - CHECK_LIMIT} check daha`);
+      const more = h('button', 'rr-pr-more', t.prMoreChecks(pr.checks.length - CHECK_LIMIT));
       more.type = 'button';
       more.addEventListener('click', () => st.opts.onOpenUrl(`${pr.url}/checks`));
       ul.append(h('li', '', [more]));
     }
     out.push(h('div', 'rr-pr-check-block', [heading, ul]));
   } else {
-    out.push(h('div', 'rr-pr-muted rr-pr-small', CI_LABELS[pr.ci]));
+    out.push(h('div', 'rr-pr-muted rr-pr-small', ciLabel(pr.ci)));
   }
 
   // Birleştir
@@ -485,9 +512,9 @@ function currentCard(st: PanelState, pr: PullRequestDetail, data: PrPanelData): 
   const method: MergeMethod | undefined =
     chosen && methods.includes(chosen) ? chosen : methods.includes('squash') ? 'squash' : methods[0];
   const select = h('select', 'rr-p-select rr-pr-select');
-  for (const m of methods) select.append(new Option(METHOD_LABELS[m], m));
+  for (const m of methods) select.append(new Option(methodLabel(m), m));
   if (method) select.value = method;
-  select.setAttribute('aria-label', 'Birleştirme yöntemi');
+  select.setAttribute('aria-label', t.prMethodAria);
   select.disabled = busy || methods.length === 0;
   select.addEventListener('change', () => st.method.set(pr.number, select.value as MergeMethod));
 
@@ -496,20 +523,20 @@ function currentCard(st: PanelState, pr: PullRequestDetail, data: PrPanelData): 
   del.checked = st.deleteBranch.get(pr.number) ?? true;
   del.disabled = busy;
   del.addEventListener('change', () => st.deleteBranch.set(pr.number, del.checked));
-  const delLabel = h('label', 'rr-op-check', [del, h('span', '', "Uzak branch'i sil")]);
+  const delLabel = h('label', 'rr-op-check', [del, h('span', '', t.prDeleteBranch)]);
   delLabel.hidden = pr.isCrossRepository;
 
   let reason: string | undefined;
-  if (pr.mergeable === 'conflicting') reason = 'Çakışma var; önce çakışmaları çözüp gönderin.';
-  else if (pr.isDraft) reason = "Taslak PR birleştirilemez; önce GitHub'da hazır olarak işaretleyin.";
-  else if (methods.length === 0 || !method) reason = 'Bu repoda izin verilen birleştirme yöntemi yok.';
-  else if (busy) reason = 'Bir işlem sürüyor…';
+  if (pr.mergeable === 'conflicting') reason = t.prWhyConflict;
+  else if (pr.isDraft) reason = t.prWhyDraft;
+  else if (methods.length === 0 || !method) reason = t.prWhyNoMethod;
+  else if (busy) reason = t.busy;
   const warnings: string[] = [];
-  if (!reason && pr.reviewDecision === 'changesRequested') warnings.push("Değişiklik istendi; birleştirmeden önce review'ları kontrol edin.");
-  if (!reason && pr.checks.some((c) => c.state === 'failure')) warnings.push("Bazı check'ler başarısız.");
-  if (!reason && pr.mergeable === 'unknown') warnings.push('GitHub birleştirilebilirliği hâlâ hesaplıyor.');
+  if (!reason && pr.reviewDecision === 'changesRequested') warnings.push(t.prWarnChanges);
+  if (!reason && pr.checks.some((c) => c.state === 'failure')) warnings.push(t.prWarnFailing);
+  if (!reason && pr.mergeable === 'unknown') warnings.push(t.prWarnUnknown);
 
-  const merge = button('Birleştir', 'primary', () => {
+  const merge = button(t.prMerge, 'primary', () => {
     if (reason || !method) return;
     st.opts.onOp({ kind: 'mergePr', number: pr.number, method: select.value as MergeMethod, deleteBranch: !pr.isCrossRepository && del.checked });
   });
@@ -521,7 +548,7 @@ function currentCard(st: PanelState, pr: PullRequestDetail, data: PrPanelData): 
 
   out.push(
     h('div', 'rr-pr-merge', [
-      h('h4', 'rr-pr-subheading', 'BİRLEŞTİR'),
+      h('h4', 'rr-pr-subheading', t.prMergeHeading),
       h('div', 'rr-pr-merge-row', [select, merge]),
       delLabel,
       why,
@@ -533,12 +560,12 @@ function currentCard(st: PanelState, pr: PullRequestDetail, data: PrPanelData): 
 function checkRow(st: PanelState, c: PrCheck): HTMLElement {
   const dot = h('span', `rr-p-ci-dot is-${c.state}`);
   dot.setAttribute('aria-hidden', 'true');
-  const label = [dot, h('span', 'rr-pr-check-name', c.name), h('span', 'rr-pr-muted', CHECK_SHORT[c.state])];
+  const label = [dot, h('span', 'rr-pr-check-name', c.name), h('span', 'rr-pr-muted', checkShort(c.state))];
   if (c.url) {
     const url = c.url;
     const b = h('button', 'rr-pr-check rr-pr-check-link', label);
     b.type = 'button';
-    b.title = `${c.name}: ${CI_LABELS[c.state]} — ayrıntıyı aç`;
+    b.title = text().prCheckDetail(c.name, ciLabel(c.state));
     b.addEventListener('click', () => st.opts.onOpenUrl(url));
     return h('li', '', [b]);
   }
@@ -555,6 +582,7 @@ function reviewIcon(r: ReviewDecision): string {
 
 // ---------- listeler ----------
 function list(st: PanelState, title: string, prs: readonly PullRequestDetail[], empty: string): HTMLElement[] {
+  const t = text();
   const heading = h('h4', 'rr-pr-subheading', title);
   if (prs.length === 0) return [heading, h('div', 'rr-pr-muted rr-pr-small', empty)];
   const branch = st.opts.status?.branch;
@@ -565,14 +593,14 @@ function list(st: PanelState, title: string, prs: readonly PullRequestDetail[], 
     prs.map((pr) => {
       const dot = h('span', `rr-p-ci-dot is-${pr.ci}`);
       dot.setAttribute('aria-hidden', 'true');
-      const meta = h('span', 'rr-pr-meta', [h('span', '', pr.author), h('span', 'rr-pr-sep', '·'), dot, h('span', '', CI_LABELS[pr.ci])]);
-      const review = REVIEW_LABELS[pr.reviewDecision];
+      const meta = h('span', 'rr-pr-meta', [h('span', '', pr.author), h('span', 'rr-pr-sep', '·'), dot, h('span', '', ciLabel(pr.ci))]);
+      const review = reviewLabel(pr.reviewDecision);
       if (review) meta.append(h('span', 'rr-pr-sep', '·'), h('span', `rr-pr-review is-${pr.reviewDecision}`, review));
-      if (pr.mergeable === 'conflicting') meta.append(h('span', 'rr-pr-sep', '·'), h('span', 'rr-pr-review is-conflict', 'Çakışma var'));
-      const updated = h('span', '', `güncellendi ${formatRelative(pr.updatedAt, now)}`);
+      if (pr.mergeable === 'conflicting') meta.append(h('span', 'rr-pr-sep', '·'), h('span', 'rr-pr-review is-conflict', t.prConflictShort));
+      const updated = h('span', '', t.prUpdated(formatRelative(pr.updatedAt, now)));
       updated.title = formatDate(pr.updatedAt);
       meta.append(h('span', 'rr-pr-sep', '·'), updated);
-      if (pr.isDraft) meta.append(h('span', 'rr-p-tag', 'taslak'));
+      if (pr.isDraft) meta.append(h('span', 'rr-p-tag', t.prDraftTag));
 
       const titleEl = h('span', 'rr-p-msg rr-pr-row-title', `#${pr.number} ${pr.title}`);
       titleEl.title = `${pr.title}\n${pr.headRef} → ${pr.baseRef}`;
@@ -580,13 +608,13 @@ function list(st: PanelState, title: string, prs: readonly PullRequestDetail[], 
       const actions = h('span', 'rr-pr-row-actions');
       const onBranch = branch !== undefined && (branch === pr.headRef || branch === `pr/${pr.number}`);
       if (!onBranch) {
-        const co = button('Checkout', 'secondary', () => st.opts.onOp({ kind: 'checkoutPr', number: pr.number }), true);
+        const co = button(t.prCheckout, 'secondary', () => st.opts.onOp({ kind: 'checkoutPr', number: pr.number }), true);
         co.disabled = st.opts.busy;
-        co.setAttribute('aria-label', `#${pr.number} branch'ine geç (checkout)`);
+        co.setAttribute('aria-label', t.prCheckoutAria(pr.number));
         actions.append(co);
       }
-      const open = button('Aç', 'secondary', () => st.opts.onOpenUrl(pr.url), true);
-      open.setAttribute('aria-label', `#${pr.number} PR'ını GitHub'da aç`);
+      const open = button(t.prOpen, 'secondary', () => st.opts.onOpenUrl(pr.url), true);
+      open.setAttribute('aria-label', t.prOpenAria(pr.number));
       actions.append(open);
 
       return h('li', 'rr-pr-row', [icon('git-pull-request', 'rr-pr-icon'), h('span', 'rr-pr-row-text', [titleEl, meta]), actions]);
@@ -597,7 +625,9 @@ function list(st: PanelState, title: string, prs: readonly PullRequestDetail[], 
 
 // ---------- yardımcılar ----------
 /** İçerik anahtarı değişmediyse container'a dokunmaz (odak ve açık seçiciler korunur). */
-function keyed(container: HTMLElement, key: string, make: () => HTMLElement[]): void {
+function keyed(container: HTMLElement, rawKey: string, make: () => HTMLElement[]): void {
+  // Dil anahtara girer: dil değişince içerik yeniden çizilir.
+  const key = `${getLang()}:${rawKey}`;
   if (container.dataset.key === key && container.dataset.key !== undefined) return;
   container.dataset.key = key;
   container.replaceChildren(...make());
