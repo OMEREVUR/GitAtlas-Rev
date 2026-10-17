@@ -14,6 +14,8 @@ import { branchContextValue, refFromCommandArg, validateBranchNameInput } from '
 import {
   detailFromBasic,
   findPrDetail,
+  githubConnectAction,
+  needsRemoteRedetect,
   opChangesRefs,
   parseGitHubOp,
   parseGitOp,
@@ -180,5 +182,30 @@ describe('v5 2. tur: PR mesajları', () => {
     const basic = findPrDetail(42, panel, [pr(42)]);
     expect(basic).toMatchObject({ number: 42, body: '', isCrossRepository: false, mergeable: 'unknown', changedFiles: 2, checks: [] });
     expect(findPrDetail(99, undefined, [pr(42)])).toBeUndefined();
+  });
+});
+
+describe('GitHub bağlanma ve branch düğmeleri', () => {
+  it('yeni webview mesajları', () => {
+    expect(parseWebviewMessage({ type: 'githubPublish' })).toEqual({ type: 'githubPublish' });
+    expect(parseWebviewMessage({ type: 'branchMenu' })).toEqual({ type: 'branchMenu' });
+    expect(parseWebviewMessage({ type: 'branchCreate' })).toEqual({ type: 'branchCreate' });
+    expect(parseWebviewMessage({ type: 'branchDelete' })).toBeUndefined();
+  });
+
+  it('bağlan isteğinin dalları', () => {
+    expect(githubConnectAction({ state: 'noRemote' }, true)).toBe('publish-prompt');
+    expect(githubConnectAction({ state: 'notGitHub', remoteUrl: 'https://gitlab.com/o/r' }, true)).toBe('not-github');
+    expect(githubConnectAction({ state: 'off', dismissed: true }, true)).toBe('connect');
+    expect(githubConnectAction({ state: 'noRemote' }, false)).toBe('disabled');
+    expect(githubConnectAction({ state: 'error', message: 'x' }, true)).toBe('connect');
+  });
+
+  it('remote yeniden algılama yalnızca bağlı değilken', () => {
+    expect(needsRemoteRedetect({ state: 'noRemote' })).toBe(true);
+    expect(needsRemoteRedetect({ state: 'notGitHub', remoteUrl: 'x' })).toBe(true);
+    expect(needsRemoteRedetect({ state: 'off', dismissed: false })).toBe(true);
+    expect(needsRemoteRedetect({ state: 'connected', repo: 'o/r', fetchedAt: 0, intervalMin: 2, baseIntervalMin: 2 })).toBe(false);
+    expect(needsRemoteRedetect({ state: 'connecting' })).toBe(false);
   });
 });

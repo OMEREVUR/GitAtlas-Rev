@@ -47,6 +47,7 @@ import { renderFileCard } from './fileCard';
 import { renderGraphToolbar, type GraphFilters } from './graphToolbar';
 import { renderGraph } from './graphView';
 import { heatLevels } from './heat';
+import { installHeatColor } from './heatColor';
 import { renderRangeFilter } from './rangeFilter';
 import { renderState, type PanelState } from './states';
 import { renderTreemap } from './treemap';
@@ -152,6 +153,8 @@ function restoreUi(): UiState {
     changesTree: o.changesTree === true,
   };
 }
+
+installHeatColor();
 
 // ---- Düzen ----
 const app = document.getElementById('app') ?? document.body;
@@ -600,7 +603,14 @@ function render(): void {
   } else {
     noticeHost.hidden = false;
     renderOpNotice(noticeHost, { running: running && isGitOpKind(running.kind) ? { kind: running.kind, commands: running.commands } : undefined, last: lastResult }, post);
-    renderSyncBar(syncHost, { status: wt, busy: running !== undefined, busyKind: running && isGitOpKind(running.kind) ? running.kind : undefined, onOp: runOp });
+    renderSyncBar(syncHost, {
+      status: wt,
+      busy: running !== undefined,
+      busyKind: running && isGitOpKind(running.kind) ? running.kind : undefined,
+      onOp: runOp,
+      onBranchMenu: () => post({ type: 'branchMenu' }),
+      onBranchCreate: () => post({ type: 'branchCreate' }),
+    });
   }
   const changeCount = wt?.files.length ?? 0;
   tabButtons.changes.textContent = changeCount > 0 ? `Değişiklikler (${changeCount})` : 'Değişiklikler';
@@ -685,6 +695,8 @@ function renderChangesView(): void {
     onLoadDraft: (base) => post({ type: 'loadPrDraft', base }),
     onOpenUrl: (url) => post({ type: 'openUrl', url }),
     onConnect: () => post({ type: 'githubConnect' }),
+    onPublish: () => post({ type: 'githubPublish' }),
+    githubStatus: github?.status,
     onRefresh: () => post({ type: 'loadPrPanel' }),
   });
   renderStashList(stashHost, stashes, { busy, onOp: runOp, canSave: wt.files.length > 0 });

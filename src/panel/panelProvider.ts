@@ -22,6 +22,7 @@ import type {
   FileStat,
   GitHubData,
   GitHubOpKind,
+  GitHubStatus,
   GitHubOpRequest,
   GitOpKind,
   GitOpRequest,
@@ -230,6 +231,21 @@ export function findPrDetail(
   return b ? detailFromBasic(b) : undefined;
 }
 
+export type GitHubConnectAction = 'disabled' | 'publish-prompt' | 'not-github' | 'connect';
+
+/** "GitHub ile bağlan" isteğinde ne yapılacağı: ayar kapalı / origin yok / origin GitHub değil / bağlan. */
+export function githubConnectAction(status: GitHubStatus, enabled: boolean): GitHubConnectAction {
+  if (!enabled) return 'disabled';
+  if (status.state === 'noRemote') return 'publish-prompt';
+  if (status.state === 'notGitHub') return 'not-github';
+  return 'connect';
+}
+
+/** Remote'un yeniden algılanması gereken durumlar (origin sonradan eklenmiş/değişmiş olabilir). */
+export function needsRemoteRedetect(status: GitHubStatus): boolean {
+  return status.state === 'noRemote' || status.state === 'notGitHub' || status.state === 'off';
+}
+
 /** Başarılı olunca HEAD/ref'leri (ve dolayısıyla harita/graph/branch'leri) değiştiren işlemler. */
 export function opChangesRefs(kind: GitOpKind): boolean {
   switch (kind) {
@@ -289,6 +305,12 @@ export function parseWebviewMessage(raw: unknown): WebviewToExtension | undefine
     }
     case 'githubConnect':
       return { type: 'githubConnect' };
+    case 'githubPublish':
+      return { type: 'githubPublish' };
+    case 'branchMenu':
+      return { type: 'branchMenu' };
+    case 'branchCreate':
+      return { type: 'branchCreate' };
     case 'githubDismiss':
       return { type: 'githubDismiss' };
     case 'githubRefresh':
@@ -351,6 +373,13 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   private readonly refsEmitter = new vscode.EventEmitter<GitRef[] | undefined>();
   /** Her reload'da (ve refreshRefs'te) listRefs sonucu; hata/repo yoksa undefined. */
   readonly onDidLoadRefs: vscode.Event<GitRef[] | undefined> = this.refsEmitter.event;
+
+  private readonly branchActionEmitter = new vscode.EventEmitter<'menu' | 'create'>();
+  /** Webview'daki branch düğmeleri (menü / yeni branch); QuickPick'i extension.ts gösterir. */
+  readonly onDidRequestBranchAction: vscode.Event<'menu' | 'create'> = this.branchActionEmitter.event;
+
+  /** .git/config izleyicisi: origin eklenince/değişince GitHub katmanı remote'u yeniden algılar. */
+  private gitConfigWatcher: vscode.Disposable | undefined;
 
   /** Açık webview'lar (yan panel ve/veya düzenleyici sekmesi); hepsi aynı modeli alır. */
   private readonly webviews = new Map<vscode.Webview, { disposables: vscode.Disposable[]; isVisible: () => boolean }>();
@@ -423,6 +452,8 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     this.disposables.push(
       this.rootEmitter,
       this.refsEmitter,
+      this.branchActionEmitter,
+      { dispose: () => this.gitConfigWatcher?.dispose() },
       this.output,
       { dispose: () => this.watcher?.dispose() },
       github.onDidChange((data) => this.onGitHubChange(data)),
@@ -546,7 +577,10 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
   private async doReload(): Promise<void> {
     const startedAt = Date.now();
     try {
+      const prevRoot = this.root;
       const root = await this.resolveRoot();
+      // Kök aynıysa (setRoot zaten çağrılmadıysa) origin sonradan eklenmiş olabilir.
+      if (root === prevRoot) void this.redetectRemote();
       this.post({ type: 'loading', progress: 0 });
       this.statusBar.setScanning(0);
       const snapshot = await loadSnapshot(root, this.storageDir, (p) => {
@@ -614,8 +648,95 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
     this.watcher?.dispose();
     this.watcher = undefined;
     this.ensureWatcher();
+    this.watchGitConfig(root);
     void this.github.setRoot(root);
     if (root !== undefined) this.rootEmitter.fire(root);
+  }
+
+  private watchGitConfig(root: string | undefined): void {
+    this.gitConfigWatcher?.dispose();
+    this.gitConfigWatcher = undefined;
+    if (!root) return;
+    const w = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.Uri.file(root), '.git/config'));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onChange = (): void => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = undefined;
+        void this.redetectRemote();
+      }, 500);
+    };
+    this.gitConfigWatcher = vscode.Disposable.from(w, w.onDidChange(onChange), w.onDidCreate(onChange), {
+      dispose: () => {
+        if (timer) clearTimeout(timer);
+      },
+    });
+  }
+
+  /** GitHub katmanı bağlı değilken remote'u yeniden algılatır (origin sonradan eklendiyse katman devreye girer). */
+  private async redetectRemote(): Promise<void> {
+    const root = this.root;
+    if (!root || this.disposed || !needsRemoteRedetect(this.github.data.status)) return;
+    await this.github.setRoot(root);
+  }
+
+  /**
+   * "GitHub ile bağlan": ayar kapalıysa ayarı, origin yoksa "GitHub'da yayınla"yı, origin GitHub değilse
+   * nedenini gösterir; aksi hâlde bağlanır. Webview düğmesi ve rewiewrev.github.connect komutu bunu kullanır.
+   */
+  async connectGitHub(): Promise<void> {
+    const enabled = vscode.workspace.getConfiguration('rewiewrev').get<unknown>('github.enabled') !== false;
+    const status = this.github.data.status;
+    switch (githubConnectAction(status, enabled)) {
+      case 'disabled': {
+        const choice = await vscode.window.showInformationMessage('RewiewRev: GitHub katmanı ayarlardan kapalı.', 'Ayarı aç');
+        if (choice) await vscode.commands.executeCommand('workbench.action.openSettings', 'rewiewrev.github.enabled');
+        return;
+      }
+      case 'publish-prompt': {
+        const choice = await vscode.window.showInformationMessage(
+          "RewiewRev: Bu repo henüz GitHub'da değil (origin remote'u yok).",
+          "GitHub'da yayınla",
+        );
+        if (choice) await this.publishToGitHub();
+        return;
+      }
+      case 'not-github': {
+        const url = status.state === 'notGitHub' ? status.remoteUrl : '';
+        void vscode.window.showInformationMessage(
+          `RewiewRev: origin bir GitHub reposu değil: ${redactSecrets(url)}. GitHub katmanı yalnızca github.com repolarıyla çalışır.`,
+        );
+        return;
+      }
+      case 'connect':
+        try {
+          await this.github.connect(); // iptal edilirse durum 'off' kalır; bir şey göstermeyiz
+        } catch (err) {
+          const text = err instanceof Error ? err.message : String(err);
+          void vscode.window.showErrorMessage(`RewiewRev: GitHub'a bağlanılamadı: ${text}`);
+        }
+        return;
+    }
+  }
+
+  /** VS Code'un yerleşik "GitHub'da yayınla" akışı (repo oluştur + origin + push); sonra remote'u yeniden algılar. */
+  async publishToGitHub(): Promise<void> {
+    const commands = await vscode.commands.getCommands(true);
+    const cmd = commands.includes('github.publish') ? 'github.publish' : commands.includes('git.publish') ? 'git.publish' : undefined;
+    if (!cmd) {
+      void vscode.window.showErrorMessage(
+        "RewiewRev: GitHub'da yayınlama komutu bulunamadı. VS Code'un yerleşik Git ve GitHub eklentileri etkin olmalı.",
+      );
+      return;
+    }
+    try {
+      await vscode.commands.executeCommand(cmd);
+    } catch (err) {
+      const text = err instanceof Error ? err.message : String(err);
+      void vscode.window.showErrorMessage(`RewiewRev: GitHub'da yayınlanamadı: ${text}`);
+    }
+    await this.redetectRemote();
+    void this.reload();
   }
 
   /** Bellekteki snapshot'tan dosyaları hesaplar, rozetleri ve webview'ı günceller. Dosya sayısını döner. */
@@ -1092,7 +1213,16 @@ export class RewiewRevPanelProvider implements vscode.WebviewViewProvider, vscod
           await this.requestGraph({ limit: msg.limit, branch: msg.branch });
           break;
         case 'githubConnect':
-          await this.github.connect();
+          await this.connectGitHub();
+          break;
+        case 'githubPublish':
+          await this.publishToGitHub();
+          break;
+        case 'branchMenu':
+          this.branchActionEmitter.fire('menu');
+          break;
+        case 'branchCreate':
+          this.branchActionEmitter.fire('create');
           break;
         case 'githubDismiss':
           this.github.dismiss();

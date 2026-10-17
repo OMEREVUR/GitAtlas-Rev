@@ -80,8 +80,32 @@ function key(e: HTMLElement, k: string): void {
   e.dataset.key = k;
 }
 
+/** Bundan fazla dosya içeren klasör varsayılan olarak kapalı açılır. */
+const COLLAPSE_OVER = 20;
+/** Düz listede/klasörde ilk gösterilen satır; "daha göster" bu kadar ekler. */
+const PAGE = 200;
+
+/** el başına kalıcı görünüm durumu (yeniden render'da korunur). */
+interface ViewState {
+  /** `${bölüm}:${klasör}` → kullanıcının seçtiği açık/kapalı. Olmayanlar varsayılan kurala göre. */
+  expanded: Map<string, boolean>;
+  collapsedSections: Set<Section>;
+  /** `${bölüm}` ya da `${bölüm}:${klasör}` → gösterilen dosya sayısı. */
+  shown: Map<string, number>;
+}
+const views = new WeakMap<HTMLElement, ViewState>();
+
 export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
   const { status, busy } = opts;
+  let view = views.get(el);
+  if (!view) {
+    view = { expanded: new Map(), collapsedSections: new Set(), shown: new Map() };
+    views.set(el, view);
+  }
+  const vs = view;
+  const rerender = (): void => renderChanges(el, opts);
+  /** Roving tabindex'te Tab ile ulaşılan satır. */
+  let currentRow: HTMLElement | undefined;
 
   // Önceki render'dan kaydırma ve odak.
   const prevScroll = el.querySelector<HTMLElement>('.rr-ch-scroll')?.scrollTop ?? 0;
@@ -213,12 +237,17 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     installKeys();
   }
 
+  function setTabbable(row: HTMLElement, on: boolean): void {
+    for (const f of Array.from(row.querySelectorAll<HTMLElement>('button, input'))) f.tabIndex = on ? 0 : -1;
+  }
+
   function setCurrent(row: HTMLElement): void {
     el.dataset.current = row.dataset.rowkey ?? '';
-    for (const r of Array.from(scroller.querySelectorAll<HTMLElement>('.rr-ch-row'))) {
-      const on = r === row;
-      for (const f of Array.from(r.querySelectorAll<HTMLElement>('button, input'))) f.tabIndex = on ? 0 : -1;
-    }
+    if (currentRow === row) return;
+    if (currentRow) setTabbable(currentRow, false);
+    else for (const r of Array.from(scroller.querySelectorAll<HTMLElement>('.rr-ch-row'))) if (r !== row) setTabbable(r, false);
+    setTabbable(row, true);
+    currentRow = row;
   }
 
   function installKeys(): void {
@@ -243,6 +272,35 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
         setCurrent(target);
         target.querySelector<HTMLElement>('.rr-ch-main')?.focus();
         target.scrollIntoView({ block: 'nearest' });
+        return;
+      }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        const main = row.querySelector<HTMLElement>('.rr-ch-main');
+        const expanded = main?.getAttribute('aria-expanded');
+        e.preventDefault();
+        if (e.key === 'ArrowRight') {
+          if (expanded === 'false') main?.click();
+          else if (expanded === 'true') {
+            const rows = Array.from(scroller.querySelectorAll<HTMLElement>('.rr-ch-row'));
+            const next = rows[rows.indexOf(row) + 1];
+            if (next && next.dataset.parent === row.dataset.rowkey) {
+              setCurrent(next);
+              next.querySelector<HTMLElement>('.rr-ch-main')?.focus();
+            }
+          }
+          return;
+        }
+        if (expanded === 'true') {
+          main?.click();
+          return;
+        }
+        // Kapalı klasör ya da dosya: üst klasöre odak.
+        const parent = row.dataset.parent ? scroller.querySelector<HTMLElement>(`.rr-ch-row[data-rowkey="${CSS.escape(row.dataset.parent)}"]`) : null;
+        if (parent) {
+          setCurrent(parent);
+          parent.querySelector<HTMLElement>('.rr-ch-main')?.focus();
+          parent.scrollIntoView({ block: 'nearest' });
+        }
         return;
       }
       if (e.key === ' ' && t.classList.contains('rr-ch-main')) {
@@ -272,17 +330,51 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     } else {
       head.append(icon('codicon-warning'));
     }
-    const h3 = h('h3', 'rr-ch-title', label);
+    const collapsed = vs.collapsedSections.has(kind);
+    const h3 = h('h3', 'rr-ch-title');
     h3.id = headId;
+    const toggle = h('button', 'rr-ch-headbtn');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    toggle.append(icon(collapsed ? 'codicon-chevron-right' : 'codicon-chevron-down'), h('span', undefined, label));
+    key(toggle, `sec:${kind}`);
+    toggle.onclick = () => {
+      if (vs.collapsedSections.has(kind)) vs.collapsedSections.delete(kind);
+      else vs.collapsedSections.add(kind);
+      rerender();
+    };
+    h3.append(toggle);
     head.append(h3, h('span', 'rr-ch-count', formatNumber(entries.length)));
     sec.append(head);
+    if (collapsed) return sec;
 
     const ul = h('ul', 'rr-ch-list');
     ul.setAttribute('aria-labelledby', headId);
     if (opts.treeView) appendTree(ul, kind, entries);
-    else for (const e of entries) ul.append(fileRow(e, 0, true));
+    else appendPaged(ul, entries, kind, 0, undefined, true);
     sec.append(ul);
     return sec;
+  }
+
+  /** Satırları PAGE'lik parçalarla ekler; fazlası için "N dosya daha göster". */
+  function appendPaged(ul: HTMLElement, entries: Entry[], pageKey: string, depth: number, parent: string | undefined, showDir: boolean): void {
+    const limit = vs.shown.get(pageKey) ?? PAGE;
+    for (const e of entries.slice(0, limit)) ul.append(fileRow(e, depth, showDir, parent));
+    const rest = entries.length - limit;
+    if (rest <= 0) return;
+    const li = h('li', 'rr-ch-more');
+    li.style.setProperty('--rr-ch-depth', String(depth));
+    const b = h('button', 'rr-ch-morebtn');
+    b.type = 'button';
+    const add = Math.min(rest, 500);
+    b.textContent = `${formatNumber(add)} dosya daha göster (${formatNumber(rest)} kalan)`;
+    key(b, `more:${pageKey}`);
+    b.onclick = () => {
+      vs.shown.set(pageKey, limit + add);
+      rerender();
+    };
+    li.append(b);
+    ul.append(li);
   }
 
   function appendTree(ul: HTMLElement, kind: Section, entries: Entry[]): void {
@@ -301,7 +393,7 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
       }
       f.entries.push(e);
     }
-    const walk = (f: Folder, depth: number): void => {
+    const walk = (f: Folder, depth: number, parent: string | undefined): void => {
       for (const sub of [...f.folders.values()].sort((a, b) => a.name.localeCompare(b.name))) {
         // Tek alt klasörlü zincirleri birleştir ("src/git").
         let node = sub;
@@ -311,12 +403,16 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
           name += '/' + only.name;
           node = only;
         }
-        ul.append(folderRow(kind, node, name, depth));
-        walk(node, depth + 1);
+        const all = collect(node);
+        const stateKey = `${kind}:${node.path}`;
+        const open = vs.expanded.get(stateKey) ?? all.length <= COLLAPSE_OVER;
+        const row = folderRow(kind, node, name, depth, all, open, parent);
+        ul.append(row);
+        if (open) walk(node, depth + 1, row.dataset.rowkey);
       }
-      for (const e of f.entries) ul.append(fileRow(e, depth, false));
+      if (f.entries.length) appendPaged(ul, f.entries, `${kind}:${f.path}`, depth, parent, false);
     };
-    walk(root, 0);
+    walk(root, 0, undefined);
   }
 
   function collect(f: Folder): Entry[] {
@@ -325,11 +421,11 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     return out;
   }
 
-  function folderRow(kind: Section, f: Folder, name: string, depth: number): HTMLLIElement {
+  function folderRow(kind: Section, f: Folder, name: string, depth: number, all: Entry[], open: boolean, parent: string | undefined): HTMLLIElement {
     const li = h('li', 'rr-ch-row rr-ch-folder');
     li.dataset.rowkey = `${kind}:dir:${f.path}`;
+    if (parent) li.dataset.parent = parent;
     li.style.setProperty('--rr-ch-depth', String(depth));
-    const all = collect(f);
     const paths = all.map((e) => e.file.path);
     if (kind !== 'conflicts') {
       const partial = all.some((e) => (kind === 'staged' ? e.file.unstaged : e.file.staged) !== undefined);
@@ -343,22 +439,55 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     const main = h('button', 'rr-ch-main');
     main.type = 'button';
     key(main, `row:${li.dataset.rowkey}`);
-    main.setAttribute('aria-label', `${name} klasörü, ${formatNumber(all.length)} dosya`);
-    main.append(icon('codicon-folder'), h('span', 'rr-ch-name', name), h('span', 'rr-ch-dir', formatNumber(all.length)));
-    // Klasör satırı yalnızca bilgi; tıklama ilk dosyayı seçer.
+    // Klasörün +/− toplamı (bu bölümdeki istatistiklerden).
+    let added = 0;
+    let deleted = 0;
+    let hasStat = false;
+    for (const e of all) {
+      const st = entryStat(e);
+      if (st) {
+        added += st.added;
+        deleted += st.deleted;
+        hasStat = true;
+      }
+    }
+    const aria = [`${name} klasörü`, `${formatNumber(all.length)} dosya`];
+    if (hasStat) aria.push(`${formatNumber(added)} eklenen, ${formatNumber(deleted)} silinen satır`);
+    main.setAttribute('aria-label', aria.join(', '));
+    main.setAttribute('aria-expanded', open ? 'true' : 'false');
+    main.title = open ? 'Klasörü kapat' : 'Klasörü aç';
+    main.append(
+      icon(open ? 'codicon-chevron-down' : 'codicon-chevron-right'),
+      icon(open ? 'codicon-folder-opened' : 'codicon-folder'),
+      h('span', 'rr-ch-name', name),
+      h('span', 'rr-ch-dir', `${formatNumber(all.length)} dosya`),
+      h('span', 'rr-ch-spacer'),
+    );
+    if (hasStat) {
+      const st = h('span', 'rr-ch-stat');
+      st.setAttribute('aria-hidden', 'true');
+      st.append(h('span', 'rr-ch-add', `+${formatNumber(added)}`), h('span', 'rr-ch-del', `−${formatNumber(deleted)}`));
+      main.append(st);
+    }
     main.onclick = () => {
-      const first = all[0];
-      if (first) opts.onSelectFile(first.file.path);
+      vs.expanded.set(`${kind}:${f.path}`, !open);
+      rerender();
     };
     li.append(main);
     return li;
   }
 
-  function fileRow(e: Entry, depth: number, showDir: boolean): HTMLLIElement {
+  function entryStat(e: Entry): { added: number; deleted: number } | undefined {
+    const f = e.file;
+    return e.section === 'staged' ? f.stagedStat : e.section === 'changes' ? f.unstagedStat : f.unstagedStat ?? f.stagedStat;
+  }
+
+  function fileRow(e: Entry, depth: number, showDir: boolean, parent?: string): HTMLLIElement {
     const f = e.file;
     const li = h('li', 'rr-ch-row');
     li.dataset.path = f.path;
     li.dataset.rowkey = `${e.section}:${f.path}`;
+    if (parent) li.dataset.parent = parent;
     li.style.setProperty('--rr-ch-depth', String(depth));
     if (f.path === opts.selected) li.classList.add('rr-ch-selected');
     const stagedView = e.section === 'staged';
@@ -368,7 +497,7 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
       const partial = stagedView ? f.unstaged !== undefined : f.staged !== undefined;
       const cb = checkbox(stagedView, partial, stagedView ? `${baseName(f.path)}: commit'ten çıkar` : `${baseName(f.path)}: commit'e ekle`, () =>
         opts.onOp(stagedView ? { kind: 'unstage', paths: [f.path] } : { kind: 'stage', paths: [f.path] }));
-      cb.title = title(stagedView ? "Commit'ten çıkar" : "Commit'e ekle", cmd(stagedView ? { kind: 'unstage', paths: [f.path] } : { kind: 'stage', paths: [f.path] }));
+      lazyTitle(cb, stagedView ? "Commit'ten çıkar" : "Commit'e ekle", stagedView ? { kind: 'unstage', paths: [f.path] } : { kind: 'stage', paths: [f.path] });
       key(cb, `cb:${rk}`);
       li.append(cb);
     } else {
@@ -378,7 +507,7 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     const main = h('button', 'rr-ch-main');
     main.type = 'button';
     key(main, `row:${rk}`);
-    const stat = stagedView ? f.stagedStat : e.section === 'changes' ? f.unstagedStat : f.unstagedStat ?? f.stagedStat;
+    const stat = entryStat(e);
     const aria = [baseName(f.path), changeText(e.kind)];
     if (dirName(f.path)) aria.push(dirName(f.path));
     if (f.oldPath) aria.push(`eski adı ${f.oldPath}`);
@@ -427,11 +556,24 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     }
     if (e.section === 'changes') {
       const op: GitOpRequest = { kind: 'discard', paths: [f.path] };
-      acts.append(iconButton('codicon-discard', `${baseName(f.path)}: değişikliği geri al`,
-        title(e.kind === 'untracked' ? 'Geri al (dosya silinir)' : 'Değişikliği geri al', cmd(op)), busy, `act:discard:${rk}`, () => opts.onOp(op)));
+      const discard = iconButton('codicon-discard', `${baseName(f.path)}: değişikliği geri al`, '', busy, `act:discard:${rk}`, () => opts.onOp(op));
+      lazyTitle(discard, e.kind === 'untracked' ? 'Geri al (dosya silinir)' : 'Değişikliği geri al', op);
+      acts.append(discard);
     }
     li.append(acts);
     return li;
+  }
+
+  /** Satır başına komut metni üzerine gelinince hesaplanır (binlerce satırda render ucuz kalsın). */
+  function lazyTitle(e: HTMLElement, text: string, op: GitOpRequest): void {
+    e.title = text;
+    const fill = (): void => {
+      e.title = title(text, cmd(op));
+      e.removeEventListener('pointerenter', fill);
+      e.removeEventListener('focus', fill);
+    };
+    e.addEventListener('pointerenter', fill);
+    e.addEventListener('focus', fill);
   }
 
   function checkbox(checked: boolean, indeterminate: boolean, label: string, onChange: () => void): HTMLInputElement {

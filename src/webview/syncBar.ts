@@ -9,6 +9,10 @@ export interface SyncBarOptions {
   busy: boolean;
   busyKind?: GitOpKind;
   onOp: (op: GitOpRequest) => void;
+  /** Verilirse branch adı bir düğme olur: branch'e geç / yeni branch oluştur menüsü (QuickPick eklentide). */
+  onBranchMenu?: () => void;
+  /** Verilirse branch adının yanında "Yeni branch" ikon düğmesi çıkar. */
+  onBranchCreate?: () => void;
 }
 
 interface SyncButton {
@@ -21,6 +25,10 @@ interface SyncButton {
 interface BarState {
   opts: SyncBarOptions;
   branch: HTMLElement;
+  refStatic: HTMLElement;
+  refBtn: HTMLButtonElement;
+  refBtnLabel: HTMLElement;
+  create: HTMLButtonElement;
   counts: HTMLElement;
   fetch: SyncButton;
   pull: SyncButton;
@@ -31,7 +39,7 @@ const states = new WeakMap<HTMLElement, BarState>();
 
 export function renderSyncBar(el: HTMLElement, opts: SyncBarOptions): void {
   let st = states.get(el);
-  if (!st || !el.contains(st.branch)) st = build(el, opts);
+  if (!st || !el.contains(st.refBtn)) st = build(el, opts);
   st.opts = opts;
   const { status, busy, busyKind } = opts;
 
@@ -46,6 +54,16 @@ export function renderSyncBar(el: HTMLElement, opts: SyncBarOptions): void {
     st.branch.textContent = `ayrık HEAD${status.head ? ` · ${status.head.slice(0, 7)}` : ''}`;
     st.branch.title = 'Bir branch üzerinde değilsiniz (detached HEAD).';
   }
+
+  // Branch menüsü / yeni branch düğmeleri (verilmezse eski düz görünüm)
+  st.refBtnLabel.textContent = st.branch.textContent;
+  st.refBtn.hidden = !opts.onBranchMenu;
+  st.refStatic.hidden = !!opts.onBranchMenu;
+  st.refBtn.disabled = busy || !status;
+  st.refBtn.setAttribute('aria-label', `Branch: ${st.branch.textContent ?? ''}. Branch'e geç ya da yeni branch oluştur`);
+  st.refBtn.title = st.branch.title ? `Branch'e geç ya da yeni branch oluştur\n${st.branch.title}` : "Branch'e geç ya da yeni branch oluştur";
+  st.create.hidden = !opts.onBranchCreate;
+  st.create.disabled = busy || !status;
 
   // ↑↓
   st.counts.className = 'rr-op-sync-counts';
@@ -107,14 +125,22 @@ export function renderSyncBar(el: HTMLElement, opts: SyncBarOptions): void {
 
 function build(el: HTMLElement, opts: SyncBarOptions): BarState {
   el.classList.add('rr-op-sync');
-  const branchIcon = icon('git-branch');
   const branch = h('span', 'rr-op-sync-branch');
+  const refStatic = h('span', 'rr-op-sync-ref', [icon('git-branch'), branch]);
+  const refBtnLabel = h('span', 'rr-op-sync-branch');
+  const refBtn = h('button', 'rr-op-sync-ref rr-op-sync-ref-btn', [icon('git-branch'), refBtnLabel, icon('chevron-down', 'rr-op-sync-caret')]);
+  refBtn.type = 'button';
+  refBtn.setAttribute('aria-haspopup', 'menu');
+  const create = h('button', 'rr-op-sync-icon', [icon('add')]);
+  create.type = 'button';
+  create.setAttribute('aria-label', 'Yeni branch');
+  create.title = 'Yeni branch oluştur';
   const counts = h('span', 'rr-op-sync-counts');
   const fetch = makeButton('cloud-download');
   const pull = makeButton('arrow-down');
   const push = makeButton('arrow-up');
   const row = h('div', 'rr-op-sync-row', [
-    h('span', 'rr-op-sync-ref', [branchIcon, branch]),
+    h('span', 'rr-op-sync-refs', [refStatic, refBtn, create]),
     counts,
     h('span', 'rr-op-sync-buttons', [fetch.btn, pull.btn, push.btn]),
   ]);
@@ -122,7 +148,9 @@ function build(el: HTMLElement, opts: SyncBarOptions): BarState {
   row.setAttribute('aria-label', 'Eşitleme');
   el.replaceChildren(row);
 
-  const st: BarState = { opts, branch, counts, fetch, pull, push };
+  const st: BarState = { opts, branch, refStatic, refBtn, refBtnLabel, create, counts, fetch, pull, push };
+  refBtn.addEventListener('click', () => st.opts.onBranchMenu?.());
+  create.addEventListener('click', () => st.opts.onBranchCreate?.());
   states.set(el, st);
   fetch.btn.addEventListener('click', () => st.opts.onOp({ kind: 'fetch' }));
   pull.btn.addEventListener('click', () => st.opts.onOp({ kind: 'pull' }));
@@ -182,8 +210,8 @@ function h<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-function icon(name: string): HTMLElement {
-  const span = h('span', `codicon codicon-${name}`);
+function icon(name: string, extra = ''): HTMLElement {
+  const span = h('span', `codicon codicon-${name}${extra ? ` ${extra}` : ''}`);
   span.setAttribute('aria-hidden', 'true');
   return span;
 }

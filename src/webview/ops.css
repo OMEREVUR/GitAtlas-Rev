@@ -220,6 +220,54 @@
   min-width: 0;
   max-width: 100%;
 }
+.rr-op-sync-ref[hidden],
+.rr-op-sync-icon[hidden] {
+  display: none;
+}
+.rr-op-sync-refs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+}
+.rr-op-sync-ref-btn,
+.rr-op-sync-icon {
+  height: 24px;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.rr-op-sync-ref-btn {
+  padding: 0 4px 0 6px;
+}
+.rr-op-sync-icon {
+  width: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.rr-op-sync-ref-btn:hover:not(:disabled),
+.rr-op-sync-icon:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  border-color: var(--vscode-button-border, var(--vscode-input-border, var(--vscode-panel-border)));
+}
+.rr-op-sync-ref-btn:disabled,
+.rr-op-sync-icon:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.rr-op-sync-caret {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
 .rr-op-sync-branch {
   font-weight: 600;
   overflow: hidden;

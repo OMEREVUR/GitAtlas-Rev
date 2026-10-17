@@ -1,5 +1,6 @@
 // YALNIZCA dev önizlemesi: sahte WorkingTreeStatus ile "Değişiklikler" listesi.
 // URL: ?theme=dark|light  ?width=360  ?tree=1  ?clean=1  ?merge=1  ?busy=1  ?selftest=1
+//      ?big=1 (tek klasörde 300 untracked dosya; katlanma ve "daha göster" testi)  ?n=2000  ?scroll=end
 import '../src/webview/base.css';
 import { renderChanges } from '../src/webview/changes';
 import type { GitOpRequest, WorkingFile, WorkingTreeStatus } from '../src/types';
@@ -31,6 +32,13 @@ const CONFLICTS: WorkingFile[] = [
   { path: 'package.json', conflicted: true, unstaged: 'modified', unstagedStat: { added: 3, deleted: 2 } },
 ];
 
+/** ?big=1: tek klasörde 300 untracked dosya (kullanıcının assets/Meme-photos durumu). */
+const BIG: WorkingFile[] = Array.from({ length: Number(params.get('n')) || 300 }, (_, i) => ({
+  path: `assets/Meme-photos/meme-${String(i + 1).padStart(3, '0')}.jpg`,
+  unstaged: 'untracked',
+  conflicted: false,
+}));
+
 const state = {
   status: {
     branch: merge ? 'main' : 'feat/changes',
@@ -38,7 +46,7 @@ const state = {
     upstream: 'origin/feat/changes',
     ahead: 2,
     behind: 0,
-    files: params.get('clean') === '1' ? [] : merge ? [...CONFLICTS, ...FILES.slice(0, 6)] : FILES,
+    files: params.get('clean') === '1' ? [] : merge ? [...CONFLICTS, ...FILES.slice(0, 6)] : params.get('big') === '1' ? [...FILES, ...BIG] : FILES,
     operation: merge ? 'merge' : undefined,
     stashCount: 1,
   } as WorkingTreeStatus,
@@ -104,7 +112,8 @@ function selftest(): void {
   const row = (section: string, path: string): HTMLElement | null => host!.querySelector(`.rr-ch-section-${section} .rr-ch-row[data-path="${path}"]`);
 
   // 1) değişenler satırındaki kutu → stage
-  const T = 'src/webview/main.ts';
+  // Büyük düz listede main.ts ilk 200 satırın dışında kalır; görünen ilk dosyayı kullan.
+  const T = params.get('big') === '1' && !state.tree ? BIG[0].path : 'src/webview/main.ts';
   row('changes', T)?.querySelector<HTMLInputElement>('.rr-ch-check')?.click();
   const op1 = lastOp();
   check('Satır kutusu → stage', op1?.kind === 'stage' && op1.paths[0] === T);
@@ -145,7 +154,44 @@ function selftest(): void {
     check('Çözüldü → markResolved', lastOp()?.kind === 'markResolved');
   }
 
+  // 7) ?big=1: katlanma, "daha göster", bölüm katlama, süre
+  if (params.get('big') === '1') {
+    if (state.tree) {
+      const folderMain = (): HTMLElement | null => host!.querySelector('.rr-ch-section-changes .rr-ch-row[data-rowkey="changes:dir:assets/Meme-photos"] .rr-ch-main');
+      check('Büyük klasör varsayılan kapalı', folderMain()?.getAttribute('aria-expanded') === 'false');
+      folderMain()?.click();
+      check('Tıkla → açılır', folderMain()?.getAttribute('aria-expanded') === 'true');
+      const shownRows = host!.querySelectorAll('.rr-ch-section-changes .rr-ch-row[data-path^="assets/"]').length;
+      check(`Açık klasörde ilk 200 satır (${shownRows})`, shownRows === 200);
+      check('"daha göster" düğmesi var', host!.querySelector('.rr-ch-section-changes .rr-ch-morebtn') !== null);
+      folderMain()?.focus();
+      folderMain()?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      check('← açık klasörü kapatır', folderMain()?.getAttribute('aria-expanded') === 'false');
+      check('Kapatınca odak klasörde kalır', document.activeElement === folderMain());
+      render();
+      check('Yeniden render\'da kapalı kalır', folderMain()?.getAttribute('aria-expanded') === 'false');
+    } else {
+      const more = host!.querySelector<HTMLButtonElement>('.rr-ch-section-changes .rr-ch-morebtn');
+      check(`Düz listede "daha göster" (${more?.textContent ?? '—'})`, more !== null);
+      more?.click();
+      check('Tıklayınca kalan satırlar eklenir', host!.querySelectorAll('.rr-ch-section-changes .rr-ch-row').length > 200);
+    }
+    const secBtn = (): HTMLElement | null => host!.querySelector('.rr-ch-section-changes .rr-ch-headbtn');
+    secBtn()?.click();
+    check('Bölüm başlığı katlanır', secBtn()?.getAttribute('aria-expanded') === 'false' && host!.querySelector('.rr-ch-section-changes .rr-ch-list') === null);
+    secBtn()?.click();
+    const t0 = performance.now();
+    render();
+    log(`render ${state.status.files.length} dosya: ${Math.round(performance.now() - t0)} ms`);
+  }
+
   log('— selftest —');
   for (const r of results.reverse()) log(r);
 }
 if (params.get('selftest') === '1') selftest();
+
+// ?scroll=end: listeyi sona kaydır (ekran görüntüsünde "daha göster" düğmesini görmek için).
+if (params.get('scroll') === 'end') {
+  const sc = host.querySelector<HTMLElement>('.rr-ch-scroll');
+  if (sc) sc.scrollTop = sc.scrollHeight;
+}

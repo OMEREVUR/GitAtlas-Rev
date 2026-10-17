@@ -57,6 +57,8 @@
 .rr-p-btn-secondary {
   background: var(--vscode-button-secondaryBackground);
   color: var(--vscode-button-secondaryForeground);
+  /* Bazı temalarda secondaryBackground panel zemini ile aynı; kenarlık düğmeyi görünür kılar. */
+  border-color: var(--vscode-button-border, var(--vscode-input-border, var(--vscode-panel-border)));
 }
 .rr-p-btn-secondary:hover {
   background: var(--vscode-button-secondaryHoverBackground);

@@ -1,11 +1,13 @@
 /* Ortak tokenlar ve temel stil. Renkler yalnızca --vscode-* değişkenlerinden türetilir. */
 :root {
+  /* Isı skalasının ana rengi; koyu temada kontrastı düşükse heatColor.ts daha okunur bir tema rengine geçirir. */
+  --rr-orange: var(--vscode-charts-orange);
   --rr-c0: var(--vscode-editor-background);
-  --rr-c1: color-mix(in srgb, var(--vscode-charts-orange) 14%, var(--vscode-editor-background));
-  --rr-c2: color-mix(in srgb, var(--vscode-charts-orange) 30%, var(--vscode-editor-background));
-  --rr-c3: color-mix(in srgb, var(--vscode-charts-orange) 46%, var(--vscode-editor-background));
-  --rr-c4: color-mix(in srgb, var(--vscode-charts-orange) 78%, var(--vscode-editor-background));
-  --rr-c5: color-mix(in srgb, var(--vscode-charts-orange) 96%, var(--vscode-editor-background));
+  --rr-c1: color-mix(in srgb, var(--rr-orange) 14%, var(--vscode-editor-background));
+  --rr-c2: color-mix(in srgb, var(--rr-orange) 30%, var(--vscode-editor-background));
+  --rr-c3: color-mix(in srgb, var(--rr-orange) 46%, var(--vscode-editor-background));
+  --rr-c4: color-mix(in srgb, var(--rr-orange) 78%, var(--vscode-editor-background));
+  --rr-c5: color-mix(in srgb, var(--rr-orange) 96%, var(--vscode-editor-background));
   --rr-box-border: var(--vscode-editor-background);
   --rr-onhot: var(--vscode-editor-background);
   --rr-btn-border: transparent;

@@ -346,3 +346,49 @@
     display: none;
   }
 }
+
+/* --- katlanabilir bölümler ve klasörler --- */
+.rr-ch-headbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+.rr-ch-headbtn .codicon {
+  font-size: 14px;
+}
+.rr-ch-headbtn:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+.rr-ch-folder .rr-ch-main > .codicon-chevron-right,
+.rr-ch-folder .rr-ch-main > .codicon-chevron-down {
+  margin-right: -4px;
+  color: var(--vscode-foreground);
+}
+.rr-ch-folder .rr-ch-dir {
+  flex: 0 0 auto;
+}
+.rr-ch-more {
+  --rr-ch-depth: 0;
+  padding: 4px 8px 4px calc(28px + var(--rr-ch-depth) * 12px);
+}
+.rr-ch-morebtn {
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--rr-btn-border);
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+.rr-ch-morebtn:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}

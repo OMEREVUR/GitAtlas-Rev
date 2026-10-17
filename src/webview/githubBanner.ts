@@ -42,6 +42,8 @@ export function prRow(pr: PullRequest, post: (msg: WebviewToExtension) => void):
 
 /** "GitHub değil" bilgisini kapatan kullanıcı için, aynı remote yeniden çizilince bant geri gelmesin. */
 const hiddenNotGitHub = new Set<string>();
+/** "Bu repo GitHub'da değil" bandını "Şimdi değil" ile kapatan kullanıcı için (webview oturumu boyunca). */
+let hiddenNoRemote = false;
 
 type Tone = 'info' | 'warning' | 'error' | 'neutral';
 
@@ -68,7 +70,21 @@ export function renderGitHubBanner(
   if (!status) return hide();
   switch (status.state) {
     case 'noRemote':
-      return hide();
+      if (hiddenNoRemote) return hide();
+      return show(
+        'info',
+        icon('github'),
+        h('div', 'rr-p-gh-body', [
+          text("Bu repo GitHub'da değil.", " Yayınlayınca açık PR'lar, çakışma uyarıları ve CI sonuçları haritaya eklenir."),
+          actions([
+            button("GitHub'da yayınla", true, () => post({ type: 'githubPublish' })),
+            button('Şimdi değil', false, () => {
+              hiddenNoRemote = true;
+              hide();
+            }),
+          ]),
+        ]),
+      );
 
     case 'off':
       if (status.dismissed) return hide();

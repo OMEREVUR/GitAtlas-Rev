@@ -1,6 +1,7 @@
 // YALNIZCA dev önizlemesi: commit kutusu, eşitleme çubuğu, işlem bildirimi ve stash listesi.
 // URL: ?theme=dark|light  ?width=360  ?state=clean|ahead|behind|diverged|noUpstream|detached
 //      ?notice=running|ok|error|cancelled  ?amend=1  ?selftest=1
+//      ?flat=1 (ikincil düğme zemini = panel zemini; kullanıcının temasındaki sorun)  ?nobranch=1 (branch düğmeleri olmadan eski görünüm)
 import '../src/webview/base.css';
 import '../src/webview/panel.css';
 import type { GitOpKind, GitOpRequest, OpResult, StashEntry, WorkingTreeStatus } from '../src/types';
@@ -19,6 +20,12 @@ if (width > 0) {
   document.body.classList.add('dev-narrow');
 }
 const selftest = params.get('selftest') === '1';
+if (params.get('flat') === '1') {
+  // Bazı temalarda ikincil düğme zemini panel zemini ile aynı: kenarlık görünürlüğünü denemek için.
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--vscode-sideBar-background');
+  document.documentElement.style.setProperty('--vscode-button-secondaryBackground', bg);
+  document.documentElement.style.setProperty('--vscode-sideBar-background', bg);
+}
 
 const NOW = Date.now();
 const HOUR = 3600_000;
@@ -149,7 +156,15 @@ function onOp(op: GitOpRequest): void {
 }
 
 function render(): void {
-  renderSyncBar(syncEl, { status, busy, busyKind, onOp });
+  const branchButtons = params.get('nobranch') !== '1';
+  renderSyncBar(syncEl, {
+    status,
+    busy,
+    busyKind,
+    onOp,
+    onBranchMenu: branchButtons ? () => log('onBranchMenu') : undefined,
+    onBranchCreate: branchButtons ? () => log('onBranchCreate') : undefined,
+  });
   renderCommitBox(commitEl, { status, busy, onOp });
   renderOpNotice(noticeEl, notice, post);
   renderStashList(stashEl, stashes, { busy, onOp, canSave: status.files.length > 0 });
@@ -248,6 +263,11 @@ if (selftest) {
     syncBtns.forEach((b) => b.click());
     check('Getir/Çek/Gönder op\'ları', ops.slice(-3).map((o) => o.kind).join() === 'fetch,pull,push');
     check('ahead>0 → Gönder vurgulu', syncBtns[2]?.classList.contains('is-accent') === true);
+    const before2 = logEl.childElementCount;
+    syncEl.querySelector<HTMLButtonElement>('.rr-op-sync-ref-btn')?.click();
+    syncEl.querySelector<HTMLButtonElement>('.rr-op-sync-icon')?.click();
+    const lines = [...logEl.children].slice(0, logEl.childElementCount - before2).map((n) => n.textContent);
+    check('branch menüsü ve Yeni branch düğmeleri', lines.includes('onBranchMenu') && lines.includes('onBranchCreate') && syncEl.querySelector('.rr-op-sync-ref-btn')?.getAttribute('aria-haspopup') === 'menu');
 
     stashEl.querySelector<HTMLButtonElement>('.rr-op-stash-tools .rr-p-btn')?.click();
     const sm = stashEl.querySelector<HTMLInputElement>('.rr-op-stash-form input.rr-op-input') as HTMLInputElement;

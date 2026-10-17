@@ -1,10 +1,10 @@
 // YALNIZCA dev önizlemesi: PULL REQUEST'LER bölümü + GitHub işlem bildirimi, sahte veriyle.
 // URL: ?theme=dark|light  ?width=360
-//      ?case=off|error|loading|feature|default|detached|current|conflict|draft|empty
+//      ?case=off|noRemote|notGitHub|connecting|error|loading|feature|default|detached|current|conflict|draft|empty
 //      ?notice=running|ok  ?selftest=1
 import '../src/webview/base.css';
 import '../src/webview/panel.css';
-import type { GitHubOpRequest, OpResult, PrDraft, PrPanelData, PullRequestDetail, WorkingTreeStatus } from '../src/types';
+import type { GitHubOpRequest, GitHubStatus, OpResult, PrDraft, PrPanelData, PullRequestDetail, WorkingTreeStatus } from '../src/types';
 import type { WebviewToExtension } from '../src/protocol';
 import { renderPrPanel, resetPrForm } from '../src/webview/prPanel';
 import { renderOpNotice, type OpNoticeState } from '../src/webview/opNotice';
@@ -74,7 +74,17 @@ function statusFor(branch: string | undefined, upstream?: string): WorkingTreeSt
 }
 
 const kase = params.get('case') ?? 'feature';
-let connected = kase !== 'off';
+let connected = !['off', 'noRemote', 'notGitHub', 'connecting'].includes(kase);
+let githubStatus: GitHubStatus | undefined =
+  kase === 'noRemote'
+    ? { state: 'noRemote' }
+    : kase === 'notGitHub'
+      ? { state: 'notGitHub', remoteUrl: 'gitlab.com/ornek/rewiewrev' }
+      : kase === 'connecting'
+        ? { state: 'connecting' }
+        : kase === 'off'
+          ? { state: 'off', dismissed: false }
+          : undefined;
 let error: string | undefined = kase === 'error' ? 'GitHub isteği başarısız: 502 Bad Gateway. Birazdan yeniden deneyin.' : undefined;
 let status: WorkingTreeStatus;
 let data: PrPanelData | undefined = {
@@ -194,6 +204,8 @@ function render(): void {
       render();
     },
     onRefresh: () => log('onRefresh'),
+    githubStatus,
+    onPublish: () => log('onPublish'),
   });
 }
 render();
@@ -287,6 +299,15 @@ if (selftest) {
     connected = false;
     render();
     check('bağlı değilken bağlan düğmesi', (q('.rr-pr-notice')?.textContent ?? '').includes('GitHub ile bağlan'));
+    githubStatus = { state: 'noRemote' };
+    render();
+    const pub = [...host.querySelectorAll<HTMLButtonElement>('.rr-pr-notice button')].find((b) => b.textContent === "GitHub'da yayınla");
+    pub?.click();
+    check("noRemote → \"GitHub'da yayınla\" → onPublish", pub !== undefined && (logEl.firstElementChild?.textContent ?? '') === 'onPublish');
+    githubStatus = { state: 'notGitHub', remoteUrl: 'gitlab.com/x/y' };
+    render();
+    check('notGitHub → url, düğme yok', (q('.rr-pr-notice')?.textContent ?? '').includes('gitlab.com/x/y') && host.querySelectorAll('.rr-pr-notice button').length === 0);
+    githubStatus = undefined;
     connected = true;
 
     // 6) bildirim

@@ -6,6 +6,7 @@ import './prPanel.css';
 import type {
   CiState,
   GitHubOpRequest,
+  GitHubStatus,
   MergeMethod,
   PrCheck,
   PrDraft,
@@ -33,6 +34,10 @@ export interface PrPanelOptions {
   onOpenUrl: (url: string) => void;
   onConnect: () => void;
   onRefresh: () => void;
+  /** Bağlı değilken sebebi göstermek için GitHub durumu. */
+  githubStatus?: GitHubStatus;
+  /** noRemote'ta "GitHub'da yayınla". */
+  onPublish?: () => void;
 }
 
 const CHECK_LIMIT = 6;
@@ -101,10 +106,33 @@ export function renderPrPanel(el: HTMLElement, opts: PrPanelOptions): void {
 
   // Bağlantı / hata / yükleniyor
   if (!connected) {
-    keyed(st.notice, 'off', () => {
-      const btn = button('GitHub ile bağlan', 'primary', () => st?.opts.onConnect());
-      return [h('p', 'rr-pr-text', "GitHub'a bağlanınca bu branch'ten PR açabilir, PR'ları birleştirip checkout edebilirsin."), btn];
-    });
+    const gs = opts.githubStatus;
+    const state = gs?.state;
+    if (gs?.state === 'noRemote') {
+      keyed(st.notice, `noRemote:${opts.onPublish ? 1 : 0}`, () => {
+        const out: HTMLElement[] = [
+          h('p', 'rr-pr-text', "Bu repo henüz GitHub'da değil (origin yok). Yayınlayınca PR açabilir, birleştirebilir ve checkout edebilirsin."),
+        ];
+        if (opts.onPublish) out.push(button("GitHub'da yayınla", 'primary', () => st?.opts.onPublish?.()));
+        return out;
+      });
+    } else if (gs?.state === 'notGitHub') {
+      const url = gs.remoteUrl;
+      keyed(st.notice, `notGitHub:${url}`, () => [
+        h('p', 'rr-pr-text', [
+          document.createTextNode('origin bir GitHub reposu değil ('),
+          h('code', 'rr-p-code', url),
+          document.createTextNode('). PR işlemleri yalnızca github.com repolarında çalışır.'),
+        ]),
+      ]);
+    } else if (state === 'connecting') {
+      keyed(st.notice, 'connecting', () => [h('p', 'rr-pr-text rr-pr-muted', 'Bağlanılıyor…')]);
+    } else {
+      keyed(st.notice, 'off', () => {
+        const btn = button('GitHub ile bağlan', 'primary', () => st?.opts.onConnect());
+        return [h('p', 'rr-pr-text', "GitHub'a bağlanınca bu branch'ten PR açabilir, PR'ları birleştirip checkout edebilirsin."), btn];
+      });
+    }
   } else if (error) {
     keyed(st.notice, `err:${error}`, () => [
       h('div', 'rr-pr-error', [icon('error'), h('span', '', error)]),

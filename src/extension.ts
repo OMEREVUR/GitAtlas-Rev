@@ -29,15 +29,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('rewiewrev.refresh', () => panel.reload()),
     vscode.commands.registerCommand('rewiewrev.openInEditor', () => panel.openInEditor()),
     vscode.commands.registerCommand('rewiewrev.refreshBranches', () => panel.refreshRefs()),
-    vscode.commands.registerCommand('rewiewrev.github.connect', () => {
-      const st = github.data.status;
-      if (st.state === 'noRemote' || st.state === 'notGitHub') {
-        const where = st.state === 'notGitHub' ? `origin (${st.remoteUrl}) bir GitHub reposu değil` : 'Bu repoda origin remote yok';
-        void vscode.window.showInformationMessage(`RewiewRev: ${where}; GitHub katmanı kullanılamıyor.`);
-        return;
-      }
-      return github.connect();
-    }),
+    // Sebebe göre: bağlan / "GitHub'da yayınla" önerisi / GitHub dışı remote / ayar kapalı.
+    vscode.commands.registerCommand('rewiewrev.github.connect', () => panel.connectGitHub()),
     vscode.commands.registerCommand('rewiewrev.github.refresh', () => github.refresh()),
     // Branch'ler paneli ↔ harita/graph: seçilen branch'in dokunduğu dosyalar haritada yanar.
     panel.onDidLoadRefs((refs) => branches.update(refs, refs ? undefined : 'Git reposu bulunamadı.')),
@@ -75,6 +68,36 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('rewiewrev.branch.merge', (a: unknown) => branchCmds.merge(a)),
     vscode.commands.registerCommand('rewiewrev.branch.rename', (a: unknown) => branchCmds.rename(a)),
     vscode.commands.registerCommand('rewiewrev.branch.delete', (a: unknown) => branchCmds.delete(a)),
+  );
+
+  // Eşitleme çubuğundaki branch adı ve "Yeni branch" düğmesi.
+  const showBranchMenu = async (): Promise<void> => {
+    const head = branches.branches.find((r) => r.isHead);
+    type Item = vscode.QuickPickItem & { action: 'create' | 'switch'; name?: string };
+    const toItem = (r: (typeof branches.branches)[number]): Item => ({
+      label: `$(${r.kind === 'remote' ? 'cloud' : 'git-branch'}) ${r.name}`,
+      description: r.subject,
+      action: 'switch',
+      name: r.name,
+    });
+    const items: Item[] = [
+      { label: '$(add) Yeni branch oluştur…', description: head ? `kaynak: ${head.name}` : undefined, action: 'create' },
+      { label: 'Lokal', kind: vscode.QuickPickItemKind.Separator, action: 'switch' },
+      ...branches.branches.filter((r) => r.kind === 'local' && !r.isHead).map(toItem),
+      { label: 'Remote', kind: vscode.QuickPickItemKind.Separator, action: 'switch' },
+      ...branches.branches.filter((r) => r.kind === 'remote' && !r.name.endsWith('/HEAD')).map(toItem),
+    ];
+    const picked = await vscode.window.showQuickPick(items, {
+      title: head ? `Şu anki branch: ${head.name}` : 'Branch',
+      placeHolder: 'Geçmek istediğin branch ya da yeni branch',
+      matchOnDescription: true,
+    });
+    if (!picked) return;
+    if (picked.action === 'create') await branchCmds.create(undefined);
+    else if (picked.name) await panel.runOp({ kind: 'checkout', branch: picked.name });
+  };
+  context.subscriptions.push(
+    panel.onDidRequestBranchAction((action) => (action === 'create' ? branchCmds.create(undefined) : showBranchMenu())),
   );
 
   // HEAD veya ref'ler değişince (commit, checkout, pull, reset) otomatik yenile.

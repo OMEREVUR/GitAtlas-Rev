@@ -17,6 +17,13 @@
   var params = new URLSearchParams(location.search);
   var theme = params.get('theme') === 'light' ? 'light' : 'dark';
   document.body.className = 'vscode-' + theme;
+  // Kullanıcının F5 temasını taklit: çok koyu charts-orange ve panelle aynı ikincil düğme arka planı.
+  if (params.get('usertheme') === '1') {
+    document.documentElement.style.setProperty('--vscode-charts-orange', '#5C2E10');
+    document.documentElement.style.setProperty('--vscode-button-secondaryBackground', '#202020');
+    document.documentElement.style.setProperty('--vscode-editorWidget-background', '#202020');
+    document.documentElement.style.setProperty('--vscode-sideBar-background', '#202020');
+  }
   var auto = params.get('autoselect');
   if (auto === '1') document.body.dataset.autoselect = 'first-commit';
   else if (auto) document.body.dataset.autoselect = auto;
@@ -36,6 +43,7 @@
   function githubData() {
     var d = model.github;
     if (gh === 'off') return { status: { state: 'off', dismissed: false }, pullRequests: [], branchCi: [] };
+    if (gh === 'noRemote') return { status: { state: 'noRemote' }, pullRequests: [], branchCi: [] };
     if (gh === 'stale') return { status: { state: 'stale', repo: d.status.repo, fetchedAt: Date.now() - 3 * 3600e3, reason: 'sessionExpired' }, pullRequests: d.pullRequests, branchCi: d.branchCi };
     return d;
   }
@@ -68,7 +76,7 @@
         }
         else if (msg.type === 'loadPrPanel') {
           setTimeout(function () {
-            if (gh === 'off') { send({ type: 'prPanel', data: undefined }); return; }
+            if (gh === 'off' || gh === 'noRemote') { send({ type: 'prPanel', data: undefined }); return; }
             var prs = (model.github.pullRequests || []).map(function (p, i) {
               return Object.assign({}, p, {
                 body: '', mergeable: i === 1 ? 'conflicting' : 'mergeable',

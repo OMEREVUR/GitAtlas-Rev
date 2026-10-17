@@ -4,3 +4,4 @@ dev/out/
 dev/screenshots/
 *.vsix
 .vitest-cache/
+TEST-PHOTOS/
