@@ -3,11 +3,12 @@ import { countLines, listTrackedFiles } from '../git/lineCounter';
 import { logArgs, parseNumstatLog } from '../git/logParser';
 import type { CommitSummary, RepoSnapshot } from '../types';
 import { readSnapshot, writeSnapshot } from './cache';
+import { text } from '../i18n/map';
 
 /** Repo var ama henüz hiç commit yok (HEAD çözülemiyor). */
 export class NoCommitsError extends Error {
   constructor() {
-    super('Bu repoda henüz commit yok.');
+    super(text().noCommitsError);
     this.name = 'NoCommitsError';
   }
 }

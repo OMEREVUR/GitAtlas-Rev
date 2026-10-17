@@ -1,9 +1,10 @@
 // Dosya kartı: seçili dosyanın özeti, son 5 commit'i (yeniden adlandırmayı takip ederek) ve eylemleri.
 import type { CommitSummary, FileStat, PullRequest, TimeRange } from '../types';
 import type { WebviewToExtension } from '../protocol';
-import { HEAT_LABELS, heatVar, type HeatLevel } from './heat';
+import { heatLabel, heatVar, type HeatLevel } from './heat';
 import { prRow } from './githubBanner';
 import { baseName, formatDate, formatNumber, formatRelative, rangeShort } from './format';
+import { text } from '../i18n/map';
 
 export interface FileCardOptions {
   range: TimeRange;
@@ -45,12 +46,13 @@ export function renderFileCard(
   opts: FileCardOptions,
 ): void {
   el.classList.add('rr-p-card');
+  const t = text();
   if (!file) {
     el.replaceChildren(
       h('div', 'rr-p-card-empty', [
         icon('file', 'rr-p-card-empty-icon'),
-        h('div', 'rr-p-card-empty-title', 'Bir dosya seç'),
-        h('div', 'rr-p-card-empty-text', "Haritada bir kutuya tıkla; son commit'leri ve diff'i burada gör."),
+        h('div', 'rr-p-card-empty-title', t.pickFile),
+        h('div', 'rr-p-card-empty-text', t.pickFileText),
       ]),
     );
     return;
@@ -60,8 +62,8 @@ export function renderFileCard(
 
   const close = h('button', 'rr-p-icon-btn', [icon('close')]);
   close.type = 'button';
-  close.setAttribute('aria-label', 'Kartı kapat');
-  close.title = 'Kartı kapat';
+  close.setAttribute('aria-label', t.closeCard);
+  close.title = t.closeCard;
   close.addEventListener('click', () => opts.onClose());
 
   const pathEl = h('div', 'rr-p-card-path', file.path);
@@ -71,8 +73,8 @@ export function renderFileCard(
   ]);
 
   const stats = h('div', 'rr-p-stats', [
-    stat('Satır', formatNumber(file.lines)),
-    stat(`Commit · ${range}`, formatNumber(file.changes)),
+    stat(t.tipLines, formatNumber(file.lines)),
+    stat(t.statCommits(range), formatNumber(file.changes)),
   ]);
 
   const meter = h('div', 'rr-p-meter');
@@ -86,7 +88,7 @@ export function renderFileCard(
     meter.append(seg);
   }
   const heat = h('div', 'rr-p-heat', [
-    h('div', 'rr-p-heat-head', [h('span', '', 'Değişim sıklığı'), h('span', 'rr-p-heat-label', HEAT_LABELS[opts.heat] ?? '')]),
+    h('div', 'rr-p-heat-head', [h('span', '', t.changeFrequency), h('span', 'rr-p-heat-label', heatLabel(opts.heat))]),
     meter,
   ]);
 
@@ -102,29 +104,29 @@ export function renderFileCard(
   if (file.lastModified > 0) touched.title = formatDate(file.lastModified);
 
   const facts = h('dl', 'rr-p-facts', [
-    h('dt', 'rr-p-fact-label', `Eklenen / silinen · ${range}`),
+    h('dt', 'rr-p-fact-label', t.addedDeleted(range)),
     h('dd', 'rr-p-fact-value', [
       h('span', 'rr-p-add', `+${formatNumber(file.added)}`),
       h('span', 'rr-p-del', `−${formatNumber(file.deleted)}`),
     ]),
-    h('dt', 'rr-p-fact-label', `Yazarlar · ${range}`),
+    h('dt', 'rr-p-fact-label', t.authorsRange(range)),
     authorsEl,
-    h('dt', 'rr-p-fact-label', 'Son dokunma'),
+    h('dt', 'rr-p-fact-label', t.lastTouched),
     touched,
   ]);
 
   const recent = recentCommitsForFile(file.path, commits);
   const recentList: HTMLElement =
     recent.length === 0
-      ? h('div', 'rr-p-muted', 'Bu dosyaya dokunan commit yok.')
+      ? h('div', 'rr-p-muted', t.noCommitsForFile)
       : h(
           'ul',
           'rr-p-recent',
           recent.map(({ commit, path }) => recentRow(commit, path, file.path, post, opts.now)),
         );
-  const recentSection = h('section', 'rr-p-section', [h('h3', 'rr-p-heading', "SON COMMIT'LER"), recentList]);
+  const recentSection = h('section', 'rr-p-section', [h('h3', 'rr-p-heading', t.recentCommits), recentList]);
 
-  const open = h('button', 'rr-p-btn rr-p-btn-primary', 'Dosyayı aç');
+  const open = h('button', 'rr-p-btn rr-p-btn-primary', t.openFile);
   open.type = 'button';
   open.addEventListener('click', () => post({ type: 'openFile', path: file.path }));
 
@@ -144,6 +146,7 @@ export function renderFileCard(
 /** v3: 2+ PR'da çakışma notu ve "AÇIK PR'LAR" listesi. PR yoksa hiçbir şey eklemez. */
 function prSections(prs: readonly PullRequest[], stale: boolean, post: (msg: WebviewToExtension) => void): HTMLElement[] {
   if (prs.length === 0) return [];
+  const t = text();
   const out: HTMLElement[] = [];
   if (prs.length >= 2) {
     const warn = h('span', `codicon codicon-warning rr-p-conflict-icon`);
@@ -151,16 +154,16 @@ function prSections(prs: readonly PullRequest[], stale: boolean, post: (msg: Web
     const note = h('div', `rr-p-conflict${stale ? ' is-stale' : ''}`, [
       warn,
       h('span', '', [
-        document.createTextNode('Bu dosyaya '),
-        h('strong', '', `${formatNumber(prs.length)} açık PR`),
-        document.createTextNode(' dokunuyor. Merge sırasında çakışabilir.' + (stale ? ' (eski veri)' : '')),
+        document.createTextNode(t.prConflictPre),
+        h('strong', '', t.openPrs(prs.length)),
+        document.createTextNode(t.prConflictPost + (stale ? ` (${t.staleData})` : '')),
       ]),
     ]);
     note.setAttribute('role', 'note');
     out.push(note);
   }
-  const heading = h('h3', 'rr-p-heading', "AÇIK PR'LAR");
-  if (stale) heading.append(h('span', 'rr-p-heading-note', ' · eski veri'));
+  const heading = h('h3', 'rr-p-heading', t.openPrsHeading);
+  if (stale) heading.append(h('span', 'rr-p-heading-note', ` · ${t.staleData}`));
   const list = h('ul', 'rr-p-prs', prs.map((pr) => h('li', '', [prRow(pr, post)])));
   out.push(h('section', 'rr-p-section', [heading, list]));
   return out;
@@ -177,8 +180,9 @@ function recentRow(
   post: (msg: WebviewToExtension) => void,
   now: number,
 ): HTMLElement {
+  const t = text();
   const meta = h('span', 'rr-p-meta', `${commit.author} · ${formatRelative(commit.date, now)}`);
-  if (path !== currentPath) meta.append(h('span', 'rr-p-oldname', ` · eski ad: ${baseName(path)}`));
+  if (path !== currentPath) meta.append(h('span', 'rr-p-oldname', t.oldName(baseName(path))));
   meta.title = formatDate(commit.date);
 
   const msg = h('span', 'rr-p-msg', commit.message);
@@ -186,7 +190,7 @@ function recentRow(
 
   const diff = h('button', 'rr-p-btn rr-p-btn-secondary rr-p-btn-small', 'Diff');
   diff.type = 'button';
-  diff.setAttribute('aria-label', `${commit.shortHash} commit'inin diff'ini gör`);
+  diff.setAttribute('aria-label', t.diffAria(commit.shortHash));
   diff.addEventListener('click', () => post({ type: 'openDiff', path, hash: commit.hash }));
 
   return h('li', 'rr-p-recent-row', [

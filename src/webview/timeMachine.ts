@@ -1,8 +1,10 @@
 // Zaman makinesi: geçmiş bir tarihteki harita + kaydırıcı + "Bu tarihte" paneli. Tasarım: TimeMachine.dc.html.
 import './timeMachine.css';
 import type { FileStat, TimelineData, TimelineMark } from '../types';
-import { HEAT_LABELS, heatLevels, heatVar } from './heat';
+import { heatLabel, heatLevels, heatVar } from './heat';
 import { baseName, formatNumber } from './format';
+import { locale } from '../i18n';
+import { text } from '../i18n/map';
 import { renderTreemap } from './treemap';
 
 export interface TimeMachineOptions {
@@ -53,11 +55,11 @@ function icon(name: string): HTMLSpanElement {
 }
 
 function longDate(ms: number): string {
-  return new Date(ms).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+  return new Date(ms).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 function shortDate(ms: number, withYear: boolean): string {
-  return new Date(ms).toLocaleDateString('tr-TR', withYear ? { day: 'numeric', month: 'short', year: '2-digit' } : { day: 'numeric', month: 'short' });
+  return new Date(ms).toLocaleDateString(locale(), withYear ? { day: 'numeric', month: 'short', year: '2-digit' } : { day: 'numeric', month: 'short' });
 }
 
 /** at'a en yakın adımın indeksi. */
@@ -82,11 +84,12 @@ function upperBound(dates: { date: number }[], x: number): number {
 function build(el: HTMLElement): Skeleton {
   el.replaceChildren();
   el.classList.add('rr-tm2');
+  const t = text();
 
   const section = h('section', 'rr-tm2-main');
-  section.setAttribute('aria-label', 'Geçmişteki harita');
+  section.setAttribute('aria-label', t.mapInPast);
   const top = h('div', 'rr-tm2-top');
-  top.append(h('span', 'rr-tm2-note', `Isı = o tarihten önceki ${WINDOW_DAYS} gündeki değişim`));
+  top.append(h('span', 'rr-tm2-note', t.heatNote(WINDOW_DAYS)));
   const map = h('div', 'rr-tm2-map');
 
   const controls = h('div', 'rr-tm2-controls');
@@ -95,15 +98,15 @@ function build(el: HTMLElement): Skeleton {
   const row = h('div', 'rr-tm2-row');
   const prev = h('button', 'rr-tm2-btn');
   prev.type = 'button';
-  prev.setAttribute('aria-label', 'Önceki adım');
+  prev.setAttribute('aria-label', t.prevStep);
   prev.append(icon('codicon-chevron-left'));
   const play = h('button', 'rr-tm2-btn rr-tm2-play');
   play.type = 'button';
   const next = h('button', 'rr-tm2-btn');
   next.type = 'button';
-  next.setAttribute('aria-label', 'Sonraki adım');
+  next.setAttribute('aria-label', t.nextStep);
   next.append(icon('codicon-chevron-right'));
-  const label = h('label', 'rr-visually-hidden', 'Tarih');
+  const label = h('label', 'rr-visually-hidden', t.date);
   const slider = h('input', 'rr-tm2-slider');
   slider.type = 'range';
   slider.min = '0';
@@ -120,7 +123,7 @@ function build(el: HTMLElement): Skeleton {
   section.append(top, map, controls);
 
   const aside = h('aside', 'rr-tm2-side');
-  aside.setAttribute('aria-label', 'Bu tarihte');
+  aside.setAttribute('aria-label', t.atThisDate);
   const wrap = h('div', 'rr-tm2-wrap');
   wrap.append(section, aside);
   el.append(wrap);
@@ -205,8 +208,9 @@ export function renderTimeMachine(el: HTMLElement, opts: TimeMachineOptions): vo
   sk.prev.disabled = idx <= 0;
   sk.next.disabled = idx >= steps.length - 1;
   sk.play.replaceChildren(icon(opts.playing ? 'codicon-debug-pause' : 'codicon-play'));
-  sk.play.setAttribute('aria-label', opts.playing ? 'Duraklat' : 'Oynat');
-  sk.play.title = opts.playing ? 'Duraklat' : 'Oynat';
+  const t = text();
+  sk.play.setAttribute('aria-label', opts.playing ? t.pause : t.play);
+  sk.play.title = opts.playing ? t.pause : t.play;
   sk.play.disabled = steps.length <= 1;
 
   const spanYears = steps.length > 1 && steps[steps.length - 1] - steps[0] > 300 * DAY;
@@ -223,10 +227,11 @@ export function renderTimeMachine(el: HTMLElement, opts: TimeMachineOptions): vo
 
 function renderAside(aside: HTMLElement, opts: TimeMachineOptions, files: FileStat[], steps: number[], idx: number): void {
   const { frame, at } = opts;
+  const t = text();
   const frag = document.createDocumentFragment();
 
   const head = h('div');
-  head.append(h('div', 'rr-tm2-kicker', 'Repo şu tarihte'), h('h2', 'rr-tm2-title', longDate(at)));
+  head.append(h('div', 'rr-tm2-kicker', t.repoOn), h('h2', 'rr-tm2-title', longDate(at)));
   frag.append(head);
 
   const present = files.filter((f) => !frame.missing.has(f.path)).length;
@@ -236,16 +241,16 @@ function renderAside(aside: HTMLElement, opts: TimeMachineOptions, files: FileSt
     d.append(h('div', 'rr-tm2-stat-k', label), h('div', 'rr-tm2-stat-v', value));
     return d;
   };
-  stats.append(stat('Dosya', formatNumber(present)), stat(`Son ${WINDOW_DAYS} günde commit`, formatNumber(frame.windowCommits)));
+  stats.append(stat(t.tmFiles, formatNumber(present)), stat(t.commitsLastDays(WINDOW_DAYS), formatNumber(frame.windowCommits)));
   frag.append(stats);
 
   // EN SICAK
   const hotBox = h('div', 'rr-tm2-group');
-  hotBox.append(h('h3', 'rr-tm2-h3', 'EN SICAK'));
+  hotBox.append(h('h3', 'rr-tm2-h3', t.hottest));
   const levels = heatLevels(files);
   const hottest = files.filter((f) => f.changes > 0).sort((a, b) => b.changes - a.changes || a.path.localeCompare(b.path)).slice(0, 5);
   if (hottest.length === 0) {
-    hotBox.append(h('div', 'rr-tm2-empty', `Önceki ${WINDOW_DAYS} günde değişiklik yok.`));
+    hotBox.append(h('div', 'rr-tm2-empty', t.noChangesDays(WINDOW_DAYS)));
   } else {
     const ul = h('ul', 'rr-tm2-list');
     for (const f of hottest) {
@@ -253,12 +258,12 @@ function renderAside(aside: HTMLElement, opts: TimeMachineOptions, files: FileSt
       const b = h('button', 'rr-tm2-hot');
       b.type = 'button';
       const level = levels.get(f.path) ?? 0;
-      b.setAttribute('aria-label', `${f.path}, ${HEAT_LABELS[level]}, ${formatNumber(f.changes)} commit`);
+      b.setAttribute('aria-label', `${f.path}, ${heatLabel(level)}, ${t.commits(f.changes)}`);
       b.title = f.path;
       const sw = h('span', 'rr-tm2-swatch');
       sw.setAttribute('aria-hidden', 'true');
       sw.style.setProperty('background', heatVar(level));
-      b.append(sw, h('span', 'rr-tm2-hot-name', baseName(f.path)), h('span', 'rr-tm2-hot-heat', `${HEAT_LABELS[level]} · ${formatNumber(f.changes)}`));
+      b.append(sw, h('span', 'rr-tm2-hot-name', baseName(f.path)), h('span', 'rr-tm2-hot-heat', `${heatLabel(level)} · ${formatNumber(f.changes)}`));
       b.onclick = () => opts.onSelectFile(f.path);
       li.append(b);
       ul.append(li);
@@ -271,7 +276,7 @@ function renderAside(aside: HTMLElement, opts: TimeMachineOptions, files: FileSt
   const marks = opts.timeline.marks;
   if (marks.length > 0) {
     const markBox = h('div', 'rr-tm2-group');
-    markBox.append(h('h3', 'rr-tm2-h3', 'DÖNÜM NOKTALARI'));
+    markBox.append(h('h3', 'rr-tm2-h3', t.milestones));
     const ul = h('ul', 'rr-tm2-list');
     const spanYears = opts.timeline.end - opts.timeline.start > 300 * DAY;
     for (const m of marks) {
@@ -291,7 +296,7 @@ function renderAside(aside: HTMLElement, opts: TimeMachineOptions, files: FileSt
     frag.append(markBox);
   }
 
-  frag.append(h('div', 'rr-tm2-foot', 'Kesik çerçeveli boş kutular o tarihte henüz var olmayan dosyalar.'));
+  frag.append(h('div', 'rr-tm2-foot', t.missingFoot));
 
   const scroll = aside.scrollTop;
   const active = document.activeElement;

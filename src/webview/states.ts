@@ -1,5 +1,6 @@
 // Durum ekranları (tasarım: States.dc.html): ilk tarama ve hata durumları.
 import type { ErrorCode, StateAction, WebviewToExtension } from '../protocol';
+import { text } from '../i18n/map';
 
 export type PanelState = { kind: 'loading'; progress: number } | { kind: 'error'; code: ErrorCode; message: string };
 
@@ -23,54 +24,49 @@ interface ErrorSpec {
 const cmd = (action: StateAction): WebviewToExtension => ({ type: 'command', action });
 
 function errorSpec(code: ErrorCode, message: string): ErrorSpec {
+  const t = text();
   switch (code) {
     case 'noRepo':
       return {
         icon: 'folder',
-        title: 'Bu klasör bir git reposu değil',
-        text: ['GitAtlas-RevRev haritayı git geçmişinden çizer. Bu klasörde ', { code: '.git' }, ' bulunamadı.'],
+        title: t.noRepoTitle,
+        text: [t.noRepoText1, { code: '.git' }, t.noRepoText2],
         actions: [
-          { label: 'Repoyu başlat', primary: true, msg: cmd('initRepo') },
-          { label: 'Başka klasör aç', primary: false, msg: cmd('openFolder') },
+          { label: t.initRepo, primary: true, msg: cmd('initRepo') },
+          { label: t.openOtherFolder, primary: false, msg: cmd('openFolder') },
         ],
       };
     case 'noCommits':
       return {
         icon: 'git-commit',
-        title: 'Henüz commit yok',
-        text: ["Harita ilk commit'ten sonra burada oluşur. Dosyaların boyutu ve değişim sıklığı commit'lerden hesaplanır."],
-        actions: [{ label: 'Kaynak denetimini aç', primary: false, msg: cmd('openScm') }],
+        title: t.noCommitsTitle,
+        text: [t.noCommitsText],
+        actions: [{ label: t.openScm, primary: false, msg: cmd('openScm') }],
       };
     case 'noGit':
       return {
         icon: 'error',
         danger: true,
-        title: 'Git bulunamadı',
-        text: [
-          'GitAtlas-RevRev ',
-          { code: 'git' },
-          ' komutunu çalıştıramadı. Git kurulu değilse indir; kuruluysa yolunu ',
-          { code: 'git.path' },
-          ' ayarında belirt.',
-        ],
+        title: t.noGitTitle,
+        text: [t.noGitText1, { code: 'git' }, t.noGitText2, { code: 'git.path' }, t.noGitText3],
         actions: [
-          { label: "Git'i indir", primary: true, msg: cmd('downloadGit') },
-          { label: 'git.path ayarını aç', primary: false, msg: cmd('openGitPathSetting') },
+          { label: t.downloadGit, primary: true, msg: cmd('downloadGit') },
+          { label: t.openGitPath, primary: false, msg: cmd('openGitPathSetting') },
         ],
       };
     case 'noWorkspace':
       return {
         icon: 'folder-opened',
-        title: 'Açık klasör yok',
-        text: ['Haritayı görmek için bir git reposu içeren klasör aç.'],
-        actions: [{ label: 'Klasör aç', primary: true, msg: cmd('openFolder') }],
+        title: t.noWorkspaceTitle,
+        text: [t.noWorkspaceText],
+        actions: [{ label: t.openFolder, primary: true, msg: cmd('openFolder') }],
       };
     case 'unknown':
       return {
         icon: 'warning',
-        title: 'Harita yüklenemedi',
-        text: [message || 'Beklenmeyen bir hata oluştu.'],
-        actions: [{ label: 'Yeniden dene', primary: true, msg: { type: 'refresh' } }],
+        title: t.loadFailedTitle,
+        text: [message || t.unexpectedError],
+        actions: [{ label: t.retry, primary: true, msg: { type: 'refresh' } }],
       };
   }
 }
@@ -107,6 +103,7 @@ export function renderState(el: HTMLElement, state: PanelState, post: (msg: Webv
 
 /** Yükleme ekranı zaten çiziliyse yalnızca çubuğu günceller (sık ilerleme mesajları için). */
 function renderLoading(el: HTMLElement, progress: number): void {
+  const t = text();
   const pct = Math.round(Math.min(1, Math.max(0, Number.isFinite(progress) ? progress : 0)) * 100);
   let bar = el.querySelector<HTMLElement>('.rr-p-progress');
   if (!bar) {
@@ -116,23 +113,23 @@ function renderLoading(el: HTMLElement, progress: number): void {
 
     bar = h('div', 'rr-p-progress', [h('div', 'rr-p-progress-fill')]);
     bar.setAttribute('role', 'progressbar');
-    bar.setAttribute('aria-label', 'Tarama ilerlemesi');
+    bar.setAttribute('aria-label', t.scanAria);
     bar.setAttribute('aria-valuemin', '0');
     bar.setAttribute('aria-valuemax', '100');
 
     const dialog = h('div', 'rr-p-state-dialog', [
-      h('div', 'rr-p-state-dialog-title', 'Git geçmişi taranıyor'),
+      h('div', 'rr-p-state-dialog-title', t.scanTitle),
       bar,
       h('div', 'rr-p-progress-pct rr-p-muted'),
-      h('div', 'rr-p-muted', "İlk tarama bir kez yapılır. Sonraki açılışlarda sadece yeni commit'ler işlenir."),
+      h('div', 'rr-p-muted', t.scanNote),
     ]);
     el.replaceChildren(h('div', 'rr-p-state-loading', [skeleton, dialog]));
   }
   bar.setAttribute('aria-valuenow', String(pct));
-  bar.setAttribute('aria-valuetext', `%${pct}`);
+  bar.setAttribute('aria-valuetext', t.pct(pct));
   bar.querySelector<HTMLElement>('.rr-p-progress-fill')?.style.setProperty('width', `${pct}%`);
   const pctEl = el.querySelector<HTMLElement>('.rr-p-progress-pct');
-  if (pctEl) pctEl.textContent = `%${pct}`;
+  if (pctEl) pctEl.textContent = t.pct(pct);
 }
 
 function h<K extends keyof HTMLElementTagNameMap>(

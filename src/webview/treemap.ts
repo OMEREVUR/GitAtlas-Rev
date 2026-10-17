@@ -2,8 +2,9 @@
 import './treemap.css';
 import { hierarchy, treemap, treemapSquarify, type HierarchyNode, type HierarchyRectangularNode } from 'd3-hierarchy';
 import type { ChangeKind, FileStat } from '../types';
-import { HEAT_LABELS, heatLevels, heatVar, type HeatLevel } from './heat';
+import { heatLabel, heatLevels, heatVar, type HeatLevel } from './heat';
 import { baseName, formatNumber, formatRelative } from './format';
+import { text } from '../i18n/map';
 
 export interface TreemapOptions {
   root: string;            // '' = repo kökü, aksi hâlde 'src/git' gibi klasör yolu
@@ -28,10 +29,6 @@ export interface TreemapOptions {
 type DirtyKind = ChangeKind | 'conflicted';
 const DIRTY_LETTER: Record<DirtyKind, string> = {
   modified: 'M', added: 'A', deleted: 'D', renamed: 'R', copied: 'C', typechange: 'T', untracked: 'A', conflicted: 'U',
-};
-const DIRTY_TEXT: Record<DirtyKind, string> = {
-  modified: 'Değişti', added: 'Yeni', deleted: 'Silindi', renamed: 'Adı değişti', copied: 'Kopyalandı',
-  typechange: 'Türü değişti', untracked: 'Yeni (izlenmiyor)', conflicted: 'Çakışma',
 };
 
 /** codicon-git-pull-request glifi. */
@@ -193,14 +190,16 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
   const missing = opts.missing;
   const dirty = opts.dirty;
 
+  const t = text();
+
   // Yol çubuğu
   const bar = h('nav', 'rr-tm-path');
-  bar.setAttribute('aria-label', 'Konum');
+  bar.setAttribute('aria-label', t.location);
   const up = h('button', 'rr-tm-up');
   up.type = 'button';
   const upTarget = parentFolder(root);
-  up.setAttribute('aria-label', root === '' ? 'Üst klasöre çık' : `Üst klasöre çık: ${upTarget === '' ? opts.repoName : upTarget}`);
-  up.title = 'Üst klasöre çık (Backspace)';
+  up.setAttribute('aria-label', root === '' ? t.upFolder : t.upFolderTo(upTarget === '' ? opts.repoName : upTarget));
+  up.title = t.upFolderTitle;
   up.disabled = root === '';
   up.append(icon('codicon-chevron-left'));
   up.onclick = () => opts.onNavigate(upTarget);
@@ -230,10 +229,10 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
   const meta = h('span', 'rr-tm-meta');
   if (outside > 0) {
     const note = h('span', 'rr-tm-outside');
-    note.append(icon('codicon-info'), document.createTextNode(` Bu commit'in ${formatNumber(outside)} dosyası bu klasörün dışında`));
+    note.append(icon('codicon-info'), document.createTextNode(t.outsideFiles(outside)));
     meta.append(note);
   }
-  meta.append(h('span', 'rr-tm-count', `${formatNumber(inRoot.length)} dosya · kutu boyutu = satır sayısı`));
+  meta.append(h('span', 'rr-tm-count', t.fileCountMeta(inRoot.length)));
   bar.append(meta);
   if (!compact) el.append(bar);
 
@@ -252,7 +251,7 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
   el.append(tip);
 
   if (inRoot.length === 0) {
-    area.append(h('div', 'rr-tm-empty', root === '' ? 'Gösterilecek dosya yok.' : 'Bu klasörde gösterilecek dosya yok.'));
+    area.append(h('div', 'rr-tm-empty', root === '' ? t.emptyRoot : t.emptyFolder));
     installHandlers(el, opts, byPath, new Map(), levels, tip);
     return;
   }
@@ -266,7 +265,7 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
   svg.setAttribute('height', String(height));
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   svg.setAttribute('role', 'group');
-  svg.setAttribute('aria-label', `${root === '' ? opts.repoName : root} haritası`);
+  svg.setAttribute('aria-label', t.mapOf(root === '' ? opts.repoName : root));
   area.append(svg);
 
   if (width < MIN_BOX || height < MIN_BOX) {
@@ -355,10 +354,10 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
       const prs = prCounts?.get(f.path) ?? 0;
       const isSel = f.path === selected;
       const isHl = highlight.has(f.path);
-      const prText = prs > 0 ? `, ${formatNumber(prs)} açık PR${prs >= 2 ? ' (çakışma riski)' : ''}` : '';
+      const prText = prs > 0 ? `, ${t.openPrs(prs)}${prs >= 2 ? ` (${t.conflictRisk})` : ''}` : '';
       const dk = dirty?.get(f.path);
-      const dirtyText = dk ? `, commit edilmemiş değişiklik: ${DIRTY_TEXT[dk]}` : '';
-      const g = node('file', f.path, `${baseName(f.path)}, ${formatNumber(f.lines)} satır, ${formatNumber(f.changes)} commit${prText}${dirtyText}`);
+      const dirtyText = dk ? `, ${t.uncommittedLower}: ${t.dirty(dk)}` : '';
+      const g = node('file', f.path, `${baseName(f.path)}, ${t.lines(f.lines)}, ${t.commits(f.changes)}${prText}${dirtyText}`);
       g.setAttribute('aria-pressed', isSel ? 'true' : 'false');
       if (hasHighlight && !isHl) g.classList.add('rr-tm-dim');
       const box = rect(level === 0 ? 'rr-tm-box rr-tm-cold' : 'rr-tm-box', x, y, w, hgt);
@@ -381,7 +380,7 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
           reserve += bw + 4;
         }
       }
-      drawBoxLabel(g, x, y, w, hgt, baseName(f.path), `${formatNumber(f.lines)} satır · ${formatNumber(f.changes)} commit`, level >= 4, reserve);
+      drawBoxLabel(g, x, y, w, hgt, baseName(f.path), `${t.lines(f.lines)} · ${t.commits(f.changes)}`, level >= 4, reserve);
       frag.append(g);
       if (prs >= 2) {
         const c = insetRect('rr-tm-conflict', x, y, w, hgt, isSel || (hasHighlight && isHl) ? 5 : 4);
@@ -397,14 +396,14 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
     const info = folderInfo.get(n.data.path);
     if (n.depth > 0 && info) {
       const collapsed = w < minFolderW || hgt < minFolderH;
-      const label = `${n.data.name}/ klasörü, ${formatNumber(info.files)} dosya, ${formatNumber(info.lines)} satır`;
+      const label = t.folderLabel(n.data.name, info.files, info.lines);
       if (collapsed) {
-        const g = node('folder', n.data.path, `${label}, içine in`);
+        const g = node('folder', n.data.path, `${label}, ${t.enterFolder}`);
         if (hasHighlight && info.highlighted === 0) g.classList.add('rr-tm-dim');
         const box = rect(info.level === 0 ? 'rr-tm-box rr-tm-cold' : 'rr-tm-box', x, y, w, hgt);
         box.style.setProperty('fill', heatVar(info.level));
         g.append(box);
-        drawBoxLabel(g, x, y, w, hgt, n.data.name + '/', `${formatNumber(info.files)} dosya`, info.level >= 4);
+        drawBoxLabel(g, x, y, w, hgt, n.data.name + '/', t.files(info.files), info.level >= 4);
         frag.append(g);
         addMarks(overlay, x, y, w, hgt, false, hasHighlight && info.highlighted > 0);
         return;
@@ -413,7 +412,7 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
         for (const c of n.children ?? []) visit(c);
         return;
       }
-      const g = node('folder', n.data.path, `${label}, içine in`);
+      const g = node('folder', n.data.path, `${label}, ${t.enterFolder}`);
       g.classList.add('rr-tm-folder');
       g.append(rect('rr-tm-head', x, y, w, HEADER));
       const headText = fitText(n.data.name, w - 12, headFont);
@@ -482,12 +481,13 @@ function prBadge(x: number, y: number, bw: number, label: string, conflict: bool
 }
 
 function legend(hasHighlight: boolean, hasPr = false, prStale = false, hasMissing = false, hasDirty = false): HTMLElement {
+  const t = text();
   const lg = h('div', 'rr-tm-legend');
-  lg.setAttribute('aria-label', 'Lejant');
+  lg.setAttribute('aria-label', t.legend);
   lg.setAttribute('role', 'group');
 
   const scale = h('span', 'rr-tm-legend-item');
-  scale.append(document.createTextNode('Az değişen'));
+  scale.append(document.createTextNode(t.lessChanged));
   const sw = h('span', 'rr-tm-scale');
   sw.setAttribute('aria-hidden', 'true');
   for (let i = 1 as HeatLevel; i <= 5; i = (i + 1) as HeatLevel) {
@@ -495,26 +495,26 @@ function legend(hasHighlight: boolean, hasPr = false, prStale = false, hasMissin
     c.style.setProperty('background', heatVar(i));
     sw.append(c);
   }
-  scale.append(sw, document.createTextNode('Sık değişen'));
+  scale.append(sw, document.createTextNode(t.moreChanged));
   lg.append(scale);
 
   const cold = h('span', 'rr-tm-legend-item');
   const coldSw = h('span', 'rr-tm-swatch rr-tm-swatch-cold');
   coldSw.setAttribute('aria-hidden', 'true');
-  cold.append(coldSw, document.createTextNode(HEAT_LABELS[0]));
+  cold.append(coldSw, document.createTextNode(heatLabel(0)));
   lg.append(cold);
 
   const sel = h('span', 'rr-tm-legend-item');
   const selSw = h('span', 'rr-tm-swatch rr-tm-swatch-sel');
   selSw.setAttribute('aria-hidden', 'true');
-  sel.append(selSw, document.createTextNode('Seçili dosya'));
+  sel.append(selSw, document.createTextNode(t.selectedFile));
   lg.append(sel);
 
   if (hasHighlight) {
     const hl = h('span', 'rr-tm-legend-item');
     const hlSw = h('span', 'rr-tm-swatch rr-tm-swatch-hl');
     hlSw.setAttribute('aria-hidden', 'true');
-    hl.append(hlSw, document.createTextNode("Commit'in dokunduğu dosyalar (diğerleri soluk)"));
+    hl.append(hlSw, document.createTextNode(t.commitTouched));
     lg.append(hl);
   }
 
@@ -522,7 +522,7 @@ function legend(hasHighlight: boolean, hasPr = false, prStale = false, hasMissin
     const pr = h('span', 'rr-tm-legend-item');
     const prSw = h('span', 'rr-tm-swatch rr-tm-swatch-conflict');
     prSw.setAttribute('aria-hidden', 'true');
-    pr.append(prSw, document.createTextNode(`Aynı dosyada 2+ açık PR (çakışma riski)${prStale ? ' (eski veri)' : ''}`));
+    pr.append(prSw, document.createTextNode(`${t.prConflictLegend}${prStale ? ` (${t.staleData})` : ''}`));
     lg.append(pr);
   }
 
@@ -530,7 +530,7 @@ function legend(hasHighlight: boolean, hasPr = false, prStale = false, hasMissin
     const ms = h('span', 'rr-tm-legend-item');
     const msSw = h('span', 'rr-tm-swatch rr-tm-swatch-missing');
     msSw.setAttribute('aria-hidden', 'true');
-    ms.append(msSw, document.createTextNode('O tarihte henüz yok'));
+    ms.append(msSw, document.createTextNode(t.notYetThere));
     lg.append(ms);
   }
 
@@ -538,7 +538,7 @@ function legend(hasHighlight: boolean, hasPr = false, prStale = false, hasMissin
     const dt = h('span', 'rr-tm-legend-item');
     const dtSw = h('span', 'rr-tm-swatch-dirty', 'M');
     dtSw.setAttribute('aria-hidden', 'true');
-    dt.append(dtSw, document.createTextNode('Commit edilmemiş değişiklik'));
+    dt.append(dtSw, document.createTextNode(t.uncommitted));
     lg.append(dt);
   }
   return lg;
@@ -643,6 +643,7 @@ function fillTip(
   prCounts?: Map<string, number>,
   dirty?: Map<string, DirtyKind>,
 ): void {
+  const t = text();
   const path = n.dataset.path ?? '';
   tip.replaceChildren();
   const head = h('div', 'rr-tm-tip-head');
@@ -658,27 +659,27 @@ function fillTip(
     if (!f) return;
     head.append(h('div', 'rr-tm-tip-name', baseName(f.path)), h('div', 'rr-tm-tip-path', f.path));
     grid.append(
-      stat('Satır', formatNumber(f.lines)),
-      stat('Commit', formatNumber(f.changes)),
-      stat('Sıklık', HEAT_LABELS[levels.get(f.path) ?? 0]),
+      stat(t.tipLines, formatNumber(f.lines)),
+      stat(t.tipCommits, formatNumber(f.changes)),
+      stat(t.tipHeat, heatLabel(levels.get(f.path) ?? 0)),
     );
     const delta = h('div', 'rr-tm-tip-row');
     delta.append(
-      h('span', 'rr-tm-tip-k', 'Değişim: '),
+      h('span', 'rr-tm-tip-k', t.tipDelta),
       h('span', 'rr-tm-tip-add', `+${formatNumber(f.added)}`),
       document.createTextNode(' '),
       h('span', 'rr-tm-tip-del', `−${formatNumber(f.deleted)}`),
     );
     const last = h('div', 'rr-tm-tip-row rr-tm-tip-sep');
-    last.append(h('span', 'rr-tm-tip-k', 'Son dokunma: '), document.createTextNode(formatRelative(f.lastModified, Date.now())));
+    last.append(h('span', 'rr-tm-tip-k', t.tipLast), document.createTextNode(formatRelative(f.lastModified, Date.now())));
     const authors = h('div', 'rr-tm-tip-row');
     const shownAuthors = f.authors.slice(0, 3).join(', ') + (f.authors.length > 3 ? ` +${f.authors.length - 3}` : '');
-    authors.append(h('span', 'rr-tm-tip-k', 'Yazarlar: '), document.createTextNode(shownAuthors || '—'));
+    authors.append(h('span', 'rr-tm-tip-k', t.tipAuthors), document.createTextNode(shownAuthors || '—'));
     tip.append(head, grid, last, delta, authors);
     const prs = prCounts?.get(f.path) ?? 0;
     if (prs > 0) {
       const prRow = h('div', prs >= 2 ? 'rr-tm-tip-row rr-tm-tip-pr rr-tm-tip-conflict' : 'rr-tm-tip-row rr-tm-tip-pr');
-      prRow.append(icon('codicon-git-pull-request'), document.createTextNode(` ${formatNumber(prs)} açık PR${prs >= 2 ? ' · çakışma riski' : ''}`));
+      prRow.append(icon('codicon-git-pull-request'), document.createTextNode(` ${t.openPrs(prs)}${prs >= 2 ? ` · ${t.conflictRisk}` : ''}`));
       tip.append(prRow);
     }
     const dk = dirty?.get(f.path);
@@ -686,21 +687,21 @@ function fillTip(
       const dRow = h('div', 'rr-tm-tip-row rr-tm-tip-pr');
       const letter = h('span', `rr-tm-swatch-dirty rr-tm-dirty-${dk}`, DIRTY_LETTER[dk]);
       letter.setAttribute('aria-hidden', 'true');
-      dRow.append(letter, document.createTextNode(` Commit edilmemiş değişiklik: ${DIRTY_TEXT[dk]}`));
+      dRow.append(letter, document.createTextNode(` ${t.uncommitted}: ${t.dirty(dk)}`));
       tip.append(dRow);
     }
-    tip.append(h('div', 'rr-tm-tip-hint', 'Tıkla: dosya kartı · Çift tıkla: dosyayı aç'));
+    tip.append(h('div', 'rr-tm-tip-hint', t.tipHint));
     return;
   }
 
   const info = folderInfo.get(path);
   head.append(h('div', 'rr-tm-tip-name', baseName(path) + '/'), h('div', 'rr-tm-tip-path', path));
   grid.append(
-    stat('Dosya', formatNumber(info?.files ?? 0)),
-    stat('Satır', formatNumber(info?.lines ?? 0)),
-    stat('En sıcak', HEAT_LABELS[info?.level ?? 0]),
+    stat(t.tipFiles, formatNumber(info?.files ?? 0)),
+    stat(t.tipLines, formatNumber(info?.lines ?? 0)),
+    stat(t.tipHottest, heatLabel(info?.level ?? 0)),
   );
-  tip.append(head, grid, h('div', 'rr-tm-tip-hint', 'Tıkla: klasörün içine in'));
+  tip.append(head, grid, h('div', 'rr-tm-tip-hint', t.tipFolderHint));
 }
 
 /** Tooltip'i imlecin sağ altına koyar; pencereden taşarsa ters tarafa geçer. */

@@ -1,6 +1,7 @@
 // Son commit'ler akışı: en yeni 50 commit; seçilen commit'in dosyaları haritada yanar.
 import type { CommitSummary } from '../types';
 import { formatDate, formatRelative } from './format';
+import { text } from '../i18n/map';
 
 export interface CommitFeedOptions {
   selectedHash?: string;
@@ -19,15 +20,16 @@ export function renderCommitFeed(el: HTMLElement, commits: CommitSummary[], opts
   const active = document.activeElement;
   const focusedHash = active instanceof HTMLElement && el.contains(active) ? active.dataset.hash : undefined;
 
-  const heading = h('h3', 'rr-p-heading rr-p-feed-heading', "SON COMMIT'LER");
+  const t = text();
+  const heading = h('h3', 'rr-p-heading rr-p-feed-heading', t.recentCommits);
 
   if (commits.length === 0) {
-    el.replaceChildren(heading, h('div', 'rr-p-feed-empty rr-p-muted', 'Henüz commit yok'));
+    el.replaceChildren(heading, h('div', 'rr-p-feed-empty rr-p-muted', t.noCommitsYet));
     return;
   }
 
   const list = h('ul', 'rr-p-feed-list');
-  list.setAttribute('aria-label', "Son commit'ler");
+  list.setAttribute('aria-label', t.recentCommitsAria);
   let toFocus: HTMLButtonElement | undefined;
   for (const c of commits.slice(0, FEED_LIMIT)) {
     const selected = c.hash === opts.selectedHash;
@@ -40,7 +42,7 @@ export function renderCommitFeed(el: HTMLElement, commits: CommitSummary[], opts
     const top = h('span', 'rr-p-feed-top', [h('code', 'rr-p-hash', c.shortHash), h('span', 'rr-p-msg', c.message)]);
     if (c.parents.length > 1) top.append(h('span', 'rr-p-tag', 'merge'));
     const fileCount = c.files.length;
-    const meta = h('span', 'rr-p-meta', `${c.author} · ${formatRelative(c.date, opts.now)} · ${fileCount} dosya`);
+    const meta = h('span', 'rr-p-meta', `${c.author} · ${formatRelative(c.date, opts.now)} · ${t.files(fileCount)}`);
     btn.append(top, meta);
 
     btn.addEventListener('click', () => opts.onSelectCommit(selected ? undefined : c.hash));

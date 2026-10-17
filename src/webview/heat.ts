@@ -1,10 +1,14 @@
 // Ortak ısı seviyesi hesabı: treemap, dosya kartı ve lejant aynı ölçeği kullanır.
 import type { FileStat } from '../types';
+import { text } from '../i18n/map';
 
 /** 0 = aralıkta hiç değişmedi, 1..5 = churn yüzdelik dilimi (5 en sıcak). */
 export type HeatLevel = 0 | 1 | 2 | 3 | 4 | 5;
 
-export const HEAT_LABELS: readonly string[] = ['Değişmedi', 'Çok az', 'Az', 'Orta', 'Sık', 'Çok sık'];
+/** Seviyenin etkin dildeki adı: "Değişmedi" … "Çok sık". */
+export function heatLabel(level: number): string {
+  return text().heatLabel(level);
+}
 
 /** Seviyenin CSS değişkeni: var(--rr-c0) … var(--rr-c5). */
 export function heatVar(level: HeatLevel): string {

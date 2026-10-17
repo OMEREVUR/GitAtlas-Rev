@@ -2,6 +2,7 @@
 import './treemap.css';
 import type { TimeRange } from '../types';
 import { rangeLong } from './format';
+import { text } from '../i18n/map';
 
 const RANGES: readonly TimeRange[] = ['7d', '30d', 'all'];
 
@@ -9,7 +10,7 @@ export function renderRangeFilter(el: HTMLElement, current: TimeRange, onChange:
   const group = document.createElement('div');
   group.className = 'rr-tm-range';
   group.setAttribute('role', 'group');
-  group.setAttribute('aria-label', 'Zaman aralığı');
+  group.setAttribute('aria-label', text().rangeAria);
   for (const r of RANGES) {
     const b = document.createElement('button');
     b.type = 'button';

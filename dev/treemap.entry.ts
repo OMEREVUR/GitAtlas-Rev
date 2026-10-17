@@ -9,6 +9,9 @@ import '../src/webview/base.css';
 import { renderTreemap } from '../src/webview/treemap';
 import { renderRangeFilter } from '../src/webview/rangeFilter';
 import type { ChangeKind, FileStat, TimeRange } from '../src/types';
+import { parseLang, setLang } from '../src/i18n';
+// ?lang=en|tr (varsayılan tr); ilk render'dan önce.
+setLang(parseLang(new URLSearchParams(location.search).get('lang')) ?? 'tr');
 
 const DAY = 86_400_000;
 const NOW = Date.now();

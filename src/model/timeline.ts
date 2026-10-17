@@ -1,5 +1,6 @@
 // Zaman makinesi verisi. SAF: node/DOM import'u yok, webview de kullanabilir.
 import type { FileStat, GitRef, RepoSnapshot, TimelineData, TimelineEvent, TimelineMark } from '../types';
+import { text } from '../i18n/map';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_TAGS = 20;
@@ -46,7 +47,7 @@ export function buildTimeline(snapshot: RepoSnapshot, files: FileStat[], refs?: 
 function buildMarks(snapshot: RepoSnapshot, events: TimelineEvent[], refs?: GitRef[]): TimelineMark[] {
   const marks: TimelineMark[] = [];
   const first = events[0];
-  if (first) marks.push({ date: first.date, label: `İlk commit: ${first.message}`, kind: 'first' });
+  if (first) marks.push({ date: first.date, label: text().firstCommit(first.message), kind: 'first' });
 
   const byHash = new Map(snapshot.commits.map((c) => [c.hash, c]));
   const tags = (refs ?? [])

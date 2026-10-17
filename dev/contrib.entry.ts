@@ -5,6 +5,9 @@ import '../src/webview/panel.css';
 import '../src/webview/contributors.css';
 import type { AuthorStat, ContribData, ModuleOwnership, TimeRange } from '../src/types';
 import { renderContributors } from '../src/webview/contributors';
+import { parseLang, setLang } from '../src/i18n';
+// ?lang=en|tr (varsayılan tr); ilk render'dan önce.
+setLang(parseLang(new URLSearchParams(location.search).get('lang')) ?? 'tr');
 
 const params = new URLSearchParams(location.search);
 document.body.className = params.get('theme') === 'light' ? 'vscode-light' : 'vscode-dark';

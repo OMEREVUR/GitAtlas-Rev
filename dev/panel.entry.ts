@@ -8,6 +8,9 @@ import { heatLevels } from '../src/webview/heat';
 import { renderFileCard } from '../src/webview/fileCard';
 import { renderCommitFeed } from '../src/webview/commitFeed';
 import { renderState, type PanelState } from '../src/webview/states';
+import { parseLang, setLang } from '../src/i18n';
+// ?lang=en|tr (varsayılan tr); ilk render'dan önce.
+setLang(parseLang(new URLSearchParams(location.search).get('lang')) ?? 'tr');
 
 const NOW = Date.UTC(2026, 9, 16, 12, 0);
 const HOUR = 3600_000;
