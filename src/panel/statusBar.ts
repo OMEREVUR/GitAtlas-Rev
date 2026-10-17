@@ -43,7 +43,7 @@ export class GitAtlasRevRevStatusBar implements vscode.Disposable {
 
   constructor() {
     this.item = vscode.window.createStatusBarItem('gitatlas-revrev.status', vscode.StatusBarAlignment.Left, 0);
-    this.item.name = 'GitAtlas-RevRev';
+    this.item.name = 'GitAtlas-Rev';
     this.item.command = { title: panelText().openPanel, command: 'gitatlas-revrev.panel.focus' };
   }
 

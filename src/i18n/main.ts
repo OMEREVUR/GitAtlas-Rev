@@ -40,7 +40,7 @@ export const mainText = defineText({
     // extension.ts
     noRepo: 'Git reposu bulunamadı.',
     nothingStaged:
-      "GitAtlas-RevRev: Commit'e eklenmiş dosya yok. GitAtlas-RevRev panelindeki Değişiklikler sekmesinden dosya seçin.",
+      "GitAtlas-Rev: Commit'e eklenmiş dosya yok. GitAtlas-Rev panelindeki Değişiklikler sekmesinden dosya seçin.",
     commitTitle: (n: number) => `Commit oluştur (${n} dosya)`,
     commitPrompt: 'Commit mesajı (özet)',
     commitEmpty: 'Bir özet yazın.',
@@ -51,7 +51,7 @@ export const mainText = defineText({
     currentBranch: (name: string) => `Şu anki branch: ${name}`,
     branch: 'Branch',
     branchPickPlaceholder: 'Geçmek istediğin branch ya da yeni branch',
-    languageChanged: 'GitAtlas-RevRev: Dil değişikliği pencere yeniden yüklenince tamamen uygulanır.',
+    languageChanged: 'GitAtlas-Rev: Dil değişikliği pencere yeniden yüklenince tamamen uygulanır.',
     reloadWindow: 'Pencereyi yeniden yükle',
   },
   en: {
@@ -90,7 +90,7 @@ export const mainText = defineText({
     preparingHistory: 'Preparing history…',
     computingContrib: 'Computing contributions…',
     noRepo: 'No Git repository found.',
-    nothingStaged: 'GitAtlas-RevRev: No files are staged. Select files in the Changes tab of the GitAtlas-RevRev panel.',
+    nothingStaged: 'GitAtlas-Rev: No files are staged. Select files in the Changes tab of the GitAtlas-Rev panel.',
     commitTitle: (n: number) => `Create commit (${plural(n, 'file')})`,
     commitPrompt: 'Commit message (summary)',
     commitEmpty: 'Write a summary.',
@@ -101,7 +101,7 @@ export const mainText = defineText({
     currentBranch: (name: string) => `Current branch: ${name}`,
     branch: 'Branch',
     branchPickPlaceholder: 'Branch to switch to, or a new branch',
-    languageChanged: 'GitAtlas-RevRev: The language change fully applies after reloading the window.',
+    languageChanged: 'GitAtlas-Rev: The language change fully applies after reloading the window.',
     reloadWindow: 'Reload window',
   },
 });

@@ -1,6 +1,6 @@
 {
   "name": "gitatlas-rev",
-  "displayName": "GitAtlas-RevRev",
+  "displayName": "GitAtlas-Rev",
   "description": "%description%",
   "version": "0.2.0",
   "publisher": "Omer-Cayir",
@@ -24,7 +24,7 @@
       "activitybar": [
         {
           "id": "gitatlas-revrev",
-          "title": "GitAtlas-RevRev",
+          "title": "GitAtlas-Rev",
           "icon": "media/icon.svg"
         }
       ]
@@ -46,91 +46,91 @@
       {
         "command": "gitatlas-revrev.refresh",
         "title": "%command.refresh%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(refresh)"
       },
       {
         "command": "gitatlas-revrev.openInEditor",
         "title": "%command.openInEditor%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(open-preview)"
       },
       {
         "command": "gitatlas-revrev.refreshBranches",
         "title": "%command.refreshBranches%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(refresh)"
       },
       {
         "command": "gitatlas-revrev.github.connect",
         "title": "%command.github.connect%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(github)"
       },
       {
         "command": "gitatlas-revrev.github.refresh",
         "title": "%command.github.refresh%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(sync)"
       },
       {
         "command": "gitatlas-revrev.git.fetch",
         "title": "%command.git.fetch%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(cloud-download)"
       },
       {
         "command": "gitatlas-revrev.git.pull",
         "title": "%command.git.pull%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(arrow-down)"
       },
       {
         "command": "gitatlas-revrev.git.push",
         "title": "%command.git.push%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(arrow-up)"
       },
       {
         "command": "gitatlas-revrev.git.commit",
         "title": "%command.git.commit%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(check)"
       },
       {
         "command": "gitatlas-revrev.branch.checkout",
         "title": "%command.branch.checkout%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(check)"
       },
       {
         "command": "gitatlas-revrev.branch.create",
         "title": "%command.branch.create%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(git-branch-create)"
       },
       {
         "command": "gitatlas-revrev.branch.merge",
         "title": "%command.branch.merge%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(git-merge)"
       },
       {
         "command": "gitatlas-revrev.branch.rename",
         "title": "%command.branch.rename%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(edit)"
       },
       {
         "command": "gitatlas-revrev.branch.delete",
         "title": "%command.branch.delete%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(trash)"
       },
       {
         "command": "gitatlas-revrev.showGitOutput",
         "title": "%command.showGitOutput%",
-        "category": "GitAtlas-RevRev",
+        "category": "GitAtlas-Rev",
         "icon": "$(output)"
       }
     ],
@@ -204,7 +204,7 @@
       ]
     },
     "configuration": {
-      "title": "GitAtlas-RevRev",
+      "title": "GitAtlas-Rev",
       "properties": {
         "gitatlas-revrev.ignore": {
           "type": "array",

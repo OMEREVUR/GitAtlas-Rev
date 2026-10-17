@@ -170,7 +170,7 @@ describe('GitOpsService (İngilizce, gerçek git)', () => {
       const svc = new GitOpsService({ root: repo, ui: new FakeUi(), pullStrategy: () => 'ask', log: (l) => log.push(l), getToken });
       const r = await run(svc, { kind: 'push' });
       expect(r.ok).toBe(false);
-      expect(r.message).toBe('Authentication failed. Set up your Git credentials or connect to GitHub in GitAtlas-RevRev.');
+      expect(r.message).toBe('Authentication failed. Set up your Git credentials or connect to GitHub in GitAtlas-Rev.');
     },
     T,
   );

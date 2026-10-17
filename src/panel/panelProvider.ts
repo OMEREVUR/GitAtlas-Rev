@@ -367,7 +367,7 @@ class NoWorkspaceError extends Error {}
 
 export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, vscode.WebviewPanelSerializer, vscode.Disposable {
   static readonly viewType = 'gitatlas-revrev.panel';
-  /** Düzenleyici alanındaki sekme ("GitAtlas-RevRev: Harita"). */
+  /** Düzenleyici alanındaki sekme ("GitAtlas-Rev: Harita"). */
   static readonly editorViewType = 'gitatlas-revrev.editor';
 
   private readonly rootEmitter = new vscode.EventEmitter<string>();
@@ -436,7 +436,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
   private opCounter = 0;
   /** Bu oturumda alınan token'lar; çıktı kanalında maskelenir. */
   private readonly secrets = new Set<string>();
-  private readonly output = vscode.window.createOutputChannel('GitAtlas-RevRev Git');
+  private readonly output = vscode.window.createOutputChannel('GitAtlas-Rev Git');
 
   private running: Promise<void> | undefined;
   private rerun = false;
@@ -837,7 +837,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     this.output.appendLine(redactSecrets(line, [...this.secrets]));
   }
 
-  /** "GitAtlas-RevRev Git" çıktı kanalını gösterir. */
+  /** "GitAtlas-Rev Git" çıktı kanalını gösterir. */
   showGitOutput(): void {
     this.output.show(true);
   }
@@ -902,7 +902,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
   /** Komutlardan gelen işlem başarısız olursa "Çıktıyı göster" düğmeli hata bildirimi. */
   private notifyFailure(result: OpResult): void {
     if (result.ok || result.cancelled) return;
-    void vscode.window.showErrorMessage(`GitAtlas-RevRev: ${result.message}`, panelText().showOutput).then((choice) => {
+    void vscode.window.showErrorMessage(`GitAtlas-Rev: ${result.message}`, panelText().showOutput).then((choice) => {
       if (choice) this.showGitOutput();
     });
   }
@@ -1265,7 +1265,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
       }
     } catch (err) {
       const text = err instanceof Error ? err.message : String(err);
-      void vscode.window.showErrorMessage(`GitAtlas-RevRev: ${text}`);
+      void vscode.window.showErrorMessage(`GitAtlas-Rev: ${text}`);
     }
   }
 
@@ -1341,7 +1341,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="${asset('codicons', 'codicon.css')}">
 <link rel="stylesheet" href="${asset('webview.css')}">
-<title>GitAtlas-RevRev</title>
+<title>GitAtlas-Rev</title>
 </head>
 <body data-lang="${lang}">
 <div id="app"></div>

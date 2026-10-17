@@ -1,8 +1,8 @@
-# GitAtlas-RevRev
+# GitAtlas-Rev
 
 *Türkçe açıklama: `README.tr.md`.*
 
-A map that lets you read a repo at a glance. GitAtlas-RevRev draws your repository as a **treemap** in the VS Code side panel: every box is a file, its size is the line count, its color is how often it changes (churn). On top of that come a commit graph, branches, open pull requests on GitHub, a time machine and a contributors panel.
+A map that lets you read a repo at a glance. GitAtlas-Rev draws your repository as a **treemap** in the VS Code side panel: every box is a file, its size is the line count, its color is how often it changes (churn). On top of that come a commit graph, branches, open pull requests on GitHub, a time machine and a contributors panel.
 
 The interface is available in **English** and **Turkish**. It follows the VS Code display language by default; change it with the `gitatlas-revrev.language` setting.
 
@@ -14,7 +14,7 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 - File card: recent commits, "Open file", and a "Diff" for every commit.
 - Recent commits feed: click a commit and the files it touched light up on the map.
 - Explorer badges: ●● / ● next to frequently changed files, even while the panel is closed.
-- The map can also be opened as an editor tab: **GitAtlas-RevRev: Open map in editor**.
+- The map can also be opened as an editor tab: **GitAtlas-Rev: Open map in editor**.
 
 **Graph and branches**
 - Commit graph: branches as colored lanes, merges as hollow dots. Filter by branch, author, date and text (message, file, hash); older commits load as you scroll.
@@ -24,7 +24,7 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 **GitHub layer**
 - **PR conflict warning:** when 2+ open PRs touch the same file, its box gets a purple dashed frame; the file card lists the PRs; the Explorer shows a PR count badge.
 - PR and CI badges in the graph and the Branches view.
-- No token needed: your built-in VS Code GitHub session is used (**GitAtlas-RevRev: Connect to GitHub**). If `origin` is not on GitHub, the layer simply stays off.
+- No token needed: your built-in VS Code GitHub session is used (**GitAtlas-Rev: Connect to GitHub**). If `origin` is not on GitHub, the layer simply stays off.
 
 **Time machine and contributors**
 - Time machine: use the slider or the play button to see the repo at a past date; heat is the change in the 7 days before that date, and files that did not exist yet have a dashed outline.
@@ -36,7 +36,7 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 - Sync bar on every tab: Fetch, Pull, Push ("Publish" on a new branch). Pull tries fast-forward first and asks merge or rebase if that is not possible.
 - Right-click in the Branches view: switch, new branch, merge, rename, delete. Stashes: stash, apply, drop. During a conflict: "Mark resolved / Continue / Abort".
 - When connected to GitHub, **Pull requests**: open a PR from this branch (pushes first if needed), merge a PR (merge/squash/rebase), check out a PR branch; "My pull requests" and "Review requested".
-- Every risky action asks for confirmation first; commands and their output are in the "GitAtlas-RevRev Git" output channel.
+- Every risky action asks for confirmation first; commands and their output are in the "GitAtlas-Rev Git" output channel.
 
 ## Settings
 
@@ -54,10 +54,10 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 
 ## Privacy
 
-- GitAtlas-RevRev has **no server of its own**; no data is sent anywhere.
+- GitAtlas-Rev has **no server of its own**; no data is sent anywhere.
 - Git data is read only on your machine with local `git` commands; actions in the Changes tab also run through local `git` (your pre-commit hooks run). Results are cached in VS Code's extension storage (globalStorage), one file per repo.
 - Push/pull first use git's own credentials; if that fails and you are connected to GitHub, it retries once with your VS Code GitHub session (the token is never written to disk or logged).
-- The GitHub layer runs only after you connect. Requests go directly to `api.github.com` with your VS Code GitHub session; GitAtlas-RevRev does not store the token. The fetched PR/CI summary is also cached only locally.
+- The GitHub layer runs only after you connect. Requests go directly to `api.github.com` with your VS Code GitHub session; GitAtlas-Rev does not store the token. The fetched PR/CI summary is also cached only locally.
 
 ## Development
 

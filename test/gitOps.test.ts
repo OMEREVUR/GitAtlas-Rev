@@ -397,11 +397,11 @@ describe('GitOpsService', () => {
     const { svc } = service(repo, { ui });
     const r = await run(svc, { kind: 'checkout', branch: 'diger' });
     expect(r.ok).toBe(true);
-    expect(r.commands).toEqual(['git switch diger', 'git stash push -u -m "GitAtlas-RevRev: diger geçişinden önce"', 'git switch diger']);
+    expect(r.commands).toEqual(['git switch diger', 'git stash push -u -m "GitAtlas-Rev: diger geçişinden önce"', 'git switch diger']);
     expect(r.message).toBe('Geçildi: diger. Değişiklikleriniz saklandı (stash@{0}).');
     expect(ui.asked[0]).toContain('Değişiklikleri sakla (stash) ve geç/İptal');
     expect(git(repo, 'branch', '--show-current')).toBe('diger');
-    expect(git(repo, 'stash', 'list', '--format=%gs')).toBe('On main: GitAtlas-RevRev: diger geçişinden önce');
+    expect(git(repo, 'stash', 'list', '--format=%gs')).toBe('On main: GitAtlas-Rev: diger geçişinden önce');
     expect((await run(svc, { kind: 'checkout', branch: 'diger' })).message).toBe("Zaten bu branch'tesiniz: diger.");
   }, T);
 
@@ -523,7 +523,7 @@ describe('GitOpsService', () => {
 
     const noToken = service(repo);
     expect((await run(noToken.svc, { kind: 'push' })).message).toBe(
-      "Kimlik doğrulama başarısız. Git kimlik bilgilerinizi ayarlayın ya da GitAtlas-RevRev'de GitHub'a bağlanın.",
+      "Kimlik doğrulama başarısız. Git kimlik bilgilerinizi ayarlayın ya da GitAtlas-Rev'de GitHub'a bağlanın.",
     );
 
     const getToken = vi.fn(() => Promise.resolve<string | undefined>('gizli-token-123'));

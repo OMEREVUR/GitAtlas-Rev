@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GitAtlas-RevRev fixture reposu: geçici klasörde belirlenimci bir git reposu kurar ve
+# GitAtlas-Rev fixture reposu: geçici klasörde belirlenimci bir git reposu kurar ve
 # stdout'a YALNIZCA repo yolunu basar (Windows'ta "C:/..." biçiminde).
 #
 # Tarihler betiğin çalıştığı andan (NOW) geriye saat cinsinden sabit ofsetlerle verilir.
@@ -80,7 +80,7 @@ D=24 # saat/gün
 
 # --- 90..31 gün önce -------------------------------------------------------
 line README.md "# Fixture"
-line README.md "GitAtlas-RevRev deneme reposu."
+line README.md "GitAtlas-Rev deneme reposu."
 line src/extension.ts "export function activate() {}"
 line package.json '{ "name": "fixture" }'
 line .mailmap "Zeynep Kaya <zeynep@example.com> <zkaya@eski.example.com>"

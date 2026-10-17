@@ -71,7 +71,7 @@ export type WebviewToExtension =
   | { type: 'gitOp'; id: string; op: GitOpRequest }
   /** Değişikliğin diff'i: staged → HEAD ↔ index, değilse index ↔ çalışma ağacı. */
   | { type: 'openChange'; path: string; staged: boolean }
-  /** "GitAtlas-RevRev Git" çıktı kanalını göster. */
+  /** "GitAtlas-Rev Git" çıktı kanalını göster. */
   | { type: 'showOutput' }
   // v5 (2. tur)
   | { type: 'loadPrPanel' }

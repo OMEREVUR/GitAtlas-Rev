@@ -57,7 +57,7 @@ export const text = defineText({
     cancelled: 'İptal edildi.',
     cancel: 'İptal',
     conflict: "Çakışma var: dosyaları çözüp 'Çözüldü' deyin ya da işlemi iptal edin.",
-    auth: "Kimlik doğrulama başarısız. Git kimlik bilgilerinizi ayarlayın ya da GitAtlas-RevRev'de GitHub'a bağlanın.",
+    auth: "Kimlik doğrulama başarısız. Git kimlik bilgilerinizi ayarlayın ya da GitAtlas-Rev'de GitHub'a bağlanın.",
     network: 'Uzak depoya ulaşılamadı. İnternet bağlantınızı ve uzak deponun adresini kontrol edin.',
     dirtyTree: 'Commit edilmemiş değişiklikler bu işlemle çakışıyor. Önce commit oluşturun ya da değişiklikleri saklayın (stash).',
     rejected: "Uzakta yeni commit'ler var; önce Çek (pull) yapın.",
@@ -72,7 +72,7 @@ export const text = defineText({
     stashAndSwitch: 'Değişiklikleri sakla (stash) ve geç',
     stashAndSwitchDetail: 'Değişiklikler stash listesine alınır; sonra geri uygulayabilirsiniz.',
     dirtyBlocksSwitch: (branch: string) => `Commit edilmemiş değişiklikler geçişi engelliyor: ${branch}`,
-    stashMessageBeforeSwitch: (branch: string) => `GitAtlas-RevRev: ${branch} geçişinden önce`,
+    stashMessageBeforeSwitch: (branch: string) => `GitAtlas-Rev: ${branch} geçişinden önce`,
     stashedNote: 'Değişiklikleriniz saklandı (stash@{0}).',
 
     // ---- dosyalar ----
@@ -220,7 +220,7 @@ export const text = defineText({
     cancelled: 'Cancelled.',
     cancel: 'Cancel',
     conflict: 'There are conflicts: resolve the files and mark them as resolved, or abort the operation.',
-    auth: 'Authentication failed. Set up your Git credentials or connect to GitHub in GitAtlas-RevRev.',
+    auth: 'Authentication failed. Set up your Git credentials or connect to GitHub in GitAtlas-Rev.',
     network: "Couldn't reach the remote. Check your internet connection and the remote URL.",
     dirtyTree: 'Uncommitted changes conflict with this operation. Commit or stash them first.',
     rejected: 'The remote has new commits; pull first.',
@@ -235,7 +235,7 @@ export const text = defineText({
     stashAndSwitch: 'Stash changes and switch',
     stashAndSwitchDetail: 'Your changes go to the stash list; you can apply them again later.',
     dirtyBlocksSwitch: (branch: string) => `Uncommitted changes block switching to ${branch}`,
-    stashMessageBeforeSwitch: (branch: string) => `GitAtlas-RevRev: before switching to ${branch}`,
+    stashMessageBeforeSwitch: (branch: string) => `GitAtlas-Rev: before switching to ${branch}`,
     stashedNote: 'Your changes were stashed (stash@{0}).',
 
     // ---- dosyalar ----

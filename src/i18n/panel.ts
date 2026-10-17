@@ -1,7 +1,7 @@
 // Eklenti tarafı metinleri: panel sağlayıcı, Branch'ler ağacı, durum çubuğu, Explorer rozetleri.
 import { defineText, plural } from './index';
 
-const APP = 'GitAtlas-RevRev';
+const APP = 'GitAtlas-Rev';
 
 export const panelText = defineText({
   tr: {

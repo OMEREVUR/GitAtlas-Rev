@@ -60,19 +60,19 @@ describe('panel metinleri: İngilizce', () => {
 
   it('Explorer rozetleri: tekil/çoğul, rozet metni aynı', () => {
     setLang('en');
-    expect(heatBadge(2, 1)).toEqual({ badge: '●●', tooltip: 'GitAtlas-RevRev: changes very often · 1 commit' });
-    expect(heatBadge(1, 4).tooltip).toBe('GitAtlas-RevRev: changes often · 4 commits');
+    expect(heatBadge(2, 1)).toEqual({ badge: '●●', tooltip: 'GitAtlas-Rev: changes very often · 1 commit' });
+    expect(heatBadge(1, 4).tooltip).toBe('GitAtlas-Rev: changes often · 4 commits');
     const b = computeBadges([file('a', 3), file('b', 1)], 'all', new Map([['a', 2]]));
-    expect(b.get('a')).toMatchObject({ kind: 'pr', badge: '2', tooltip: 'GitAtlas-RevRev: 2 open PRs touch this file (conflict risk)' });
-    expect(b.get('b')?.tooltip).toMatch(/^GitAtlas-RevRev: heat \d\/5 · 1 commit$/);
+    expect(b.get('a')).toMatchObject({ kind: 'pr', badge: '2', tooltip: 'GitAtlas-Rev: 2 open PRs touch this file (conflict risk)' });
+    expect(b.get('b')?.tooltip).toMatch(/^GitAtlas-Rev: heat \d\/5 · 1 commit$/);
   });
 
   it('durum çubuğu', () => {
     setLang('en');
     const t = panelText();
-    expect(t.scanning(42)).toBe('GitAtlas-RevRev: scanning 42%');
-    expect(t.ready(true)).toBe('GitAtlas-RevRev: scan complete · cache up to date');
-    expect(t.readyTooltip(1)).toBe('GitAtlas-RevRev: 1 file · click to open the map');
+    expect(t.scanning(42)).toBe('GitAtlas-Rev: scanning 42%');
+    expect(t.ready(true)).toBe('GitAtlas-Rev: scan complete · cache up to date');
+    expect(t.readyTooltip(1)).toBe('GitAtlas-Rev: 1 file · click to open the map');
     const data: GitHubData = {
       branchCi: [],
       pullRequests: [pr(1, 'x')],
@@ -93,8 +93,8 @@ describe('panel metinleri: İngilizce', () => {
 
 describe('panel metinleri: Türkçe varsayılan korunur', () => {
   it('mevcut Türkçe metinler', () => {
-    expect(heatBadge(2, 7).tooltip).toBe('GitAtlas-RevRev: çok sık değişiyor · 7 commit');
-    expect(panelText().scanning(42)).toBe('GitAtlas-RevRev: taranıyor %42');
+    expect(heatBadge(2, 7).tooltip).toBe('GitAtlas-Rev: çok sık değişiyor · 7 commit');
+    expect(panelText().scanning(42)).toBe('GitAtlas-Rev: taranıyor %42');
     expect(branchDescription(ref('old', { date: NOW - 40 * DAY }), NOW)).toBe('bayat · 5 hafta önce');
   });
 });

@@ -93,7 +93,7 @@ export const text = defineText({
 
     // durum ekranları
     noRepoTitle: 'Bu klasör bir git reposu değil',
-    noRepoText1: 'GitAtlas-RevRev haritayı git geçmişinden çizer. Bu klasörde ',
+    noRepoText1: 'GitAtlas-Rev haritayı git geçmişinden çizer. Bu klasörde ',
     noRepoText2: ' bulunamadı.',
     initRepo: 'Repoyu başlat',
     openOtherFolder: 'Başka klasör aç',
@@ -101,7 +101,7 @@ export const text = defineText({
     noCommitsText: "Harita ilk commit'ten sonra burada oluşur. Dosyaların boyutu ve değişim sıklığı commit'lerden hesaplanır.",
     openScm: 'Kaynak denetimini aç',
     noGitTitle: 'Git bulunamadı',
-    noGitText1: 'GitAtlas-RevRev ',
+    noGitText1: 'GitAtlas-Rev ',
     noGitText2: ' komutunu çalıştıramadı. Git kurulu değilse indir; kuruluysa yolunu ',
     noGitText3: ' ayarında belirt.',
     downloadGit: "Git'i indir",
@@ -233,7 +233,7 @@ export const text = defineText({
     recentCommitsAria: 'Recent commits',
 
     noRepoTitle: 'This folder is not a git repository',
-    noRepoText1: 'GitAtlas-RevRev draws the map from git history. No ',
+    noRepoText1: 'GitAtlas-Rev draws the map from git history. No ',
     noRepoText2: ' was found in this folder.',
     initRepo: 'Initialize repository',
     openOtherFolder: 'Open another folder',
@@ -241,7 +241,7 @@ export const text = defineText({
     noCommitsText: 'The map appears here after the first commit. File sizes and change frequency are computed from commits.',
     openScm: 'Open source control',
     noGitTitle: 'Git not found',
-    noGitText1: 'GitAtlas-RevRev could not run the ',
+    noGitText1: 'GitAtlas-Rev could not run the ',
     noGitText2: ' command. If Git is not installed, download it; if it is, set its path in the ',
     noGitText3: ' setting.',
     downloadGit: 'Download Git',

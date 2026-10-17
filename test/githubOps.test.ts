@@ -346,7 +346,7 @@ describe.skipIf(!bash)('GitHubOpsService (fixture + sahte GitHub API)', () => {
       commands: [
         'git fetch origin +refs/pull/7/head:refs/remotes/origin/pr/7',
         'git switch --no-track -c pr/7 origin/pr/7',
-        'git stash push -u -m "GitAtlas-RevRev: pr/7 geçişinden önce"',
+        'git stash push -u -m "GitAtlas-Rev: pr/7 geçişinden önce"',
         'git switch --no-track -c pr/7 origin/pr/7',
       ],
     });

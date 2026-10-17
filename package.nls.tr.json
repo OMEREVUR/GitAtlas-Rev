@@ -37,7 +37,7 @@
   "config.git.pullStrategy.ask": "Sor",
   "config.git.pullStrategy.merge": "Merge",
   "config.git.pullStrategy.rebase": "Rebase",
-  "config.language": "GitAtlas-RevRev arayüzünün dili. `auto`: VS Code arayüz dili Türkçeyse Türkçe, değilse İngilizce. Menü ve komut adları her zaman VS Code arayüz diline uyar.",
+  "config.language": "GitAtlas-Rev arayüzünün dili. `auto`: VS Code arayüz dili Türkçeyse Türkçe, değilse İngilizce. Menü ve komut adları her zaman VS Code arayüz diline uyar.",
   "config.language.auto": "Otomatik",
   "config.language.en": "English",
   "config.language.tr": "Türkçe"
