@@ -1,6 +1,6 @@
 # GitAtlas-RevRev
 
-*[Türkçe](README.tr.md)*
+*Türkçe açıklama: `README.tr.md`.*
 
 A map that lets you read a repo at a glance. GitAtlas-RevRev draws your repository as a **treemap** in the VS Code side panel: every box is a file, its size is the line count, its color is how often it changes (churn). On top of that come a commit graph, branches, open pull requests on GitHub, a time machine and a contributors panel.
 
