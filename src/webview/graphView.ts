@@ -2,6 +2,8 @@
 import './graph.css';
 import type { CiState, CommitSummary, GitRef, GraphData, GraphRow } from '../types';
 import { formatRelative } from './format';
+import { ciLabel } from './githubBanner';
+import { text } from '../i18n/graph';
 
 export interface GraphViewOptions {
   plain: boolean;                 // true: şerit sütunu gizli ("Sade liste")
@@ -15,8 +17,6 @@ export interface GraphViewOptions {
   /** v3: branch → açık PR'lar. Anahtar: lokal branch adı ya da remote branch'in "origin/" sonrası. */
   prsByBranch?: Map<string, { number: number; ci: CiState; url: string }[]>;
 }
-
-const CI_TEXT: Record<CiState, string> = { success: 'CI geçti', failure: 'CI başarısız', pending: 'CI sürüyor', none: 'CI yok' };
 
 /** Ref'in PR eşlemesindeki anahtarı: lokal ad ya da remote'un ilk "/" sonrası. */
 function prKey(r: GitRef): string | undefined {
@@ -143,14 +143,15 @@ export function renderGraph(el: HTMLElement, graph: GraphData, opts: GraphViewOp
   el.style.setProperty('--rr-g-gw', `${graphW}px`);
 
   // Başlık
+  const t = text();
   const head = h('div', 'rr-g-head rr-g-grid');
   head.setAttribute('aria-hidden', 'true');
   head.append(
-    h('span', 'rr-g-c-graph', showGraph ? 'Graph' : ''),
-    h('span', 'rr-g-c-msg', 'Mesaj'),
-    h('span', 'rr-g-c-author', 'Yazar'),
-    h('span', 'rr-g-c-date', 'Tarih'),
-    h('span', 'rr-g-c-hash', 'Hash'),
+    h('span', 'rr-g-c-graph', showGraph ? t.colGraph : ''),
+    h('span', 'rr-g-c-msg', t.colMessage),
+    h('span', 'rr-g-c-author', t.colAuthor),
+    h('span', 'rr-g-c-date', t.colDate),
+    h('span', 'rr-g-c-hash', t.colHash),
   );
   el.append(head);
 
@@ -158,7 +159,7 @@ export function renderGraph(el: HTMLElement, graph: GraphData, opts: GraphViewOp
   el.append(scroller);
 
   if (list.length === 0) {
-    scroller.append(h('div', 'rr-g-empty', filtered ? 'Filtreyle eşleşen commit yok' : 'Gösterilecek commit yok'));
+    scroller.append(h('div', 'rr-g-empty', filtered ? t.emptyFiltered : t.empty));
     if (graph.hasMore) scroller.append(footer(graph, opts, state, scroller));
     installKeys(el, opts, list, indexOf, state, () => undefined);
     return;
@@ -167,7 +168,7 @@ export function renderGraph(el: HTMLElement, graph: GraphData, opts: GraphViewOp
   const body = h('div', 'rr-g-body');
   body.style.setProperty('height', `${list.length * ROW_H}px`);
   const ol = h('ol', 'rr-g-list');
-  ol.setAttribute('aria-label', "Commit'ler");
+  ol.setAttribute('aria-label', t.commitsAria);
   body.append(ol);
   let svg: SVGSVGElement | null = null;
   const segments = showGraph ? buildSegments(graph) : [];
@@ -313,6 +314,7 @@ function rowItem(
   if (isSel) btn.classList.add('rr-g-selected');
   else if (opts.branchHashes?.has(c.hash)) btn.classList.add('rr-g-inbranch');
 
+  const t = text();
   const refNames = refs.map((r) => r.name);
   const ariaParts = [
     c.message,
@@ -320,7 +322,7 @@ function rowItem(
     formatRelative(c.date, opts.now),
     c.shortHash,
   ];
-  if (isMerge) ariaParts.push(c.parents.length > 2 ? `merge (${c.parents.length} parent)` : 'merge');
+  if (isMerge) ariaParts.push(c.parents.length > 2 ? t.mergeParentsAria(c.parents.length) : t.mergeAria);
   if (isHead) ariaParts.push('HEAD');
   if (refNames.length) ariaParts.push(`ref: ${refNames.join(', ')}`);
   // Bu satırdaki ref'lere bağlı PR'lar (lokal + remote aynı PR'ı iki kez göstermesin).
@@ -336,7 +338,7 @@ function rowItem(
       if (fresh.length) prsByRef.set(r, fresh);
     }
     for (const prs of prsByRef.values()) {
-      for (const p of prs) ariaParts.push(p.ci === 'none' ? `PR #${p.number}` : `PR #${p.number}, ${CI_TEXT[p.ci]}`);
+      for (const p of prs) ariaParts.push(p.ci === 'none' ? `PR #${p.number}` : `PR #${p.number}, ${ciLabel(p.ci)}`);
     }
   }
   btn.setAttribute('aria-label', ariaParts.join(', '));
@@ -354,12 +356,12 @@ function rowItem(
     tag.style.setProperty('--rr-g-lane', color);
     if (r.kind === 'tag') tag.append(icon('codicon-tag'));
     tag.append(h('span', 'rr-g-ref-text', r.name));
-    tag.title = r.kind === 'remote' ? `${r.name} (remote)` : r.kind === 'tag' ? `${r.name} (etiket)` : r.name;
+    tag.title = r.kind === 'remote' ? t.refRemote(r.name) : r.kind === 'tag' ? t.refTag(r.name) : r.name;
     if (r.isHead) tag.classList.add('rr-g-ref-current');
     msg.append(tag);
     for (const p of prsByRef.get(r) ?? []) {
       const chip = h('span', 'rr-g-pr');
-      chip.title = p.ci === 'none' ? `PR #${p.number}` : `PR #${p.number} · ${CI_TEXT[p.ci]}`;
+      chip.title = p.ci === 'none' ? `PR #${p.number}` : `PR #${p.number} · ${ciLabel(p.ci)}`;
       chip.append(h('span', 'rr-g-ref-text', `#${p.number}`));
       if (p.ci !== 'none') {
         const dot = h('span', `rr-g-ci rr-g-ci-${p.ci}`);
@@ -427,18 +429,19 @@ function drawGraph(svg: SVGSVGElement, graph: GraphData, segments: Segment[], fi
 }
 
 function footer(graph: GraphData, opts: GraphViewOptions, state: ViewState, scroller: HTMLElement): HTMLElement {
+  const t = text();
   const f = h('div', 'rr-g-foot');
   if (!graph.hasMore) {
-    f.append(icon('codicon-history'), document.createTextNode(' Geçmişin başı'));
+    f.append(icon('codicon-history'), document.createTextNode(` ${t.historyStart}`));
     return f;
   }
   const btn = h('button', 'rr-g-more');
   btn.type = 'button';
   if (opts.loadingMore) {
     btn.disabled = true;
-    btn.append(icon('codicon-loading codicon-modifier-spin'), document.createTextNode(' Yükleniyor…'));
+    btn.append(icon('codicon-loading codicon-modifier-spin'), document.createTextNode(` ${t.loading}`));
   } else {
-    btn.textContent = "Daha eski commit'leri yükle";
+    btn.textContent = t.loadMore;
     btn.onclick = () => opts.onLoadMore();
     if (typeof IntersectionObserver !== 'undefined') {
       let fired = false;

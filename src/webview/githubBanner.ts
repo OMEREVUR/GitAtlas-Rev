@@ -2,6 +2,8 @@
 import type { CiState, GitHubData, PullRequest, RateLimitInfo } from '../types';
 import type { WebviewToExtension } from '../protocol';
 import { formatNumber, formatRelative } from './format';
+import { locale } from '../i18n';
+import { text } from '../i18n/graph';
 
 /** Dosya → ona dokunan açık PR sayısı. 2+ olanlar çakışma riskidir. */
 export function conflictFiles(prs: readonly PullRequest[]): Map<string, number> {
@@ -12,15 +14,40 @@ export function conflictFiles(prs: readonly PullRequest[]): Map<string, number> 
   return map;
 }
 
-export const CI_LABELS: Record<CiState, string> = {
-  success: 'CI geçti',
-  failure: 'CI başarısız',
-  pending: 'CI sürüyor',
-  none: 'CI yok',
+/** CI durumunun etkin dildeki etiketi ("CI geçti" / "CI passed"). */
+export function ciLabel(ci: CiState): string {
+  const t = text();
+  switch (ci) {
+    case 'success':
+      return t.ciSuccess;
+    case 'failure':
+      return t.ciFailure;
+    case 'pending':
+      return t.ciPending;
+    case 'none':
+      return t.ciNone;
+  }
+}
+
+/** Eski kullanım için: her okumada etkin dile göre (getter'lar). Yeni kodda ciLabel tercih edilir. */
+export const CI_LABELS: Readonly<Record<CiState, string>> = {
+  get success() {
+    return ciLabel('success');
+  },
+  get failure() {
+    return ciLabel('failure');
+  },
+  get pending() {
+    return ciLabel('pending');
+  },
+  get none() {
+    return ciLabel('none');
+  },
 };
 
 /** Açık PR satırı (dosya kartı ve seçim ayrıntısı ortak): tıklayınca PR GitHub'da açılır. */
 export function prRow(pr: PullRequest, post: (msg: WebviewToExtension) => void): HTMLButtonElement {
+  const t = text();
   const title = h('span', 'rr-p-msg', `#${pr.number} ${pr.title}`);
   const dot = h('span', `rr-p-ci-dot is-${pr.ci}`);
   dot.setAttribute('aria-hidden', 'true');
@@ -28,14 +55,14 @@ export function prRow(pr: PullRequest, post: (msg: WebviewToExtension) => void):
     h('span', '', pr.author),
     h('span', 'rr-p-pr-sep', '·'),
     dot,
-    h('span', '', CI_LABELS[pr.ci]),
+    h('span', '', ciLabel(pr.ci)),
   ]);
-  if (pr.isDraft) meta.append(h('span', 'rr-p-tag', 'taslak'));
+  if (pr.isDraft) meta.append(h('span', 'rr-p-tag', t.draft));
   const prIcon = h('span', 'codicon codicon-git-pull-request rr-p-pr-icon');
   prIcon.setAttribute('aria-hidden', 'true');
   const btn = h('button', 'rr-p-pr-row', [prIcon, h('span', 'rr-p-pr-text', [title, meta])]);
   btn.type = 'button';
-  btn.title = `${pr.title}\n${pr.headRef} → ${pr.baseRef}\nGitHub'da aç`;
+  btn.title = `${pr.title}\n${pr.headRef} → ${pr.baseRef}\n${t.openOnGitHub}`;
   btn.addEventListener('click', () => post({ type: 'openUrl', url: pr.url }));
   return btn;
 }
@@ -56,6 +83,7 @@ export function renderGitHubBanner(
   el.setAttribute('role', 'status');
   const status = data?.status;
   const now = Date.now();
+  const t = text();
 
   const hide = (): void => {
     el.replaceChildren();
@@ -75,10 +103,10 @@ export function renderGitHubBanner(
         'info',
         icon('github'),
         h('div', 'rr-p-gh-body', [
-          text("Bu repo GitHub'da değil.", " Yayınlayınca açık PR'lar, çakışma uyarıları ve CI sonuçları haritaya eklenir."),
+          textLine(t.noRemoteTitle, t.noRemoteText),
           actions([
-            button("GitHub'da yayınla", true, () => post({ type: 'githubPublish' })),
-            button('Şimdi değil', false, () => {
+            button(t.publish, true, () => post({ type: 'githubPublish' })),
+            button(t.notNow, false, () => {
               hiddenNoRemote = true;
               hide();
             }),
@@ -92,13 +120,10 @@ export function renderGitHubBanner(
         'info',
         icon('github'),
         h('div', 'rr-p-gh-body', [
-          text(
-            'GitHub katmanı kapalı.',
-            " Bağlanınca açık PR'lar, çakışmalar ve CI sonuçları haritaya eklenir. Token gerekmez; VS Code'daki GitHub oturumun kullanılır.",
-          ),
+          textLine(t.offTitle, t.offText),
           actions([
-            button('GitHub ile bağlan', true, () => post({ type: 'githubConnect' })),
-            button('Şimdi değil', false, () => post({ type: 'githubDismiss' })),
+            button(t.connect, true, () => post({ type: 'githubConnect' })),
+            button(t.notNow, false, () => post({ type: 'githubDismiss' })),
           ]),
         ]),
       );
@@ -106,25 +131,26 @@ export function renderGitHubBanner(
     case 'connecting': {
       const bar = h('span', 'rr-p-gh-progress', [h('span', 'rr-p-gh-progress-fill')]);
       bar.setAttribute('aria-hidden', 'true');
-      return show('neutral', h('div', 'rr-p-gh-body', [h('span', '', "Açık PR'lar ve CI sonuçları alınıyor…"), bar]));
+      return show('neutral', h('div', 'rr-p-gh-body', [h('span', '', t.connecting), bar]));
     }
 
     case 'connected': {
       const prs = data?.pullRequests ?? [];
       const risky = [...conflictFiles(prs).values()].filter((n) => n >= 2).length;
-      const parts = [status.repo, `${formatNumber(prs.length)} açık PR`];
-      if (risky > 0) parts.push(`${formatNumber(risky)} dosyada çakışma riski`);
+      const parts = [status.repo, t.openPrs(prs.length, formatNumber(prs.length))];
+      if (risky > 0) parts.push(t.conflictRisk(risky, formatNumber(risky)));
+      const rel = formatRelative(status.fetchedAt, now);
 
       const refresh = h('button', 'rr-p-icon-btn', [icon('refresh')]);
       refresh.type = 'button';
-      refresh.setAttribute('aria-label', 'GitHub verisini yenile');
-      refresh.title = `GitHub verisini yenile (${formatRelative(status.fetchedAt, now)} güncellendi)`;
+      refresh.setAttribute('aria-label', t.refreshAria);
+      refresh.title = t.refreshTitle(rel);
       refresh.addEventListener('click', () => post({ type: 'githubRefresh' }));
 
       const line = h('div', 'rr-p-gh-line', [
         icon('github'),
-        h('span', 'rr-p-gh-summary', [strong('GitHub bağlandı'), document.createTextNode(` · ${parts.join(' · ')}`)]),
-        h('span', 'rr-p-gh-time', `${formatRelative(status.fetchedAt, now)} güncellendi`),
+        h('span', 'rr-p-gh-summary', [strong(t.connected), document.createTextNode(` · ${parts.join(' · ')}`)]),
+        h('span', 'rr-p-gh-time', t.updated(rel)),
         refresh,
       ]);
 
@@ -133,27 +159,26 @@ export function renderGitHubBanner(
       const slowed = status.intervalMin > status.baseIntervalMin;
       if (!lowLimit && !slowed) return show('neutral', line);
 
-      let msg = rl ? ` ${formatNumber(rl.remaining)} / ${formatNumber(rl.limit)} kaldı.` : '';
-      if (slowed) msg += ` Yenileme aralığı ${status.baseIntervalMin} dakikadan ${status.intervalMin} dakikaya çıkarıldı.`;
+      let msg = rl ? t.remaining(formatNumber(rl.remaining), formatNumber(rl.limit)) : '';
+      if (slowed) msg += t.slowed(status.baseIntervalMin, status.intervalMin);
       if (rl) msg += ` ${resetText(rl)}`;
-      const warn = h('div', 'rr-p-gh-line rr-p-gh-warn', [icon('warning'), text('GitHub istek limiti azaldı:', msg)]);
+      const warn = h('div', 'rr-p-gh-line rr-p-gh-warn', [icon('warning'), textLine(t.rateLow, msg)]);
       return show('warning', h('div', 'rr-p-gh-stack', [line, warn]));
     }
 
     case 'stale': {
-      const age = status.fetchedAt > 0 ? formatRelative(status.fetchedAt, now).replace(/önce$/, 'önceki') : '';
-      const shown = age ? ` PR ve CI bilgileri ${age} hâliyle gösteriliyor.` : ' PR ve CI bilgileri son alınan hâliyle gösteriliyor.';
+      const shown = status.fetchedAt > 0 ? t.shownAsOf(formatRelative(status.fetchedAt, now)) : t.shownLast;
       let body: HTMLElement;
       const acts: HTMLButtonElement[] = [];
       if (status.reason === 'sessionExpired') {
-        body = text('GitHub oturumu sona erdi.', `${shown} Git katmanı güncel.`);
-        acts.push(button('Yeniden oturum aç', true, () => post({ type: 'githubConnect' })));
+        body = textLine(t.sessionExpired, `${shown}${t.gitUpToDate}`);
+        acts.push(button(t.signInAgain, true, () => post({ type: 'githubConnect' })));
       } else if (status.reason === 'offline') {
-        body = text("GitHub'a ulaşılamıyor.", `${shown} Git katmanı güncel.`);
-        acts.push(button('Yeniden dene', false, () => post({ type: 'githubRefresh' })));
+        body = textLine(t.offline, `${shown}${t.gitUpToDate}`);
+        acts.push(button(t.retry, false, () => post({ type: 'githubRefresh' })));
       } else {
         const reset = status.rateLimit ? ` ${resetText(status.rateLimit)}` : '';
-        body = text('GitHub istek limiti doldu.', `${shown}${reset}`);
+        body = textLine(t.rateExceeded, `${shown}${reset}`);
       }
       const children: HTMLElement[] = [body];
       if (acts.length > 0) children.push(actions(acts));
@@ -164,18 +189,18 @@ export function renderGitHubBanner(
       if (hiddenNotGitHub.has(status.remoteUrl)) return hide();
       const close = h('button', 'rr-p-icon-btn', [icon('close')]);
       close.type = 'button';
-      close.setAttribute('aria-label', 'Bilgiyi kapat');
-      close.title = 'Bilgiyi kapat';
+      close.setAttribute('aria-label', t.dismissInfo);
+      close.title = t.dismissInfo;
       close.addEventListener('click', () => {
         hiddenNotGitHub.add(status.remoteUrl);
         hide();
         post({ type: 'githubDismiss' });
       });
       const msg = h('span', 'rr-p-gh-text', [
-        strong('origin bir GitHub reposu değil'),
+        strong(t.notGitHub),
         document.createTextNode(' '),
         h('code', 'rr-p-code', status.remoteUrl),
-        document.createTextNode('. GitHub katmanı kapalı kalır; harita, graph ve branch paneli normal çalışır.'),
+        document.createTextNode(t.notGitHubText),
       ]);
       return show('neutral', icon('info'), h('div', 'rr-p-gh-body', [msg]), close);
     }
@@ -185,19 +210,20 @@ export function renderGitHubBanner(
         'error',
         icon('error'),
         h('div', 'rr-p-gh-body', [
-          text('GitHub verisi alınamadı.', status.message ? ` ${status.message}` : ''),
-          actions([button('Yeniden dene', false, () => post({ type: 'githubRefresh' }))]),
+          // status.message eklentiden (githubLayer) gelir; dili orada belirlenir.
+          textLine(t.errorTitle, status.message ? ` ${status.message}` : ''),
+          actions([button(t.retry, false, () => post({ type: 'githubRefresh' }))]),
         ]),
       );
   }
 }
 
 function resetText(rl: RateLimitInfo): string {
-  const t = new Date(rl.resetAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-  return `Limit ${t} itibarıyla sıfırlanır.`;
+  const time = new Date(rl.resetAt).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
+  return text().resetAt(time);
 }
 
-function text(bold: string, rest: string): HTMLElement {
+function textLine(bold: string, rest: string): HTMLElement {
   return h('span', 'rr-p-gh-text', [strong(bold), document.createTextNode(rest)]);
 }
 

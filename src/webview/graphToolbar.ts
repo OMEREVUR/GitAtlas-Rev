@@ -1,6 +1,8 @@
 // Graph filtre araç çubuğu: Branch / Yazar seçicileri, arama kutusu ve "Sade liste" düğmesi.
 // Yeniden çağrıldığında DOM'u yeniden kurmaz; yalnızca değerleri günceller (arama kutusunun odağı korunur).
 import type { GitRef } from '../types';
+import { getLang, type Lang } from '../i18n';
+import { text } from '../i18n/graph';
 
 export interface GraphFilters {
   branch?: string;
@@ -27,13 +29,15 @@ interface ToolbarState {
   branchKey: string;
   authorKey: string;
   timer: number | undefined;
+  /** Kurulduğu dil; değişirse araç çubuğu yeniden kurulur. */
+  lang: Lang;
 }
 
 const states = new WeakMap<HTMLElement, ToolbarState>();
 
 export function renderGraphToolbar(el: HTMLElement, opts: GraphToolbarOptions): void {
   let st = states.get(el);
-  if (!st || !el.contains(st.search)) st = build(el, opts);
+  if (!st || !el.contains(st.search) || st.lang !== getLang()) st = build(el, opts);
   st.opts = opts;
 
   const branchKey = JSON.stringify(opts.refs.filter((r) => r.kind !== 'tag').map((r) => [r.kind, r.name]));
@@ -57,36 +61,37 @@ export function renderGraphToolbar(el: HTMLElement, opts: GraphToolbarOptions): 
 
 function build(el: HTMLElement, opts: GraphToolbarOptions): ToolbarState {
   el.classList.add('rr-p-gtb');
+  const t = text();
 
   const branch = h('select', 'rr-p-select');
   const author = h('select', 'rr-p-select');
 
   const searchId = `rr-p-gsearch-${Math.random().toString(36).slice(2, 8)}`;
-  const label = h('label', 'rr-visually-hidden', 'Commit, dosya ya da hash ara');
+  const label = h('label', 'rr-visually-hidden', t.searchLabel);
   label.htmlFor = searchId;
   const search = h('input', 'rr-p-search-input');
   search.type = 'search';
   search.id = searchId;
-  search.placeholder = 'Commit, dosya, hash';
+  search.placeholder = t.searchPlaceholder;
   search.autocomplete = 'off';
   search.spellcheck = false;
   const searchIcon = h('span', 'codicon codicon-search rr-p-search-icon');
   searchIcon.setAttribute('aria-hidden', 'true');
 
-  const plain = h('button', 'rr-p-toggle', 'Sade liste');
+  const plain = h('button', 'rr-p-toggle', t.plainList);
   plain.type = 'button';
 
   const row = h('div', 'rr-p-gtb-row', [
-    h('label', 'rr-p-field', [h('span', 'rr-p-field-label', 'Branch'), branch]),
-    h('label', 'rr-p-field', [h('span', 'rr-p-field-label', 'Yazar'), author]),
+    h('label', 'rr-p-field', [h('span', 'rr-p-field-label', t.branch), branch]),
+    h('label', 'rr-p-field', [h('span', 'rr-p-field-label', t.author), author]),
     h('div', 'rr-p-search', [searchIcon, label, search]),
     plain,
   ]);
   row.setAttribute('role', 'toolbar');
-  row.setAttribute('aria-label', 'Graph filtreleri');
+  row.setAttribute('aria-label', t.filtersAria);
   el.replaceChildren(row);
 
-  const st: ToolbarState = { opts, branch, author, search, plain, branchKey: '', authorKey: '', timer: undefined };
+  const st: ToolbarState = { opts, branch, author, search, plain, branchKey: '', authorKey: '', timer: undefined, lang: getLang() };
   states.set(el, st);
 
   const emit = (patch: Partial<GraphFilters>): void => st.opts.onChange({ ...st.opts.filters, ...patch });
@@ -120,10 +125,11 @@ function fillBranches(select: HTMLSelectElement, refs: readonly GitRef[]): void 
   const byName = (a: GitRef, b: GitRef): number => a.name.localeCompare(b.name);
   const local = refs.filter((r) => r.kind === 'local').sort(byName);
   const remote = refs.filter((r) => r.kind === 'remote').sort(byName);
-  const nodes: Array<HTMLOptionElement | HTMLOptGroupElement> = [new Option('Tümü', '')];
+  const t = text();
+  const nodes: Array<HTMLOptionElement | HTMLOptGroupElement> = [new Option(t.all, '')];
   for (const [label, list] of [
-    ['Lokal', local],
-    ['Remote', remote],
+    [t.local, local],
+    [t.remote, remote],
   ] as const) {
     if (list.length === 0) continue;
     const group = h('optgroup', '');
@@ -135,7 +141,7 @@ function fillBranches(select: HTMLSelectElement, refs: readonly GitRef[]): void 
 }
 
 function fillAuthors(select: HTMLSelectElement, authors: readonly string[]): void {
-  select.replaceChildren(new Option('Herkes', ''), ...authors.map((a) => new Option(a, a)));
+  select.replaceChildren(new Option(text().everyone, ''), ...authors.map((a) => new Option(a, a)));
 }
 
 /** Listede olmayan bir değer seçiliyse (ör. silinmiş branch) onu da gösterir, sessizce "Tümü"ye düşmez. */

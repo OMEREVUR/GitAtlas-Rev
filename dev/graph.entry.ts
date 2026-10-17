@@ -6,8 +6,12 @@ import { renderGraph } from '../src/webview/graphView';
 import { renderTreemap } from '../src/webview/treemap';
 import { layoutGraph } from '../src/model/graphLayout';
 import type { CiState, CommitSummary, FileStat, GitRef, GraphData } from '../src/types';
+import { parseLang, setLang } from '../src/i18n';
 
 const params = new URLSearchParams(location.search);
+// ?lang=en|tr (varsayılan tr); ilk render'dan önce.
+const lang = parseLang(params.get('lang')) ?? 'tr';
+setLang(lang);
 const theme = params.get('theme') === 'light' ? 'vscode-light' : 'vscode-dark';
 document.body.classList.remove('vscode-dark', 'vscode-light');
 document.body.classList.add(theme);
@@ -24,8 +28,13 @@ const FILES = [
   'src/panel/html.ts', 'src/webview/main.ts', 'src/webview/treemap.ts', 'src/webview/graphView.ts', 'src/webview/fileCard.ts',
   'src/webview/commitFeed.ts', 'src/webview/base.css', 'test/logParser.test.ts', 'test/graphLayout.test.ts', 'README.md', 'package.json',
 ];
-const VERBS = ['ekle', 'düzelt', 'sadeleştir', 'hızlandır', 'yeniden adlandır', 'test yaz', 'belgele'];
-const TOPICS = ['treemap etiketleri', 'cache süresi', 'numstat ayrıştırma', 'rozet rengi', 'graph şeritleri', 'branch paneli', 'yol çubuğu', 'durum çubuğu', 'tooltip konumu'];
+// Sahte commit mesajları da dile göre (İngilizce ekran görüntüsünde Türkçe kelime kalmasın).
+const VERBS = lang === 'en'
+  ? ['add', 'fix', 'simplify', 'speed up', 'rename', 'test', 'document']
+  : ['ekle', 'düzelt', 'sadeleştir', 'hızlandır', 'yeniden adlandır', 'test yaz', 'belgele'];
+const TOPICS = lang === 'en'
+  ? ['treemap labels', 'cache lifetime', 'numstat parsing', 'badge color', 'graph lanes', 'branch panel', 'breadcrumb', 'status bar', 'tooltip position']
+  : ['treemap etiketleri', 'cache süresi', 'numstat ayrıştırma', 'rozet rengi', 'graph şeritleri', 'branch paneli', 'yol çubuğu', 'durum çubuğu', 'tooltip konumu'];
 
 function rand(seed: number): () => number {
   let x = seed;

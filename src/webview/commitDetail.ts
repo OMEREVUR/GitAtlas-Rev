@@ -3,6 +3,7 @@ import type { CommitSummary, GitRef, PullRequest } from '../types';
 import type { WebviewToExtension } from '../protocol';
 import { prRow } from './githubBanner';
 import { baseName, formatDate, formatNumber, formatRelative } from './format';
+import { text } from '../i18n/graph';
 
 export type GraphSelection =
   | { kind: 'commit'; commit: CommitSummary; refs: GitRef[] }
@@ -65,12 +66,13 @@ export function renderCommitDetail(
   const prevScroll = el.dataset.selKey === key ? el.scrollTop : 0;
   el.dataset.selKey = key;
 
+  const t = text();
   const host = h('div', 'rr-p-minimap');
   const count = selection
-    ? `${formatNumber(opts.touchedCount)} / ${formatNumber(opts.totalCount)} dosya`
-    : `${formatNumber(opts.totalCount)} dosya`;
+    ? t.filesOf(formatNumber(opts.touchedCount), opts.totalCount, formatNumber(opts.totalCount))
+    : t.files(opts.totalCount, formatNumber(opts.totalCount));
   const mapSection = h('section', 'rr-p-detail-map', [
-    h('div', 'rr-p-detail-map-head', [h('h3', 'rr-p-heading', 'HARİTADA'), h('span', 'rr-p-meta', count)]),
+    h('div', 'rr-p-detail-map-head', [h('h3', 'rr-p-heading', t.onMap), h('span', 'rr-p-meta', count)]),
     host,
   ]);
 
@@ -78,12 +80,8 @@ export function renderCommitDetail(
   if (!selection) {
     body = [
       h('div', 'rr-p-detail-empty', [
-        h('div', 'rr-p-card-empty-title', 'Bir commit ya da branch seç'),
-        h(
-          'div',
-          'rr-p-card-empty-text',
-          "Graph'ta bir satıra ya da Branch'ler panelinde bir branch'e tıkla; dokunduğu dosyalar haritada yanar.",
-        ),
+        h('div', 'rr-p-card-empty-title', t.emptyTitle),
+        h('div', 'rr-p-card-empty-text', t.emptyText),
       ]),
     ];
   } else if (selection.kind === 'commit') {
@@ -98,10 +96,11 @@ export function renderCommitDetail(
 }
 
 function header(kicker: string, title: string, meta: string, opts: CommitDetailOptions, extra: HTMLElement[] = []): HTMLElement {
+  const t = text();
   const close = h('button', 'rr-p-icon-btn', [icon('close')]);
   close.type = 'button';
-  close.setAttribute('aria-label', 'Seçimi kaldır');
-  close.title = 'Seçimi kaldır';
+  close.setAttribute('aria-label', t.clearSelection);
+  close.title = t.clearSelection;
   close.addEventListener('click', () => opts.onClear());
 
   const titleEl = h('h2', 'rr-p-detail-title', title);
@@ -117,6 +116,7 @@ function commitBody(
   post: (msg: WebviewToExtension) => void,
   opts: CommitDetailOptions,
 ): HTMLElement[] {
+  const t = text();
   const isMerge = commit.parents.length > 1;
   const extra: HTMLElement[] = [];
   if (refs.length > 0) extra.push(h('div', 'rr-p-reftags', refs.map(refTag)));
@@ -131,33 +131,33 @@ function commitBody(
 
   const files =
     commit.files.length === 0
-      ? h('div', 'rr-p-muted', isMerge ? "Merge commit'i: değişiklikler parent'larda görünür." : 'Bu commit dosya değiştirmiyor.')
+      ? h('div', 'rr-p-muted', isMerge ? t.mergeNoFiles : t.noFiles)
       : fileList(commit.files, (f) => {
           const diff = h('button', 'rr-p-btn rr-p-btn-secondary rr-p-btn-small', 'Diff');
           diff.type = 'button';
-          diff.setAttribute('aria-label', `${baseName(f.path)} diff'ini gör`);
+          diff.setAttribute('aria-label', t.viewDiff(baseName(f.path)));
           diff.addEventListener('click', () => post({ type: 'openDiff', path: f.path, hash: commit.hash }));
           return diff;
         });
 
-  const show = primaryButton('Haritada aç', opts.onShowInMap);
-  const copy = h('button', 'rr-p-btn rr-p-btn-secondary', "Hash'i kopyala");
+  const show = primaryButton(t.showInMap, opts.onShowInMap);
+  const copy = h('button', 'rr-p-btn rr-p-btn-secondary', t.copyHash);
   copy.type = 'button';
   let resetTimer: number | undefined;
   copy.addEventListener('click', () => {
-    const done = (text: string): void => {
-      copy.textContent = text;
+    const done = (label: string): void => {
+      copy.textContent = label;
       window.clearTimeout(resetTimer);
-      resetTimer = window.setTimeout(() => (copy.textContent = "Hash'i kopyala"), COPIED_MS);
+      resetTimer = window.setTimeout(() => (copy.textContent = t.copyHash), COPIED_MS);
     };
     const clip = navigator.clipboard as Clipboard | undefined;
     if (!clip) {
-      done('Kopyalanamadı');
+      done(t.copyFailed);
       return;
     }
     clip.writeText(commit.hash).then(
-      () => done('Kopyalandı'),
-      () => done('Kopyalanamadı'),
+      () => done(t.copied),
+      () => done(t.copyFailed),
     );
   });
   copy.setAttribute('aria-live', 'polite');
@@ -172,33 +172,34 @@ function branchBody(
   post: (msg: WebviewToExtension) => void,
   opts: CommitDetailOptions,
 ): HTMLElement[] {
-  const kind = ref.kind === 'local' ? 'BRANCH · LOKAL' : ref.kind === 'remote' ? 'BRANCH · REMOTE' : 'ETİKET';
+  const t = text();
+  const kind = ref.kind === 'local' ? t.kickerLocal : ref.kind === 'remote' ? t.kickerRemote : t.kickerTag;
   const kicker = `${kind}${ref.isHead ? ' · HEAD' : ''}`;
 
   const meta: string[] = [];
   if (ref.ahead !== undefined || ref.behind !== undefined) {
     meta.push(`↑${ref.ahead ?? 0} ↓${ref.behind ?? 0}${ref.compareTo ? ` ${ref.compareTo}` : ''}`);
   }
-  if (ref.date > 0) meta.push(`son: ${formatRelative(ref.date, opts.now)}`);
+  if (ref.date > 0) meta.push(t.lastCommit(formatRelative(ref.date, opts.now)));
   if (ref.author) meta.push(ref.author);
 
   const extra: HTMLElement[] = [];
   if (ref.date > 0 && opts.now - ref.date > STALE_MS) {
-    const stale = h('span', 'rr-p-tag', 'bayat');
-    stale.title = '30 günden uzun süredir commit yok';
+    const stale = h('span', 'rr-p-tag', t.stale);
+    stale.title = t.staleTitle;
     extra.push(h('div', 'rr-p-reftags', [stale]));
   }
   const head = header(kicker, ref.name, meta.join(' · '), opts, extra);
 
   const rows = aggregateFiles(commits);
-  const files = rows.length === 0 ? h('div', 'rr-p-muted', "Bu branch'in kendi commit'i yok.") : fileList(rows);
+  const files = rows.length === 0 ? h('div', 'rr-p-muted', t.branchNoOwn) : fileList(rows);
 
   return [
     head,
     ...prList(prsForRefs([ref], opts), post),
-    h('div', 'rr-p-detail-count', `${formatNumber(commits.length)} commit`),
+    h('div', 'rr-p-detail-count', t.commits(commits.length, formatNumber(commits.length))),
     filesSection(files),
-    h('div', 'rr-p-actions', [primaryButton('Haritada aç', opts.onShowInMap)]),
+    h('div', 'rr-p-actions', [primaryButton(t.showInMap, opts.onShowInMap)]),
   ];
 }
 
@@ -221,7 +222,7 @@ function prList(prs: readonly PullRequest[], post: (msg: WebviewToExtension) => 
 }
 
 function filesSection(content: HTMLElement): HTMLElement {
-  return h('section', 'rr-p-section', [h('h3', 'rr-p-heading', 'DOKUNDUĞU DOSYALAR'), content]);
+  return h('section', 'rr-p-section', [h('h3', 'rr-p-heading', text().touchedFiles), content]);
 }
 
 function fileList(rows: readonly FileRow[], trailing?: (f: FileRow) => HTMLElement): HTMLElement {
@@ -245,7 +246,8 @@ function fileList(rows: readonly FileRow[], trailing?: (f: FileRow) => HTMLEleme
     }),
   );
   if (rows.length > FILE_LIMIT) {
-    list.append(h('li', 'rr-p-muted rr-p-file-more', `+${formatNumber(rows.length - FILE_LIMIT)} dosya daha`));
+    const more = rows.length - FILE_LIMIT;
+    list.append(h('li', 'rr-p-muted rr-p-file-more', text().moreFiles(more, formatNumber(more))));
   }
   return list;
 }
