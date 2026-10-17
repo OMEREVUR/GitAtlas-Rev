@@ -1,60 +1,65 @@
 # GitAtlas-RevRev
 
-Repoyu tek bakışta okutan harita. GitAtlas-RevRev, VS Code'un yan panelinde reponu bir **treemap** olarak çizer: her kutu bir dosya, kutunun boyutu satır sayısı, rengi ne sık değiştiği (churn). Üstüne commit graph'ı, branch'ler, GitHub'daki açık PR'lar, zaman makinesi ve katkı paneli biner.
+*[Türkçe](README.tr.md)*
 
-## Özellikler
+A map that lets you read a repo at a glance. GitAtlas-RevRev draws your repository as a **treemap** in the VS Code side panel: every box is a file, its size is the line count, its color is how often it changes (churn). On top of that come a commit graph, branches, open pull requests on GitHub, a time machine and a contributors panel.
 
-**Harita (v1)**
-- Repo treemap'i: klasörler iç içe kutular; klasör başlığına tıklayıp içine inilir, Backspace ile çıkılır.
-- Zaman filtresi: 7 gün / 30 gün / tümü.
-- Dosya kartı: son commit'ler, "Dosyayı aç", her commit için "Diff".
-- Son commit'ler akışı: bir commit'e tıklayınca dokunduğu dosyalar haritada yanar.
-- Explorer rozeti: sık değişen dosyaların yanında ●● / ●; panel kapalıyken de görünür.
-- Harita düzenleyici alanında sekme olarak da açılabilir: **GitAtlas-RevRev: Haritayı düzenleyicide aç**.
+The interface is available in **English** and **Turkish**. It follows the VS Code display language by default; change it with the `gitatlas-revrev.language` setting.
 
-**Graph ve branch'ler (v2)**
-- Commit graph: branch'ler renkli şeritler, merge'ler içi boş noktalar. Branch, yazar, tarih ve metin (mesaj, dosya, hash) filtresi; kaydırdıkça daha eski commit'ler yüklenir.
-- Branch'ler paneli: lokal ve remote branch'ler, ahead/behind, son dokunma; 30 günden uzun süredir dokunulmayanlar "bayat".
-- Graph'ta ya da Branch'ler panelinde seçilen commit/branch'in dosyaları haritada yanar.
+## Features
 
-**GitHub katmanı (v3)**
-- **PR çakışma uyarısı:** aynı dosyaya 2+ açık PR dokunuyorsa kutu mor kesikli çerçeveyle işaretlenir; dosya kartında PR'lar listelenir; Explorer'da PR sayısı rozeti görünür.
-- PR ve CI rozetleri graph'ta ve Branch'ler panelinde.
-- Token gerekmez: VS Code'un yerleşik GitHub oturumu kullanılır (**GitAtlas-RevRev: GitHub ile bağlan**). origin GitHub değilse katman sessizce kapalı kalır.
+**Map**
+- Repo treemap: folders are nested boxes; click a folder header to drill in, Backspace to go back up.
+- Time range: 7 days / 30 days / all.
+- File card: recent commits, "Open file", and a "Diff" for every commit.
+- Recent commits feed: click a commit and the files it touched light up on the map.
+- Explorer badges: ●● / ● next to frequently changed files, even while the panel is closed.
+- The map can also be opened as an editor tab: **GitAtlas-RevRev: Open map in editor**.
 
-**Zaman makinesi ve katkı paneli (v4)**
-- Zaman makinesi: kaydırıcıyla ya da oynat düğmesiyle repoyu geçmiş bir tarihte gör; ısı o tarihten önceki 7 günün değişimi, o tarihte henüz olmayan dosyalar kesik çerçeveli.
-- Katkı paneli: modül sahipliği ("tek kişiye bağlı" uyarısıyla), haftalık ritim, "bu dosyayı en iyi kim bilir", yazarlar. Aynı kişinin farklı e-postaları `.mailmap` ile birleşir.
+**Graph and branches**
+- Commit graph: branches as colored lanes, merges as hollow dots. Filter by branch, author, date and text (message, file, hash); older commits load as you scroll.
+- Branches view: local and remote branches, ahead/behind, last touched; branches untouched for more than 30 days are marked "stale".
+- Select a commit or branch in the graph or the Branches view and its files light up on the map.
 
-**Değişiklikler: git komutu yazmadan (v5)**
-- **Değişiklikler** sekmesi: değişen dosyaları onay kutularıyla tek tek ya da hepsini commit'e ekle/çıkar, diff'e bak, değişikliği geri al.
-- Commit kutusu: tür seçici (feat, fix…), özet sayacı, "Commit ve gönder", son commit'e ekleme (amend), son commit'i geri alma; altında çalışacak git komutu görünür.
-- Her sekmede eşitleme çubuğu: Getir, Çek, Gönder (yeni branch'te "Yayınla"). Pull önce fast-forward dener, olmazsa merge mi rebase mi diye sorar.
-- Branch'ler panelinde sağ tık: geç, yeni branch, birleştir, yeniden adlandır, sil. Saklananlar (stash): sakla, uygula, sil. Çakışmada "Çözüldü / Devam et / İptal et".
-- GitHub bağlıysa **Pull request'ler**: bu branch'ten PR aç (gerekirse önce gönderir), PR'ı birleştir (merge/squash/rebase), PR branch'ine geç; "Benim PR'larım" ve "Review bekleyenler".
-- Riskli her işlem önce onay ister; komutlar ve çıktıları "GitAtlas-RevRev Git" çıktı kanalında.
+**GitHub layer**
+- **PR conflict warning:** when 2+ open PRs touch the same file, its box gets a purple dashed frame; the file card lists the PRs; the Explorer shows a PR count badge.
+- PR and CI badges in the graph and the Branches view.
+- No token needed: your built-in VS Code GitHub session is used (**GitAtlas-RevRev: Connect to GitHub**). If `origin` is not on GitHub, the layer simply stays off.
 
-## Ayarlar
+**Time machine and contributors**
+- Time machine: use the slider or the play button to see the repo at a past date; heat is the change in the 7 days before that date, and files that did not exist yet have a dashed outline.
+- Contributors panel: module ownership (with a "single owner" warning), weekly rhythm, "who knows this file best", authors. Multiple emails of the same person are merged via `.mailmap`.
 
-| Ayar | Varsayılan | Açıklama |
+**Changes: git without typing commands**
+- **Changes** tab: stage or unstage changed files one by one or all at once with checkboxes, view the diff, discard a change.
+- Commit box: type picker (feat, fix…), summary counter, "Commit & push", amend last commit, undo last commit; the git command that will run is shown below.
+- Sync bar on every tab: Fetch, Pull, Push ("Publish" on a new branch). Pull tries fast-forward first and asks merge or rebase if that is not possible.
+- Right-click in the Branches view: switch, new branch, merge, rename, delete. Stashes: stash, apply, drop. During a conflict: "Mark resolved / Continue / Abort".
+- When connected to GitHub, **Pull requests**: open a PR from this branch (pushes first if needed), merge a PR (merge/squash/rebase), check out a PR branch; "My pull requests" and "Review requested".
+- Every risky action asks for confirmation first; commands and their output are in the "GitAtlas-RevRev Git" output channel.
+
+## Settings
+
+| Setting | Default | Description |
 | --- | --- | --- |
-| `gitatlas-revrev.ignore` | `[]` | Haritadan ve rozetlerden hariç tutulacak ek glob desenleri. `node_modules`, `dist`, `out`, `build`, `*.lock`, `package-lock.json`, `*.min.js` zaten hariç. |
-| `gitatlas-revrev.defaultRange` | `30d` | Panel açıldığında seçili zaman aralığı. |
-| `gitatlas-revrev.graph.initialCommits` | `500` | Graph'ta ilk yüklenecek commit sayısı. |
-| `gitatlas-revrev.explorer.badges` | `hot` | Explorer rozetleri: `hot` (●● / ●), `all` (1–5 ısı), `off`. |
-| `gitatlas-revrev.github.enabled` | `true` | GitHub katmanı. |
-| `gitatlas-revrev.github.refreshInterval` | `2` | GitHub yenileme aralığı (dakika); yalnızca panel açıkken, limit azalınca otomatik uzar. |
-| `gitatlas-revrev.git.pullStrategy` | `ask` | Pull fast-forward olmazsa: `ask` (sor), `merge`, `rebase`. |
-| `gitatlas-revrev.git.path` | `""` | Git yolu; boşsa VS Code'un `git.path` ayarı ya da PATH'teki `git`. |
+| `gitatlas-revrev.language` | `auto` | Interface language: `auto` (follows VS Code), `en`, `tr`. |
+| `gitatlas-revrev.ignore` | `[]` | Extra glob patterns to exclude from the map and badges. `node_modules`, `dist`, `out`, `build`, `*.lock`, `package-lock.json`, `*.min.js` are already excluded. |
+| `gitatlas-revrev.defaultRange` | `30d` | Time range selected when the panel opens. |
+| `gitatlas-revrev.graph.initialCommits` | `500` | Number of commits loaded first in the graph. |
+| `gitatlas-revrev.explorer.badges` | `hot` | Explorer badges: `hot` (●● / ●), `all` (heat 1–5), `off`. |
+| `gitatlas-revrev.github.enabled` | `true` | GitHub layer. |
+| `gitatlas-revrev.github.refreshInterval` | `2` | GitHub refresh interval (minutes); only while the panel is open, backs off automatically when the rate limit runs low. |
+| `gitatlas-revrev.git.pullStrategy` | `ask` | When a pull cannot fast-forward: `ask`, `merge`, `rebase`. |
+| `gitatlas-revrev.git.path` | `""` | Path to git; if empty, VS Code's `git.path` setting or `git` on PATH. |
 
-## Gizlilik
+## Privacy
 
-- GitAtlas-RevRev'in **kendi sunucusu yoktur**; hiçbir veri dışarı gönderilmez.
-- Git verisi yalnızca senin makinende, yerel `git` komutlarıyla okunur; Değişiklikler sekmesindeki işlemler de yerel `git` ile yapılır (pre-commit hook'ların çalışır); sonuçlar VS Code'un eklenti depolama alanında (globalStorage) repo başına bir dosyada cache'lenir.
-- Push/pull için önce git'in kendi kimlik bilgileri kullanılır; başarısız olursa ve GitHub'a bağlıysan bir kez VS Code GitHub oturumuyla denenir (token diske yazılmaz, loglanmaz).
-- GitHub katmanı yalnızca sen bağlandığında çalışır. İstekler doğrudan `api.github.com`'a, VS Code'un GitHub oturumuyla gider; token GitAtlas-RevRev tarafından saklanmaz. Çekilen PR/CI özeti yine yalnızca yerelde cache'lenir.
+- GitAtlas-RevRev has **no server of its own**; no data is sent anywhere.
+- Git data is read only on your machine with local `git` commands; actions in the Changes tab also run through local `git` (your pre-commit hooks run). Results are cached in VS Code's extension storage (globalStorage), one file per repo.
+- Push/pull first use git's own credentials; if that fails and you are connected to GitHub, it retries once with your VS Code GitHub session (the token is never written to disk or logged).
+- The GitHub layer runs only after you connect. Requests go directly to `api.github.com` with your VS Code GitHub session; GitAtlas-RevRev does not store the token. The fetched PR/CI summary is also cached only locally.
 
-## Geliştirme
+## Development
 
 ```
 npm install
@@ -63,4 +68,4 @@ npm test             # vitest
 npm run typecheck
 ```
 
-VS Code'da **F5** ile Extension Development Host açılır. Ayrıntılar ve diğer komutlar için `CLAUDE.md`'ye bak.
+Press **F5** in VS Code to open the Extension Development Host. See `CLAUDE.md` for details and other commands.
