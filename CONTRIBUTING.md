@@ -26,6 +26,7 @@ Useful extras:
 - `npm run fixture` creates a small deterministic test repository and prints its path.
 - `npm run preview -- <repo> --lang en` renders the webview with real data from `<repo>` and saves headless Chrome screenshots to `dev/screenshots/`.
 - `bash scripts/make-demo.sh` creates the larger demo repository used for the Marketplace screenshots.
+- `make vsix` typechecks and builds `Extension-Versions/gitatlas-rev-<version>.vsix` (it refuses to overwrite an existing one; `make vsix FORCE=1` does). Without make: `node scripts/package-vsix.mjs`. `make check` runs the typecheck and the tests.
 
 ## Rules of the codebase
 
