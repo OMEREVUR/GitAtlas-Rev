@@ -1,10 +1,18 @@
 # GitAtlas-Rev
 
-*Türkçe açıklama: `README.tr.md`.*
+[![Marketplace](https://img.shields.io/visual-studio-marketplace/v/Omer-Cayir.gitatlas-rev?label=Marketplace)](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/Omer-Cayir.gitatlas-rev)](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev)
+[![CI](https://github.com/OMEREVUR/GitAtlas-Rev/actions/workflows/ci.yml/badge.svg)](https://github.com/OMEREVUR/GitAtlas-Rev/actions/workflows/ci.yml)
+
+*Türkçe: [README.tr.md](README.tr.md)*
 
 A map that lets you read a repo at a glance. GitAtlas-Rev draws your repository as a **treemap** in the VS Code side panel: every box is a file, its size is the line count, its color is how often it changes (churn). On top of that come a commit graph, branches, open pull requests on GitHub, a time machine and a contributors panel.
 
 The interface is available in **English** and **Turkish**. It follows the VS Code display language by default; change it with the `gitatlas-revrev.language` setting.
+
+![The map: box size is line count, color is churn; a dashed purple frame marks a file touched by two open PRs](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/01-map-pr-conflict-dark.png)
+
+**[Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev)**, or press `Ctrl+P` in VS Code and run `ext install Omer-Cayir.gitatlas-rev`. Then open the **GitAtlas-Rev** icon in the Activity Bar.
 
 ## Features
 
@@ -16,10 +24,14 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 - Explorer badges: ●● / ● next to frequently changed files, even while the panel is closed.
 - The map can also be opened as an editor tab: **GitAtlas-Rev: Open map in editor**.
 
+![A selected commit lights up the files it touched; the rest of the map is dimmed](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/02-commit-highlight-light.png)
+
 **Graph and branches**
 - Commit graph: branches as colored lanes, merges as hollow dots. Filter by branch, author, date and text (message, file, hash); older commits load as you scroll.
 - Branches view: local and remote branches, ahead/behind, last touched; branches untouched for more than 30 days are marked "stale".
 - Select a commit or branch in the graph or the Branches view and its files light up on the map.
+
+![Commit graph with branch lanes, PR and CI badges, and a mini map of the selected commit](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/03-graph-dark.png)
 
 **GitHub layer**
 - **PR conflict warning:** when 2+ open PRs touch the same file, its box gets a purple dashed frame; the file card lists the PRs; the Explorer shows a PR count badge.
@@ -30,6 +42,10 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 - Time machine: use the slider or the play button to see the repo at a past date; heat is the change in the 7 days before that date, and files that did not exist yet have a dashed outline.
 - Contributors panel: module ownership (with a "single owner" warning), weekly rhythm, "who knows this file best", authors. Multiple emails of the same person are merged via `.mailmap`.
 
+![Time machine: the repo growing from its first commit to today](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/08-time-machine.gif)
+
+![Contributors panel: module ownership, weekly rhythm and who knows each file best](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/05-contributors-dark.png)
+
 **Changes: git without typing commands**
 - **Changes** tab: stage or unstage changed files one by one or all at once with checkboxes, view the diff, discard a change.
 - Commit box: type picker (feat, fix…), summary counter, "Commit & push", amend last commit, undo last commit; the git command that will run is shown below.
@@ -37,6 +53,8 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 - Right-click in the Branches view: switch, new branch, merge, rename, delete. Stashes: stash, apply, drop. During a conflict: "Mark resolved / Continue / Abort".
 - When connected to GitHub, **Pull requests**: open a PR from this branch (pushes first if needed), merge a PR (merge/squash/rebase), check out a PR branch; "My pull requests" and "Review requested".
 - Every risky action asks for confirmation first; commands and their output are in the "GitAtlas-Rev Git" output channel.
+
+![Changes tab: stage with checkboxes, commit box and pull requests](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/06-changes-pr-dark.png)
 
 ## Settings
 
@@ -68,6 +86,10 @@ npm test             # vitest
 npm run typecheck
 ```
 
-To build a VSIX: `npx @vscode/vsce package --no-dependencies`.
+To build a VSIX: `npx @vscode/vsce package --no-dependencies --skip-license`.
 
-Press **F5** in VS Code to open the Extension Development Host. See `CLAUDE.md` for details and other commands.
+Press **F5** in VS Code to open the Extension Development Host. See [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or a pull request.
+
+## License
+
+GitAtlas-Rev is **source-available**, not open source: it is licensed under MIT with the [Commons Clause](https://commonsclause.com/) condition (see [LICENSE](LICENSE)). You may use, modify and share it, but you may not sell it, or a product or service whose value derives substantially from it. Because this combination is not an OSI-approved license, GitHub does not show a license name for the repository.

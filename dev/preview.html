@@ -88,7 +88,7 @@
             });
             var branch = model.status && model.status.branch;
             send({ type: 'prPanel', data: {
-              viewer: 'ornek', defaultBranch: 'main', mergeMethods: ['merge', 'squash', 'rebase'],
+              viewer: 'example', defaultBranch: 'main', mergeMethods: ['merge', 'squash', 'rebase'],
               currentBranchPr: prs.filter(function (p) { return p.headRef === branch; })[0],
               mine: prs.slice(0, 2), reviewRequested: prs.slice(2), fetchedAt: Date.now() - 60000 } });
           }, 30);

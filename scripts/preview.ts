@@ -67,12 +67,12 @@ async function main(): Promise<void> {
         if (hot && i < 2) files.add(hot);
         hotPath = hot;
         return {
-          number: 41 + i, title: r.subject, url: `https://github.com/ornek/repo/pull/${41 + i}`, author: r.author,
+          number: 41 + i, title: r.subject, url: `https://github.com/example/repo/pull/${41 + i}`, author: r.author,
           headRef: r.name, baseRef: 'main', isDraft: i === 2, updatedAt: r.date, files: [...files], ci: cis[i % 3] ?? 'none',
         };
       });
     const github: GitHubData = {
-      status: { state: 'connected', repo: 'ornek/repo', fetchedAt: now - 60_000, intervalMin: 2, baseIntervalMin: 2, rateLimit: { remaining: 4870, limit: 5000, resetAt: now + 3600_000 } },
+      status: { state: 'connected', repo: 'example/repo', fetchedAt: now - 60_000, intervalMin: 2, baseIntervalMin: 2, rateLimit: { remaining: 4870, limit: 5000, resetAt: now + 3600_000 } },
       pullRequests: prs,
       branchCi: [{ branch: 'main', ci: 'success' }],
     };

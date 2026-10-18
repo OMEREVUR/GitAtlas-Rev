@@ -2,10 +2,18 @@
   "name": "gitatlas-rev",
   "displayName": "GitAtlas-Rev",
   "description": "%description%",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "Omer-Cayir",
   "icon": "icons/icon.png",
   "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OMEREVUR/GitAtlas-Rev.git"
+  },
+  "bugs": {
+    "url": "https://github.com/OMEREVUR/GitAtlas-Rev/issues"
+  },
+  "homepage": "https://github.com/OMEREVUR/GitAtlas-Rev#readme",
   "private": true,
   "engines": {
     "vscode": "^1.90.0"
@@ -14,6 +22,27 @@
     "Visualization",
     "SCM Providers"
   ],
+  "keywords": [
+    "git",
+    "treemap",
+    "visualization",
+    "churn",
+    "hotspot",
+    "code map",
+    "commit graph",
+    "git graph",
+    "branches",
+    "pull request",
+    "github",
+    "heatmap",
+    "contributors",
+    "time machine",
+    "codebase overview"
+  ],
+  "galleryBanner": {
+    "color": "#1B1C20",
+    "theme": "dark"
+  },
   "main": "./dist/extension.js",
   "activationEvents": [
     "onStartupFinished",
