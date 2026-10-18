@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: GitAtlas-Rev on the Visual Studio Marketplace
+    url: https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev
+    about: Install the extension, read the changelog and leave a rating.

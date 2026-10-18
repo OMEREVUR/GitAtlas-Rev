@@ -1,0 +1,45 @@
+name: Bug report
+description: Something in GitAtlas-Rev does not work as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead? Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a repository with …
+        2. Click …
+    validations:
+      required: true
+  - type: input
+    id: ext-version
+    attributes:
+      label: GitAtlas-Rev version
+      placeholder: "0.2.1"
+    validations:
+      required: true
+  - type: input
+    id: vscode-version
+    attributes:
+      label: VS Code version
+      description: Help > About
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system and git version
+      placeholder: "Windows 11, git 2.47"
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: If a git action failed, paste the relevant part of the "GitAtlas-Rev Git" output channel (View > Output). Remove anything private.
+      render: text
