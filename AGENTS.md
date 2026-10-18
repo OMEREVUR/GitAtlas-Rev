@@ -2,8 +2,8 @@
 
 ## Proje
 - GitAtlas-Rev, bir git reposunu VS Code yan panelinde treemap olarak gösteren bir eklenti. Kutu boyutu = satır sayısı, renk = churn (seçili aralıkta kaç commit'te değiştiği). Commit akışında bir commit seçilince dokunduğu dosyalar haritada yanar; Explorer'da sıcaklık rozeti görünür.
-- Ürünün tek doğru kaynağı: `RewiewRev — Proje Raporu.md`. Bu dosya silinmez, taşınmaz, adı değiştirilmez; yalnızca kullanıcının isteğiyle güncel hâle getirilir (17 Ekim 2026: 0.2.0 durumuna güncellendi, ilk kullanıcı geri bildirimi ve 0.3.0 kapsamı eklendi).
-- Arayüz tasarımı: `rewiewrev-design/` (salt okunur referans). Önce `rewiewrev-design/README.md`, sonra ilgili `.dc.html` okunur. `support.js` ve tasarımlardaki `THEMES`/`rrTheme()` haritası eklentiye taşınmaz.
+- Ürünün tek doğru kaynağı: `docs/RewiewRev — Proje Raporu.md`. Bu dosya silinmez, taşınmaz, adı değiştirilmez (18 Ekim 2026: kullanıcının isteğiyle kökten `docs/`'a taşındı); yalnızca kullanıcının isteğiyle güncel hâle getirilir (17 Ekim 2026: 0.2.0 durumuna güncellendi, ilk kullanıcı geri bildirimi ve 0.3.0 kapsamı eklendi).
+- Arayüz tasarımı: `docs/rewiewrev-design/` (salt okunur referans). Önce `docs/rewiewrev-design/README.md`, sonra ilgili `.dc.html` okunur. `support.js` ve tasarımlardaki `THEMES`/`rrTheme()` haritası eklentiye taşınmaz.
 - Ad yazımı "GitAtlas-Rev", paket adı "gitatlas-rev", Marketplace ID'si `Omer-Cayir.gitatlas-rev` (Ekim 2026: "RewiewRev" → "GitAtlas-RevRev" → Marketplace "GitAtlas-RevRev" görünen adını ve "gitatlas-revrev" paket adını kabul etmediği için "GitAtlas-Rev"; rapor ve tasarım klasörü eski adı taşır). Yazım düzeltilmez, değiştirilmez. Komut, ayar ve görünüm kimlikleri `gitatlas-revrev.*` olarak kaldı (görünmez, değiştirilmez).
 
 ## Sürüm durumu
@@ -44,6 +44,7 @@
 - Extension Development Host: VS Code'da F5 (`.vscode/launch.json`, önce `npm: build` çalışır).
 
 ## Klasör yapısı
+- `docs/` — proje raporu (`docs/RewiewRev — Proje Raporu.md`) ve arayüz tasarımı (`docs/rewiewrev-design/`); eklentiye girmez.
 - `src/types.ts`, `src/protocol.ts` — sözleşme.
 - `src/git/` — v5: `status.ts` (porcelain v2 durum, stash listesi), `opCommands.ts` (saf: işlem → git argümanları, webview önizlemesi de kullanır), `prCheckout.ts` (saf), `askpass.ts`; git komutları, `git log --numstat` ayrıştırma, satır sayımı, `refs.ts` (for-each-ref + ahead/behind), `graphLog.ts` (graph log argümanları).
 - `src/model/` — snapshot'tan `FileStat` üretme, glob eşleme, cache, `loadSnapshot` servisi; `graphLayout.ts` + `graphSelect.ts` (saf, webview de import eder), `graphService.ts` (`loadGraph`); v4: `timeline.ts` (`buildTimeline`, `timelineFrame`, `timelineSteps`) ve `contrib.ts` (`computeContrib`), ikisi de saf.
@@ -96,7 +97,7 @@ Büyük işler aynı makinedeki birkaç Codex oturumuna bölünür. Bir oturum *
 - "Bitince şefe SendMessage ile ilk satırı 'bitti' olan özet gönder: ne yaptın, nasıl test ettin, birleştirirken nelere dikkat etmeli."
 
 **Dosya sahipliği**
-- İki oturum asla aynı dosyaya yazmaz. `package.json`, `package-lock.json`, `tsconfig.json`, `esbuild.mjs`, `vitest.config.mts`, `.vscode/`, `AGENTS.md`, `src/types.ts`, `src/protocol.ts`, `src/extension.ts`, `src/webview/main.ts` ve ortak yardımcılar yalnızca şefindir. `rewiewrev-design/` kimse tarafından değiştirilmez; rapor yalnızca kullanıcının isteğiyle şef tarafından güncellenir.
+- İki oturum asla aynı dosyaya yazmaz. `package.json`, `package-lock.json`, `tsconfig.json`, `esbuild.mjs`, `vitest.config.mts`, `.vscode/`, `AGENTS.md`, `src/types.ts`, `src/protocol.ts`, `src/extension.ts`, `src/webview/main.ts` ve ortak yardımcılar yalnızca şefindir. `docs/rewiewrev-design/` kimse tarafından değiştirilmez; rapor yalnızca kullanıcının isteğiyle şef tarafından güncellenir.
 - İşçiler commit atmaz, `git add` yapmaz; bağımlılık gerekirse şefe sorar, kurulumu şef yapar.
 - İşçi başka bir dosyada hata görürse düzeltmez, özetinde şefe bildirir.
 
