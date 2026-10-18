@@ -39,7 +39,7 @@ function findBash(): string | undefined {
 const bash = findBash();
 const temps: string[] = [];
 afterAll(async () => {
-  for (const t of temps) await rm(t, { recursive: true, force: true });
+  for (const t of temps) await rm(t, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 function git(cwd: string, ...args: string[]): string {

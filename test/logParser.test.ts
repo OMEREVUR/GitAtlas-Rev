@@ -154,7 +154,7 @@ describe('gerçek geçici repo', () => {
   });
 
   afterAll(async () => {
-    if (dir) await rm(dir, { recursive: true, force: true });
+    if (dir) await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   });
 
   it('runGit(logArgs()) çıktısı doğru ayrıştırılır', async () => {
@@ -200,7 +200,7 @@ describe('gerçek geçici repo', () => {
       await expect(runGit(['-c', 'safe.directory=*', 'status'], plain)).rejects.toMatchObject({ code: 'notRepo' });
       await expect(runGit(['status'], plain)).rejects.toBeInstanceOf(GitError);
     } finally {
-      await rm(plain, { recursive: true, force: true });
+      await rm(plain, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
     }
   });
 
@@ -228,7 +228,7 @@ describe('.mailmap ve setGitPath', () => {
 
   afterAll(async () => {
     setGitPath(undefined);
-    if (dir) await rm(dir, { recursive: true, force: true });
+    if (dir) await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   });
 
   it('iki e-posta tek yazara iner', async () => {

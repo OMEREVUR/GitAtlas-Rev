@@ -48,7 +48,7 @@ describe.skipIf(!bash)('loadGraph (fixture reposu)', () => {
   }, 60_000);
 
   afterAll(async () => {
-    for (const t of temps) await rm(t, { recursive: true, force: true });
+    for (const t of temps) await rm(t, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   });
 
   it('tüm branch\'ler', async () => {

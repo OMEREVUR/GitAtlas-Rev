@@ -286,7 +286,7 @@ describe('prCheckoutCommands', () => {
   describe('gerçek repo', { timeout: 30_000 }, () => {
     let tmp = '';
     afterAll(async () => {
-      if (tmp) await rm(tmp, { recursive: true, force: true });
+      if (tmp) await rm(tmp, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
     });
 
     it('fork ve aynı repo komutları gerçekten çalışır (pr/<n> checkout edilmişken de)', async () => {

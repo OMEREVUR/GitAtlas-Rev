@@ -71,7 +71,7 @@ describe('listRefs + graphLogArgs (gerçek repo)', { timeout: 30_000 }, () => {
   }, 60_000);
 
   afterAll(async () => {
-    if (tmp) await rm(tmp, { recursive: true, force: true });
+    if (tmp) await rm(tmp, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   });
 
   it('branch ve etiketleri doğru türler ve hash\'lerle listeler', async () => {
@@ -168,7 +168,7 @@ describe('listRefs + graphLogArgs (gerçek repo)', { timeout: 30_000 }, () => {
     try {
       await expect(listRefs(plain)).rejects.toMatchObject({ code: 'notRepo' });
     } finally {
-      await rm(plain, { recursive: true, force: true });
+      await rm(plain, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
     }
   });
 });

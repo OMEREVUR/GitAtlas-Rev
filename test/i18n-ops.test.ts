@@ -19,7 +19,7 @@ const temps: string[] = [];
 
 afterEach(() => setLang('tr'));
 afterAll(async () => {
-  for (const t of temps) await rm(t, { recursive: true, force: true });
+  for (const t of temps) await rm(t, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 function git(cwd: string, ...args: string[]): string {

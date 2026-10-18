@@ -346,7 +346,7 @@ describe('getOriginUrl + GitHubLayer (vscode taklidi)', () => {
   });
 
   afterAll(async () => {
-    if (tmp) await rm(tmp, { recursive: true, force: true });
+    if (tmp) await rm(tmp, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   });
 
   it('getOriginUrl: remote yoksa undefined, varsa adres', async () => {

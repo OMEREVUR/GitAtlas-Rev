@@ -36,7 +36,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  if (tmp) await rm(tmp, { recursive: true, force: true });
+  if (tmp) await rm(tmp, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 describe('parsePorcelainV2 / parseNumstatZ (sabit)', () => {
