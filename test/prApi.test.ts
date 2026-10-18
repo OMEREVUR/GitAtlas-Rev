@@ -295,7 +295,7 @@ describe('prCheckoutCommands', () => {
       const origin = path.join(tmp, 'origin.git');
       const src = path.join(tmp, 'src');
       const work = path.join(tmp, 'work');
-      await runGit(['init', '-q', '--bare', origin], tmp);
+      await runGit(['init', '-q', '--bare', '-b', 'main', origin], tmp);
       await runGit(['init', '-q', '-b', 'main', src], tmp);
       const g = (dir: string, ...a: string[]) => runGit([...CFG, ...a], dir);
       await writeFile(path.join(src, 'a.txt'), 'a\n');

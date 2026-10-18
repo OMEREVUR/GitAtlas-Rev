@@ -245,7 +245,7 @@ git checkout -q main
 
 # Bare origin, repo'nun .git klasörü içinde (repo silinince o da silinir).
 ORIGIN="$REPO/.git/fixture-origin.git"
-git init -q --bare "$ORIGIN"
+git init -q --bare -b main "$ORIGIN"
 git remote add origin "$ORIGIN"
 git push -q origin "main~2:refs/heads/main" 2>/dev/null
 git push -q origin "experiment/canvas:refs/heads/experiment/canvas" 2>/dev/null

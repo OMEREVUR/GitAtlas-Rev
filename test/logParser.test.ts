@@ -219,7 +219,7 @@ describe('.mailmap ve setGitPath', () => {
 
   beforeAll(async () => {
     dir = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-mailmap-'));
-    await runGit(['init', '-q'], dir);
+    await runGit(['init', '-q', '-b', 'main'], dir);
     await commitAs('Ali Veli', 'ali@is.example.com', 'a.txt');
     await commitAs('ali', 'ali@ev.example.com', 'b.txt');
     await writeFile(path.join(dir, '.mailmap'), 'Ali Veli <ali@is.example.com> ali <ali@ev.example.com>\n');

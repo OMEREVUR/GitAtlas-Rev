@@ -5,7 +5,7 @@ import * as path from 'node:path';
 import { promisify } from 'node:util';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createAskpassEnv } from '../src/git/askpass';
-import { classifyGitError, GitError, runGit } from '../src/git/gitRunner';
+import { classifyGitError, GitError, runGit, setGitPath } from '../src/git/gitRunner';
 import { opCommands } from '../src/git/opCommands';
 import { getStatus, listStashes, parseNumstatZ, parsePorcelainV2 } from '../src/git/status';
 import type { WorkingFile, WorkingTreeStatus } from '../src/types';
@@ -229,7 +229,7 @@ describe('getStatus (gerçek repo)', { timeout: 30_000 }, () => {
 
   it('upstream, ahead/behind ve lastCommit.pushed', async () => {
     const origin = path.join(tmp, `origin-${counter++}.git`);
-    await runGit(['init', '-q', '--bare', origin], tmp);
+    await runGit(['init', '-q', '--bare', '-b', 'main', origin], tmp);
     const { dir, git } = await makeRepo('up');
     await git('remote', 'add', 'origin', origin);
     await writeFile(path.join(dir, 'f.txt'), '1\n');
@@ -309,7 +309,13 @@ describe('runGit seçenekleri ve hata sınıfları', () => {
     await expect(
       runGit(['-c', 'credential.helper=', 'credential', 'fill'], dir, { input: 'protocol=https\nhost=example.invalid\n\n', env: { GIT_ASKPASS: '' } }),
     ).rejects.toBeInstanceOf(GitError);
-    await expect(runGit(['hash-object', '--stdin'], dir, { timeoutMs: 1, input: 'x' })).rejects.toThrow(/zaman aşımı|başarısız|hash/);
+    // Süre dolması makinenin hızına bağlı olmasın: "git" yerine uyuyan bir node süreci çalışır.
+    setGitPath(process.execPath);
+    const timedOut = await runGit(['-e', 'setTimeout(() => {}, 10000)'], dir, { timeoutMs: 100 })
+      .catch((e: unknown) => e)
+      .finally(() => setGitPath(undefined));
+    expect(timedOut).toBeInstanceOf(GitError);
+    expect((timedOut as GitError).timedOut).toBe(true);
   });
 
   it.each([

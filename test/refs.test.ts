@@ -32,7 +32,7 @@ describe('listRefs + graphLogArgs (gerçek repo)', { timeout: 30_000 }, () => {
     tmp = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-refs-'));
     const origin = path.join(tmp, 'origin.git');
     work = path.join(tmp, 'work');
-    await runGit(['init', '-q', '--bare', origin], tmp);
+    await runGit(['init', '-q', '--bare', '-b', 'main', origin], tmp);
     await runGit(['init', '-q', '-b', 'main', work], tmp);
     await git('remote', 'add', 'origin', origin);
 
@@ -162,7 +162,7 @@ describe('listRefs + graphLogArgs (gerçek repo)', { timeout: 30_000 }, () => {
 
   it('boş repo → [], repo değil → notRepo', async () => {
     const empty = path.join(tmp, 'empty');
-    await runGit(['init', '-q', empty], tmp);
+    await runGit(['init', '-q', '-b', 'main', empty], tmp);
     expect(await listRefs(empty)).toEqual([]);
     const plain = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-norepo-'));
     try {

@@ -117,7 +117,7 @@ describe.skipIf(!bash)('loadGraph (fixture reposu)', () => {
   it('commit\'siz repo: boş graph, hata yok', async () => {
     const empty = await mkdtemp(join(tmpdir(), 'gitatlas-revrev-graph-empty-'));
     temps.push(empty);
-    git(empty, 'init', '-q');
+    git(empty, 'init', '-q', '-b', 'main');
     const g = await loadGraph(empty, { limit: 500 });
     expect(g.commits).toEqual([]);
     expect(g.refs).toEqual([]);

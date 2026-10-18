@@ -10,7 +10,7 @@ describe('lineCounter', () => {
 
   beforeAll(async () => {
     dir = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-lines-'));
-    await runGit(['init', '-q'], dir);
+    await runGit(['init', '-q', '-b', 'main'], dir);
     await mkdir(path.join(dir, 'src', 'alt klasör'), { recursive: true });
     await writeFile(path.join(dir, 'three.txt'), 'a\nb\nc\n');
     await writeFile(path.join(dir, 'no-eol.txt'), 'a\nb');

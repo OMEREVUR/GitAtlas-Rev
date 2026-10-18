@@ -159,7 +159,7 @@ describe.skipIf(!bash)('loadSnapshot (fixture reposu)', () => {
   it('commit\'i olmayan repo → NoCommitsError', async () => {
     const empty = await mkdtemp(join(tmpdir(), 'gitatlas-revrev-empty-'));
     temps.push(empty);
-    git(empty, 'init', '-q');
+    git(empty, 'init', '-q', '-b', 'main');
     await expect(loadSnapshot(empty, storage, () => undefined)).rejects.toBeInstanceOf(NoCommitsError);
   });
 

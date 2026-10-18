@@ -328,7 +328,7 @@ describe('getOriginUrl + GitHubLayer (vscode taklidi)', () => {
   beforeAll(async () => {
     tmp = await mkdtemp(path.join(os.tmpdir(), 'gitatlas-revrev-gh-'));
     repo = path.join(tmp, 'repo');
-    await runGit(['init', '-q', repo], tmp);
+    await runGit(['init', '-q', '-b', 'main', repo], tmp);
   });
 
   beforeEach(async () => {

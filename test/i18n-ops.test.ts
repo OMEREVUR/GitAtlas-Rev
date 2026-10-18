@@ -5,7 +5,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
-import { GitError, runGit } from '../src/git/gitRunner';
+import { GitError, runGit, setGitPath } from '../src/git/gitRunner';
 import { createPullRequest, mergePullRequest } from '../src/github/prApi';
 import { text as githubText } from '../src/i18n/github';
 import { setLang } from '../src/i18n/index';
@@ -185,10 +185,14 @@ describe('gitRunner (İngilizce)', () => {
       setLang('en');
       await expect(runGit(['status'], dir)).rejects.toMatchObject({ code: 'notRepo', message: 'This folder is not a git repository.' });
 
-      const err: unknown = await runGit(['hash-object', '--stdin'], dir, { timeoutMs: 1, input: 'x' }).catch((e: unknown) => e);
+      // Süre dolması makinenin hızına bağlı olmasın: "git" yerine uyuyan bir node süreci çalışır.
+      setGitPath(process.execPath);
+      const err: unknown = await runGit(['-e', 'setTimeout(() => {}, 10000)'], dir, { timeoutMs: 100 })
+        .catch((e: unknown) => e)
+        .finally(() => setGitPath(undefined));
       expect(err).toBeInstanceOf(GitError);
-      // Süre dolarsa bayrak ve İngilizce mesaj; çok hızlı makinede komut başka bir hatayla da bitebilir.
-      if (err instanceof GitError && err.timedOut) expect(err.message).toBe('Git operation timed out (0 s).');
+      expect((err as GitError).timedOut).toBe(true);
+      expect((err as GitError).message).toBe('Git operation timed out (0 s).');
     },
     T,
   );
