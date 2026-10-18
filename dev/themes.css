@@ -1,7 +1,7 @@
 /* YALNIZCA dev önizlemeleri için: VS Code'un webview'a verdiği --vscode-* değişkenlerinin taklidi.
    Eklentiye girmez. <body class="vscode-dark"> ya da <body class="vscode-light"> ile seçilir;
    değişkenler VS Code'taki gibi <html> (:root) üzerinde tanımlanır ki base.css'teki --rr-* türetmeleri çözülsün.
-   Değerler docs/rewiewrev-design/Main.dc.html içindeki önizleme temalarından alınmıştır. */
+   Değerler arayüz tasarımının (Main) önizleme temalarından alınmıştır. */
 :root:has(> body.vscode-dark) {
   --vscode-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, sans-serif;
   --vscode-font-size: 13px;

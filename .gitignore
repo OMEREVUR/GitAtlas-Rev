@@ -8,3 +8,8 @@ TEST-PHOTOS/
 Extension-Versions/
 AI-Fead-Back/
 Marketplace-Images/
+
+# İç belgeler (yerelde kalır, public repoya girmez)
+CLAUDE.md
+AGENTS.md
+docs/
