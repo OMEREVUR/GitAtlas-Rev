@@ -6,6 +6,7 @@ import { GitHubLayer } from './github/githubLayer';
 import { BranchView, branchCommandHandlers } from './panel/branchTree';
 import { GIT_SCHEME, GitContentProvider } from './panel/gitContentProvider';
 import { GitAtlasRevRevPanelProvider } from './panel/panelProvider';
+import { RepoManager } from './panel/repoManager';
 import { GitAtlasRevRevStatusBar } from './panel/statusBar';
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -15,13 +16,18 @@ export function activate(context: vscode.ExtensionContext): void {
   const decorations = new HeatDecorationProvider();
   const statusBar = new GitAtlasRevRevStatusBar();
   const github = new GitHubLayer(storageDir, context.workspaceState);
-  const panel = new GitAtlasRevRevPanelProvider(context.extensionUri, storageDir, decorations, statusBar, github);
+  // Repo değişimi sürmekte olan bir git işleminin ortasında olmasın.
+  let panelBusy = (): boolean => false;
+  const repos = new RepoManager(context.workspaceState, () => !panelBusy());
+  const panel = new GitAtlasRevRevPanelProvider(context.extensionUri, storageDir, decorations, statusBar, github, repos);
+  panelBusy = () => panel.busy;
   const branches = new BranchView();
 
   context.subscriptions.push(
     decorations,
     statusBar,
     github,
+    repos,
     panel,
     branches,
     vscode.window.registerFileDecorationProvider(decorations),
@@ -30,7 +36,8 @@ export function activate(context: vscode.ExtensionContext): void {
       webviewOptions: { retainContextWhenHidden: true },
     }),
     vscode.window.registerWebviewPanelSerializer(GitAtlasRevRevPanelProvider.editorViewType, panel),
-    vscode.commands.registerCommand('gitatlas-revrev.refresh', () => panel.reload()),
+    vscode.commands.registerCommand('gitatlas-revrev.refresh', () => panel.refreshAll()),
+    vscode.commands.registerCommand('gitatlas-revrev.selectRepo', () => repos.showPicker()),
     vscode.commands.registerCommand('gitatlas-revrev.openInEditor', () => panel.openInEditor()),
     vscode.commands.registerCommand('gitatlas-revrev.refreshBranches', () => panel.refreshRefs()),
     // Sebebe göre: bağlan / "GitHub'da yayınla" önerisi / GitHub dışı remote / ayar kapalı.

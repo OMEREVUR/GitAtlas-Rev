@@ -1,5 +1,5 @@
 // SÖZLEŞME — webview ↔ eklenti mesajları. Değişiklik yalnızca bilinçli bir kararla yapılır.
-import type { CommitSummary, ContribData, FileStat, GitHubData, GitHubOpKind, GitHubOpRequest, GitOpKind, GitOpRequest, GraphData, OpResult, PrDraft, PrPanelData, StashEntry, TimeRange, TimelineData, WorkingTreeStatus } from './types';
+import type { CommitSummary, ContribData, FileStat, GitHubData, GitHubOpKind, GitHubOpRequest, GitOpKind, GitOpRequest, GraphData, OpResult, PrDraft, PrPanelData, RepoInfo, StashEntry, TimeRange, TimelineData, WorkingTreeStatus } from './types';
 
 /** Panelde gösterilen hata durumları (tasarım: States.dc.html). */
 export type ErrorCode = 'noWorkspace' | 'noRepo' | 'noCommits' | 'noGit' | 'unknown';
@@ -42,7 +42,10 @@ export type ExtensionToWebview =
   // v5 (2. tur)
   /** data undefined: GitHub bağlı değil; error: veri alınamadı. */
   | { type: 'prPanel'; data: PrPanelData | undefined; error?: string }
-  | { type: 'prDraft'; draft: PrDraft | undefined; error?: string };
+  | { type: 'prDraft'; draft: PrDraft | undefined; error?: string }
+  // 0.3.0
+  /** Workspace'teki repolar ve gösterilen repo (current: kök yolu; repo yoksa undefined). Kök değişince model'den önce gelir. */
+  | { type: 'repos'; repos: RepoInfo[]; current: string | undefined; follow: boolean };
 
 export type WebviewToExtension =
   | { type: 'ready' }
@@ -84,4 +87,7 @@ export type WebviewToExtension =
   /** Eşitleme çubuğundaki branch adı: geç / yeni branch menüsü (QuickPick). */
   | { type: 'branchMenu' }
   /** Eşitleme çubuğundaki "Yeni branch" düğmesi. */
-  | { type: 'branchCreate' };
+  | { type: 'branchCreate' }
+  // 0.3.0
+  /** Eşitleme çubuğundaki repo adı: repo seçici (QuickPick eklentide). */
+  | { type: 'repoMenu' };

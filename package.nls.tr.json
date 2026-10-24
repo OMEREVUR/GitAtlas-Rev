@@ -4,6 +4,7 @@
   "view.branches": "Branch'ler",
   "command.refresh": "Yenile",
   "command.openInEditor": "Haritayı düzenleyicide aç",
+  "command.selectRepo": "Repo seç",
   "command.refreshBranches": "Branch'leri yenile",
   "command.github.connect": "GitHub ile bağlan",
   "command.github.refresh": "GitHub verisini yenile",

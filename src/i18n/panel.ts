@@ -102,6 +102,18 @@ export const panelText = defineText({
     ghConnectingDetail: "GitHub: açık PR'lar ve CI sonuçları alınıyor…",
     ghError: 'GitHub: hata',
 
+    // ---- 0.3.0: repo seçici ----
+    repoPickTitle: 'GitAtlas-Rev: Repo seç',
+    repoPickPlaceholder: 'Haritada gösterilecek repo',
+    repoCurrent: 'şu an gösterilen',
+    repoFollow: 'Açık dosyanın reposunu takip et',
+    repoFollowOn: 'açık · bir dosyaya geçince harita o dosyanın reposuna geçer',
+    repoFollowOff: 'kapalı',
+    repoBusy: 'GitAtlas-Rev: Bir git işlemi sürüyor; bitince repo değiştirilebilir.',
+    repoNone: 'GitAtlas-Rev: Workspace klasörlerinde git reposu bulunamadı.',
+    repoStatus: (name: string) => `$(repo) ${name}`,
+    repoStatusTooltip: (name: string, count: number) => `GitAtlas-Rev: ${name} gösteriliyor · workspace'te ${count} repo · değiştirmek için tıkla`,
+
     // ---- Explorer rozetleri ----
     badgeHot: (changes: number) => `${APP}: çok sık değişiyor · ${changes} commit`,
     badgeWarm: (changes: number) => `${APP}: sık değişiyor · ${changes} commit`,
@@ -202,6 +214,17 @@ export const panelText = defineText({
     ghConnecting: 'GitHub: connecting',
     ghConnectingDetail: 'GitHub: fetching open PRs and CI results…',
     ghError: 'GitHub: error',
+
+    repoPickTitle: 'GitAtlas-Rev: Select repository',
+    repoPickPlaceholder: 'Repository to show on the map',
+    repoCurrent: 'shown now',
+    repoFollow: 'Follow the repository of the active file',
+    repoFollowOn: 'on · the map switches to the repository of the file you open',
+    repoFollowOff: 'off',
+    repoBusy: 'GitAtlas-Rev: A git operation is running; you can switch repositories when it finishes.',
+    repoNone: 'GitAtlas-Rev: No Git repository was found in the workspace folders.',
+    repoStatus: (name: string) => `$(repo) ${name}`,
+    repoStatusTooltip: (name: string, count: number) => `GitAtlas-Rev: showing ${name} · ${plural(count, 'repository', 'repositories')} in the workspace · click to switch`,
 
     badgeHot: (changes: number) => `${APP}: changes very often · ${plural(changes, 'commit')}`,
     badgeWarm: (changes: number) => `${APP}: changes often · ${plural(changes, 'commit')}`,

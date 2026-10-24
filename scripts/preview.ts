@@ -1,6 +1,6 @@
 // Webview önizlemesi: bir repodan gerçek modeli üretir (dev/out/preview-model.js), dev/preview.html'i
 // headless Chrome ile açıp koyu/açık/vurgulu/dar ekran görüntülerini dev/screenshots/ altına alır.
-// Kullanım: npm run preview -- <repo-yolu> [--name ad] [--lang en|tr] [--no-shots]
+// Kullanım: npm run preview -- <repo-yolu> [--name ad] [--lang en|tr] [--no-shots] [--only <ad parçası>]
 import { parseLang, setLang } from '../src/i18n';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -131,6 +131,10 @@ async function main(): Promise<void> {
     { file: `${name}-map-dirty.png`, query: 'theme=light&gh=off', size: '1100,820' },
     { file: `${name}-changes-pr-dark.png`, query: 'theme=dark&view=changes&gh=connected', size: '1200,1100' },
     { file: `${name}-changes-pr-light.png`, query: 'theme=light&view=changes&gh=connected', size: '1200,1100' },
+    // 0.3.0: çoklu repo
+    { file: `${name}-repos-dark.png`, query: 'theme=dark&repos=3&gh=off', size: '1100,820' },
+    { file: `${name}-repos-light.png`, query: 'theme=light&repos=3&view=changes&gh=off', size: '1200,820' },
+    { file: `${name}-repos-narrow.png`, query: 'theme=dark&repos=3&gh=off&width=360', size: '600,1300' },
   ];
   if (sampleBranch) {
     const b = encodeURIComponent(`branch:${sampleBranch}`);
@@ -139,7 +143,10 @@ async function main(): Promise<void> {
       { file: `${name}-map-branch.png`, query: `theme=light&autoselect=${b}`, size: '1100,820' },
     );
   }
+  const onlyIdx = args.indexOf('--only');
+  const only = onlyIdx >= 0 ? args[onlyIdx + 1] : undefined;
   for (const s of shots) {
+    if (only && !s.file.includes(only)) continue;
     const out = resolve('dev/screenshots', s.file);
     const r = spawnSync(chrome, [
       '--headless=new', '--disable-gpu', '--hide-scrollbars', '--allow-file-access-from-files',

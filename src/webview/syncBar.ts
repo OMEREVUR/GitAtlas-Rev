@@ -15,6 +15,9 @@ export interface SyncBarOptions {
   onBranchMenu?: () => void;
   /** Verilirse branch adının yanında "Yeni branch" ikon düğmesi çıkar. */
   onBranchCreate?: () => void;
+  /** 0.3.0: workspace'te 2+ repo varsa gösterilen repo; onRepoMenu ile birlikte verilirse branch'in solunda repo düğmesi çıkar. */
+  repo?: { name: string; count: number };
+  onRepoMenu?: () => void;
 }
 
 interface SyncButton {
@@ -29,6 +32,8 @@ interface BarState {
   /** İskeletin kurulduğu dil; değişirse yeniden kurulur. */
   lang: Lang;
   branch: HTMLElement;
+  repoBtn: HTMLButtonElement;
+  repoLabel: HTMLElement;
   refStatic: HTMLElement;
   refBtn: HTMLButtonElement;
   refBtnLabel: HTMLElement;
@@ -58,6 +63,16 @@ export function renderSyncBar(el: HTMLElement, opts: SyncBarOptions): void {
   } else {
     st.branch.textContent = `${t.sbDetached}${status.head ? ` · ${status.head.slice(0, 7)}` : ''}`;
     st.branch.title = t.sbDetachedTitle;
+  }
+
+  // Repo seçici (yalnızca 2+ repo)
+  const repo = opts.onRepoMenu ? opts.repo : undefined;
+  st.repoBtn.hidden = !repo;
+  if (repo) {
+    st.repoLabel.textContent = repo.name;
+    st.repoBtn.setAttribute('aria-label', t.sbRepoAria(repo.name));
+    st.repoBtn.title = `${repo.name}\n${t.sbRepoMenu(repo.count)}`;
+    st.repoBtn.disabled = busy;
   }
 
   // Branch menüsü / yeni branch düğmeleri (verilmezse eski düz görünüm)
@@ -132,6 +147,11 @@ function build(el: HTMLElement, opts: SyncBarOptions): BarState {
   el.classList.add('rr-op-sync');
   const t = text();
   const branch = h('span', 'rr-op-sync-branch');
+  const repoLabel = h('span', 'rr-op-sync-branch');
+  const repoBtn = h('button', 'rr-op-sync-ref rr-op-sync-ref-btn rr-op-sync-repo', [icon('repo'), repoLabel, icon('chevron-down', 'rr-op-sync-caret')]);
+  repoBtn.type = 'button';
+  repoBtn.setAttribute('aria-haspopup', 'menu');
+  repoBtn.hidden = true;
   const refStatic = h('span', 'rr-op-sync-ref', [icon('git-branch'), branch]);
   const refBtnLabel = h('span', 'rr-op-sync-branch');
   const refBtn = h('button', 'rr-op-sync-ref rr-op-sync-ref-btn', [icon('git-branch'), refBtnLabel, icon('chevron-down', 'rr-op-sync-caret')]);
@@ -146,7 +166,7 @@ function build(el: HTMLElement, opts: SyncBarOptions): BarState {
   const pull = makeButton('arrow-down');
   const push = makeButton('arrow-up');
   const row = h('div', 'rr-op-sync-row', [
-    h('span', 'rr-op-sync-refs', [refStatic, refBtn, create]),
+    h('span', 'rr-op-sync-refs', [repoBtn, refStatic, refBtn, create]),
     counts,
     h('span', 'rr-op-sync-buttons', [fetch.btn, pull.btn, push.btn]),
   ]);
@@ -154,7 +174,8 @@ function build(el: HTMLElement, opts: SyncBarOptions): BarState {
   row.setAttribute('aria-label', t.sbToolbar);
   el.replaceChildren(row);
 
-  const st: BarState = { opts, lang: getLang(), branch, refStatic, refBtn, refBtnLabel, create, counts, fetch, pull, push };
+  const st: BarState = { opts, lang: getLang(), branch, repoBtn, repoLabel, refStatic, refBtn, refBtnLabel, create, counts, fetch, pull, push };
+  repoBtn.addEventListener('click', () => st.opts.onRepoMenu?.());
   refBtn.addEventListener('click', () => st.opts.onBranchMenu?.());
   create.addEventListener('click', () => st.opts.onBranchCreate?.());
   states.set(el, st);

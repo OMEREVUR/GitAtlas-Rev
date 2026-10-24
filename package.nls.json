@@ -4,6 +4,7 @@
   "view.branches": "Branches",
   "command.refresh": "Refresh",
   "command.openInEditor": "Open map in editor",
+  "command.selectRepo": "Select repository",
   "command.refreshBranches": "Refresh branches",
   "command.github.connect": "Connect to GitHub",
   "command.github.refresh": "Refresh GitHub data",

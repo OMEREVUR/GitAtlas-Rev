@@ -224,6 +224,10 @@
 .rr-op-sync-icon[hidden] {
   display: none;
 }
+/* 0.3.0: repo adı uzun olabilir; tam yol tooltip'te. */
+.rr-op-sync-repo .rr-op-sync-branch {
+  max-width: 16ch;
+}
 .rr-op-sync-refs {
   display: inline-flex;
   align-items: center;

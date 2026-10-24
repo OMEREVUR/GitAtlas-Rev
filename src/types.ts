@@ -443,3 +443,13 @@ export type GitHubOpRequest =
   | { kind: 'checkoutPr'; number: number };
 
 export type GitHubOpKind = GitHubOpRequest['kind'];
+
+// ---- 0.3.0: çoklu klasörlü workspace ----
+
+/** Workspace klasörlerinde bulunan bir git reposu. */
+export interface RepoInfo {
+  /** Repo kökü, mutlak yol. */
+  root: string;
+  /** Kök klasörün adı (gösterim). */
+  name: string;
+}

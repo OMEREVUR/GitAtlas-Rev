@@ -119,6 +119,8 @@ export const text = defineText({
     sbDetachedPushWhy: 'Ayrık HEAD gönderilemez; önce bir branch oluşturun.',
     sbNewBranch: 'Yeni branch',
     sbNewBranchTitle: 'Yeni branch oluştur',
+    sbRepoAria: (name: string) => `Repo: ${name}. Başka bir repoya geç`,
+    sbRepoMenu: (count: number) => `Repo değiştir (workspace'te ${count} repo)`,
     sbToolbar: 'Eşitleme',
 
     // ---- işlem bildirimi ----
@@ -337,6 +339,8 @@ export const text = defineText({
     sbDetachedPushWhy: 'Detached HEAD cannot be pushed; create a branch first.',
     sbNewBranch: 'New branch',
     sbNewBranchTitle: 'Create a new branch',
+    sbRepoAria: (name: string) => `Repository: ${name}. Switch to another repository`,
+    sbRepoMenu: (count: number) => `Switch repository (${plural(count, 'repository', 'repositories')} in the workspace)`,
     sbToolbar: 'Sync',
 
     onCreatePr: 'Creating PR',

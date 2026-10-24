@@ -27,6 +27,7 @@ import type {
   GraphData,
   OpResult,
   PullRequest,
+  RepoInfo,
   StashEntry,
   TimeRange,
   TimelineData,
@@ -131,6 +132,10 @@ let prError: string | undefined;
 let prRequested = false;
 let prDraft: PrDraft | undefined;
 let prDraftError: string | undefined;
+
+// 0.3.0: çoklu repo
+let repos: RepoInfo[] = [];
+let currentRepo: string | undefined;
 
 function str(v: unknown): string | undefined {
   return typeof v === 'string' ? v : undefined;
@@ -616,6 +621,8 @@ function render(): void {
       onOp: runOp,
       onBranchMenu: () => post({ type: 'branchMenu' }),
       onBranchCreate: () => post({ type: 'branchCreate' }),
+      repo: repoForSyncBar(),
+      onRepoMenu: () => post({ type: 'repoMenu' }),
     });
   }
   const changeCount = wt?.files.length ?? 0;
@@ -706,6 +713,50 @@ function renderChangesView(): void {
     onRefresh: () => post({ type: 'loadPrPanel' }),
   });
   renderStashList(stashHost, stashes, { busy, onOp: runOp, canSave: wt.files.length > 0 });
+}
+
+function repoForSyncBar(): { name: string; count: number } | undefined {
+  if (repos.length < 2) return undefined;
+  const cur = repos.find((r) => r.root === currentRepo);
+  return cur ? { name: cur.name, count: repos.length } : undefined;
+}
+
+/**
+ * Başka bir repoya geçildi: eski reponun verisini ve seçimlerini at. "İstendi" bayrakları kalır;
+ * eklenti aynı istekleri yeni repo için kendiliğinden yeniden gönderir.
+ */
+function resetForRepo(): void {
+  stopPlay();
+  model = undefined;
+  panelState = { kind: 'loading', progress: 0 };
+  byPath = new Map();
+  heat = heatLevels([]);
+  graph = undefined;
+  graphError = undefined;
+  timeline = undefined;
+  contrib = undefined;
+  contribRequested = undefined;
+  wt = undefined;
+  stashes = [];
+  lastResult = undefined;
+  prPanel = undefined;
+  prError = undefined;
+  prRequested = false;
+  prDraft = undefined;
+  prDraftError = undefined;
+  ui = {
+    ...ui,
+    root: '',
+    selectedPath: undefined,
+    selectedHash: undefined,
+    selectedBranch: undefined,
+    selectedAuthor: undefined,
+    timeAt: undefined,
+    filters: { branch: undefined, author: undefined, query: '', plain: ui.filters.plain },
+  };
+  saveUi();
+  resetCommitBox(commitHost);
+  resetPrForm(prHost);
 }
 
 function loadingNote(host: HTMLElement, text: string): void {
@@ -838,6 +889,11 @@ window.addEventListener('message', (e: MessageEvent<ExtensionToWebview>) => {
     case 'graphError':
       graphLoading = false;
       graphError = msg.message;
+      break;
+    case 'repos':
+      if (currentRepo !== undefined && msg.current !== currentRepo) resetForRepo();
+      repos = msg.repos;
+      currentRepo = msg.current;
       break;
     case 'selectBranch':
       ui = { ...ui, selectedBranch: msg.name, selectedHash: msg.name ? undefined : ui.selectedHash };

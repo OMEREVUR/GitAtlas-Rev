@@ -41,6 +41,13 @@
   var gh = params.get('gh') || 'connected';
   if (params.get('tree') === '1') state = Object.assign({}, state || {}, { changesTree: true });
   var opdemo = params.get('opdemo') === '1';
+  // ?repos=2: çoklu klasörlü workspace (repo seçici görünür).
+  var repoCount = Number(params.get('repos')) || 1;
+  function reposMsg() {
+    var list = [{ root: '/work/' + model.repoName, name: model.repoName }];
+    for (var i = 1; i < repoCount; i++) list.push({ root: '/work/api-' + i, name: 'api-' + i });
+    return { type: 'repos', repos: list, current: list[0].root, follow: false };
+  }
   function githubData() {
     var d = model.github;
     if (gh === 'off') return { status: { state: 'off', dismissed: false }, pullRequests: [], branchCi: [] };
@@ -60,6 +67,7 @@
         console.log('[webview → eklenti]', JSON.stringify(msg));
         if (!model) { send({ type: 'error', code: 'unknown', message: 'dev/out/preview-model.js yok: npm run preview -- <repo> çalıştır.' }); return; }
         if (msg.type === 'ready' || msg.type === 'refresh') {
+          if (msg.type === 'ready') send(reposMsg());
           send({ type: 'loading', progress: 0.5 });
           setTimeout(function () { sendModel(); if (model.github) send({ type: 'github', data: githubData() }); }, 50);
         }

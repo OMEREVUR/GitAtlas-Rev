@@ -85,6 +85,12 @@
         "icon": "$(open-preview)"
       },
       {
+        "command": "gitatlas-revrev.selectRepo",
+        "title": "%command.selectRepo%",
+        "category": "GitAtlas-Rev",
+        "icon": "$(repo)"
+      },
+      {
         "command": "gitatlas-revrev.refreshBranches",
         "title": "%command.refreshBranches%",
         "category": "GitAtlas-Rev",

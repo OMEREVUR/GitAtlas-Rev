@@ -43,6 +43,7 @@ import type {
 } from '../types';
 import { INDEX_REF, makeGitUri } from './gitContentProvider';
 import { createVscodeOpsUi } from './opsUi';
+import type { RepoManager } from './repoManager';
 import { WorkingTreeWatcher } from './workingTreeWatcher';
 import type { GitAtlasRevRevStatusBar } from './statusBar';
 
@@ -313,6 +314,8 @@ export function parseWebviewMessage(raw: unknown): WebviewToExtension | undefine
       return { type: 'branchMenu' };
     case 'branchCreate':
       return { type: 'branchCreate' };
+    case 'repoMenu':
+      return { type: 'repoMenu' };
     case 'githubDismiss':
       return { type: 'githubDismiss' };
     case 'githubRefresh':
@@ -449,6 +452,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     private readonly decorations: HeatDecorationProvider,
     private readonly statusBar: GitAtlasRevRevStatusBar,
     private readonly github: GitHubLayer,
+    private readonly repos: RepoManager,
   ) {
     setGitPath(getGitPath());
     this.statusBar.setGitHub(github.data);
@@ -477,7 +481,13 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
           this.updateDecorations();
         }
       }),
-      vscode.workspace.onDidChangeWorkspaceFolders(() => void this.reload()),
+      vscode.workspace.onDidChangeWorkspaceFolders(() => {
+        this.repos.markStale();
+        void this.reload();
+      }),
+      // Çoklu repo: liste/seçim webview'lara (kök değişince model'den önce gider), seçim değişince yeniden tara.
+      repos.onDidChange((s) => this.broadcast({ type: 'repos', repos: s.repos, current: s.current, follow: s.follow })),
+      repos.onDidSelect(() => void this.reload()),
     );
   }
 
@@ -567,6 +577,17 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     return this.running;
   }
 
+  /** Repo listesini de yeniden bulup tarar (Yenile düğmesi/komutu: başka bir klasörde sonradan git init yapılmış olabilir). */
+  refreshAll(): Promise<void> {
+    this.repos.markStale();
+    return this.reload();
+  }
+
+  /** Sürmekte olan ya da sırada bekleyen yazma işlemi var mı? */
+  get busy(): boolean {
+    return this.opQueue.busy;
+  }
+
   dispose(): void {
     this.disposed = true;
     this.webviews.forEach((w) => w.disposables.forEach((d) => d.dispose()));
@@ -617,6 +638,13 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
   }
 
   private async resolveRoot(): Promise<string> {
+    await this.repos.ensure();
+    const selected = this.repos.currentRoot;
+    if (selected) {
+      this.setRoot(selected);
+      return selected;
+    }
+    // Hiç repo bulunamadı: hatayı (klasör yok / repo değil / git yok) ilk klasör üzerinden üret.
     const folder = vscode.workspace.workspaceFolders?.[0];
     if (!folder || folder.uri.scheme !== 'file') {
       this.setRoot(undefined);
@@ -648,6 +676,9 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     this.githubOps = undefined;
     this.lastPrPanel = undefined;
     this.lastPrPanelMsg = undefined;
+    // Branch adları repoya özgü: graph tüm branch'lerle yeniden yüklenir, Branch'ler seçimi kalkar.
+    if (this.graphParams) this.graphParams = { limit: this.graphParams.limit };
+    this.selectedBranch = undefined;
     this.watcher?.dispose();
     this.watcher = undefined;
     this.ensureWatcher();
@@ -1178,7 +1209,9 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     if (!msg) return;
     try {
       switch (msg.type) {
-        case 'ready':
+        case 'ready': {
+          const rs = this.repos.snapshot;
+          void from.postMessage({ type: 'repos', repos: rs.repos, current: rs.current, follow: rs.follow });
           if (this.lastState) void from.postMessage(this.lastState);
           if (this.lastGraphState) void from.postMessage(this.lastGraphState);
           if (this.selectedBranch !== undefined) void from.postMessage({ type: 'selectBranch', name: this.selectedBranch });
@@ -1190,12 +1223,13 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
           if (this.lastPrPanelMsg) void from.postMessage(this.lastPrPanelMsg);
           if (!this.started) void this.reload();
           break;
+        }
         case 'setRange':
           this.range = msg.range;
           this.recompute();
           break;
         case 'refresh':
-          await this.reload();
+          await this.refreshAll();
           break;
         case 'openFile':
           await this.openFile(msg.path);
@@ -1220,6 +1254,9 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
           break;
         case 'branchCreate':
           this.branchActionEmitter.fire('create');
+          break;
+        case 'repoMenu':
+          await this.repos.showPicker();
           break;
         case 'githubDismiss':
           this.github.dismiss();
