@@ -43,6 +43,22 @@
   var opdemo = params.get('opdemo') === '1';
   // ?repos=2: çoklu klasörlü workspace (repo seçici görünür).
   var repoCount = Number(params.get('repos')) || 1;
+  // ?conflict=merge|rebase: sahte çakışma (3 dosya; ardından 1'i çözülmüş hâli gelir → "1/3 dosya çözüldü").
+  var conflictOp = params.get('conflict');
+  function conflictStatus(resolved) {
+    var base = JSON.parse(JSON.stringify(model.status));
+    var files = (model.ranges.all || []).filter(function (f) { return f.changes > 0; }).slice(0, 3).map(function (f) { return f.path; });
+    var kinds = ['bothModified', 'deletedByThem', 'bothAdded'];
+    var list = files.map(function (p, i) {
+      if (i < resolved) return { path: p, staged: 'modified', conflicted: false };
+      return { path: p, unstaged: kinds[i] === 'deletedByThem' ? 'deleted' : 'modified', conflicted: true, conflict: kinds[i] };
+    });
+    base.files = list.concat(base.files.filter(function (f) { return files.indexOf(f.path) < 0; }));
+    base.operation = conflictOp;
+    return base;
+  }
+  // ?color=recency: haritanın renk ölçeği.
+  var colorMode = params.get('color') === 'recency' ? 'recency' : 'churn';
   function reposMsg() {
     var list = [{ root: '/work/' + model.repoName, name: model.repoName }];
     for (var i = 1; i < repoCount; i++) list.push({ root: '/work/api-' + i, name: 'api-' + i });
@@ -57,7 +73,7 @@
   }
   function send(msg) { window.postMessage(msg, '*'); }
   function sendModel() {
-    send({ type: 'model', range: range, repoName: model.repoName, files: model.ranges[range], commits: model.commits });
+    send({ type: 'model', range: range, repoName: model.repoName, files: model.ranges[range], commits: model.commits, colorMode: colorMode });
   }
   window.acquireVsCodeApi = function () {
     return {
@@ -73,7 +89,10 @@
         }
         else if (msg.type === 'loadStatus') {
           setTimeout(function () {
-            send({ type: 'status', status: model.status });
+            if (conflictOp) {
+              send({ type: 'status', status: conflictStatus(0) });
+              send({ type: 'status', status: conflictStatus(1) });
+            } else send({ type: 'status', status: model.status });
             send({ type: 'stashes', stashes: model.stashes || [] });
             if (opdemo) {
               send({ type: 'opStarted', id: 'demo', kind: 'push', commands: ['git push -u origin feature/graph'] });
@@ -117,6 +136,7 @@
         else if (msg.type === 'loadTimeline') { setTimeout(function () { send({ type: 'timeline', timeline: model.timeline }); }, 30); }
         else if (msg.type === 'loadContrib') { setTimeout(function () { send({ type: 'contrib', contrib: model.contribs[msg.range] }); }, 30); }
         else if (msg.type === 'setRange') { range = msg.range; sendModel(); }
+        else if (msg.type === 'setColorMode') { colorMode = msg.mode; sendModel(); }
         else if (msg.type === 'loadGraph') {
           send({ type: 'graphLoading' });
           var g = model.graphs && model.graphs[msg.branch || ''];

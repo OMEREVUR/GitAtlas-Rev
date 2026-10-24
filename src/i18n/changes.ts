@@ -2,6 +2,22 @@
 // stash listesi ve PR paneli. Git komutlarının kendisi (opCommands önizlemesi) çevrilmez.
 import { defineText, plural } from './index';
 import { formatNumber } from '../webview/format';
+import type { SideRole } from '../git/conflictSides';
+
+const SIDE_SHORT_TR: Record<SideRole, string> = {
+  current: 'Mevcut', incoming: 'Gelen', onto: 'Hedef', yours: 'Seninki', picked: 'Alınan', revert: 'Geri alma',
+};
+const SIDE_LONG_TR: Record<SideRole, string> = {
+  current: "mevcut branch'teki (HEAD)", incoming: "gelen branch'teki", onto: "üzerine rebase edilen branch'teki",
+  yours: "senin commit'indeki", picked: "alınan commit'teki", revert: "geri alma commit'indeki",
+};
+const SIDE_SHORT_EN: Record<SideRole, string> = {
+  current: 'Current', incoming: 'Incoming', onto: 'Target', yours: 'Yours', picked: 'Picked', revert: 'Revert',
+};
+const SIDE_LONG_EN: Record<SideRole, string> = {
+  current: 'the current branch (HEAD)', incoming: 'the incoming branch', onto: 'the branch you are rebasing onto',
+  yours: 'your commit', picked: 'the picked commit', revert: 'the revert',
+};
 
 const n = formatNumber;
 
@@ -58,6 +74,14 @@ export const text = defineText({
     resolvedBtn: 'Çözüldü',
     resolvedAria: (name: string) => `${name}: çözüldü olarak işaretle`,
     resolvedTitle: 'Çakışma çözüldü olarak işaretle',
+    // 0.3.0: çakışma satırı
+    sideShort: (role: SideRole) => SIDE_SHORT_TR[role],
+    sideAria: (name: string, role: SideRole) => `${name}: ${SIDE_LONG_TR[role]} sürümü al`,
+    sideTitle: (role: SideRole) => `${SIDE_LONG_TR[role]} sürümü al (diğer taraf atılır)`,
+    sideDeletes: (role: SideRole) => `${SIDE_LONG_TR[role]} tarafta dosya yok: seçersen dosya silinir`,
+    mergeEditorAria: (name: string) => `${name}: merge editöründe aç`,
+    mergeEditorTitle: 'Merge editöründe aç (iki taraf yan yana, sonuç altta)',
+    bandProgress: (done: number, total: number) => ` · ${n(done)}/${n(total)} dosya çözüldü`,
     diffAria: (name: string) => `${name}: diff'i gör`,
     diffTitle: "Diff'i gör",
     openFileAria: (name: string) => `${name}: dosyayı aç`,
@@ -280,6 +304,13 @@ export const text = defineText({
     resolvedBtn: 'Mark resolved',
     resolvedAria: (name: string) => `${name}: mark resolved`,
     resolvedTitle: 'Mark the conflict as resolved',
+    sideShort: (role: SideRole) => SIDE_SHORT_EN[role],
+    sideAria: (name: string, role: SideRole) => `${name}: keep the version from ${SIDE_LONG_EN[role]}`,
+    sideTitle: (role: SideRole) => `Keep the version from ${SIDE_LONG_EN[role]} (the other side is dropped)`,
+    sideDeletes: (role: SideRole) => `The file does not exist in ${SIDE_LONG_EN[role]}: choosing it deletes the file`,
+    mergeEditorAria: (name: string) => `${name}: open in merge editor`,
+    mergeEditorTitle: 'Open in the merge editor (both sides next to each other, result below)',
+    bandProgress: (done: number, total: number) => ` · ${n(done)}/${plural(total, 'file')} resolved`,
     diffAria: (name: string) => `${name}: open diff`,
     diffTitle: 'Open diff',
     openFileAria: (name: string) => `${name}: open file`,

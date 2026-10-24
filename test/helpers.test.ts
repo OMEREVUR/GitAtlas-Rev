@@ -10,7 +10,7 @@ vi.mock('vscode', () => ({
   workspace: { getConfiguration: () => ({ get: () => [] }) },
 }));
 
-import { heatLevels } from '../src/webview/heat';
+import { heatLevels, levelsFor, recencyLevels } from '../src/webview/heat';
 import { recentCommitsForFile } from '../src/webview/fileCard';
 import { computeHeatTiers, heatBadge } from '../src/decorations/heatDecorations';
 import { isSafeRelPath, parseWebviewMessage } from '../src/panel/panelProvider';
@@ -33,6 +33,61 @@ describe('heatLevels', () => {
     expect(h.get('f9')).toBe(5);
     expect(h.get('tie')).toBe(h.get('f9'));
     expect(h.get('f4')).toBe(3);
+  });
+
+  it("çoğunluğu oluşturan eşitler grubun en alt sırasını alır (genç repoda 1 commit'likler soğuk kalır)", () => {
+    const files = [
+      ...Array.from({ length: 7 }, (_, i) => file(`once${i}`, 1)),
+      file('twice', 2),
+      file('busy', 5),
+      file('hot', 9),
+    ];
+    const h = heatLevels(files);
+    for (let i = 0; i < 7; i++) expect(h.get(`once${i}`)).toBe(1);
+    expect(h.get('twice')).toBe(4);
+    expect(h.get('busy')).toBe(5);
+    expect(h.get('hot')).toBe(5);
+  });
+
+  it('hepsi aynı sayıda değiştiyse hepsi en soğuk değişen seviyede', () => {
+    const h = heatLevels([file('a', 1), file('b', 1), file('c', 1)]);
+    expect([...h.values()]).toEqual([1, 1, 1]);
+  });
+});
+
+describe('recencyLevels', () => {
+  const NOW = Date.UTC(2026, 9, 24, 12);
+  const at = (path: string, daysAgo: number): FileStat => ({ ...file(path, 1), lastModified: daysAgo < 0 ? 0 : NOW - daysAgo * 864e5 });
+
+  it("son değişiklikten bu yana geçen süreye göre sabit dilimler; commit'i olmayan 0", () => {
+    const h = recencyLevels([at('today', 0.2), at('d2', 2), at('d5', 5), at('d20', 20), at('old', 90), at('none', -1)], NOW);
+    expect([...h.values()]).toEqual([5, 4, 3, 2, 1, 0]);
+  });
+
+  it('dilim sınırları kapsayıcıdır', () => {
+    const h = recencyLevels([at('a', 1), at('b', 3), at('c', 7), at('d', 30), at('e', 30.01)], NOW);
+    expect([...h.values()]).toEqual([5, 4, 3, 2, 1]);
+  });
+
+  it("webview'dan gelen setColorMode/repoMenu doğrulanır", () => {
+    expect(parseWebviewMessage({ type: 'setColorMode', mode: 'recency' })).toEqual({ type: 'setColorMode', mode: 'recency' });
+    expect(parseWebviewMessage({ type: 'setColorMode', mode: 'rainbow' })).toBeUndefined();
+    expect(parseWebviewMessage({ type: 'repoMenu' })).toEqual({ type: 'repoMenu' });
+  });
+
+  it("openMergeEditor ve resolveSide yalnızca güvenli yol ve geçerli tarafla kabul edilir", () => {
+    expect(parseWebviewMessage({ type: 'openMergeEditor', path: 'src/a.ts' })).toEqual({ type: 'openMergeEditor', path: 'src/a.ts' });
+    expect(parseWebviewMessage({ type: 'openMergeEditor', path: '../x' })).toBeUndefined();
+    const op = (o: unknown): unknown => parseWebviewMessage({ type: 'gitOp', id: 'x', op: o });
+    expect(op({ kind: 'resolveSide', path: 'a.txt', side: 'theirs' })).toEqual({ type: 'gitOp', id: 'x', op: { kind: 'resolveSide', path: 'a.txt', side: 'theirs' } });
+    expect(op({ kind: 'resolveSide', path: 'a.txt', side: 'both' })).toBeUndefined();
+    expect(op({ kind: 'resolveSide', path: '/etc/passwd', side: 'ours' })).toBeUndefined();
+  });
+
+  it('levelsFor moda göre seçer', () => {
+    const files = [at('x', 0.5)];
+    expect(levelsFor('recency', files, NOW).get('x')).toBe(5);
+    expect(levelsFor('churn', files, NOW).get('x')).toBe(1);
   });
 });
 

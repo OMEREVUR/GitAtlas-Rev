@@ -63,6 +63,37 @@
   min-height: 0;
   border-top: 1px solid var(--vscode-panel-border);
 }
+/* 0.3.0: çakışma bandı (Değişiklikler sekmesi dışındaki sekmelerde). */
+.rr-conflictband {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-top: 1px solid var(--vscode-panel-border);
+  border-left: 3px solid var(--vscode-gitDecoration-conflictingResourceForeground, var(--vscode-errorForeground));
+  background: var(--vscode-inputValidation-errorBackground, var(--vscode-editorWidget-background));
+}
+.rr-conflictband[hidden] {
+  display: none;
+}
+.rr-conflictband .codicon {
+  color: var(--vscode-gitDecoration-conflictingResourceForeground, var(--vscode-errorForeground));
+}
+.rr-conflictband-text {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.rr-conflictband-go {
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--rr-btn-border);
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
 .rr-selbar {
   grid-area: sel;
   display: flex;

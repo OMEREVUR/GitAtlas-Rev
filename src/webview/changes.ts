@@ -4,6 +4,7 @@ import './changes.css';
 import type { ChangeKind, GitOpRequest, RepoOperation, WorkingFile, WorkingTreeStatus } from '../types';
 import { baseName, formatNumber } from './format';
 import { formatCommand, opCommands } from '../git/opCommands';
+import { sideExists, sideRole, type ConflictSide } from '../git/conflictSides';
 import { text } from '../i18n/changes';
 
 export interface ChangesOptions {
@@ -18,6 +19,10 @@ export interface ChangesOptions {
   onToggleTreeView: () => void;
   /** Düğme title'larında gösterilecek komut ("git add -A"). Verilmezse opCommands + formatCommand kullanılır. */
   commandFor?: (op: GitOpRequest) => string | undefined;
+  /** 0.3.0: bu işlemde görülen en yüksek çakışma sayısı; bantta "2/5 dosya çözüldü". */
+  conflictTotal?: number;
+  /** 0.3.0: verilirse çakışma satırında "merge editöründe aç" düğmesi çıkar. */
+  onOpenMergeEditor?: (path: string) => void;
 }
 
 type Section = 'conflicts' | 'staged' | 'changes';
@@ -187,6 +192,8 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     text.append(icon(conflicts.length > 0 ? 'codicon-warning' : 'codicon-info'));
     const msg = h('span');
     msg.append(h('strong', undefined, opText(status.operation)));
+    const total = Math.max(opts.conflictTotal ?? 0, conflicts.length);
+    if (total > 0) msg.append(h('strong', 'rr-ch-band-progress', t.bandProgress(total - conflicts.length, total)));
     msg.append(document.createTextNode(conflicts.length > 0 ? t.bandConflicts(conflicts.length) : t.bandNoConflicts));
     text.append(msg);
     const actions = h('div', 'rr-ch-band-actions');
@@ -545,6 +552,22 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
 
     const acts = h('span', 'rr-ch-actions');
     if (e.section === 'conflicts') {
+      if (opts.onOpenMergeEditor) {
+        const open = opts.onOpenMergeEditor;
+        acts.append(iconButton('codicon-git-merge', t.mergeEditorAria(baseName(f.path)), t.mergeEditorTitle, false, `act:merge:${rk}`, () => open(f.path)));
+      }
+      for (const side of ['ours', 'theirs'] as ConflictSide[]) {
+        const role = sideRole(status.operation, side);
+        const op: GitOpRequest = { kind: 'resolveSide', path: f.path, side };
+        const b = h('button', 'rr-ch-btn rr-ch-resolve rr-ch-side', t.sideShort(role));
+        b.type = 'button';
+        b.setAttribute('aria-label', t.sideAria(baseName(f.path), role));
+        b.title = title(sideExists(f.conflict, side) ? t.sideTitle(role) : t.sideDeletes(role), cmd(op));
+        b.disabled = busy;
+        b.onclick = () => opts.onOp(op);
+        key(b, `act:${side}:${rk}`);
+        acts.append(b);
+      }
       const done = h('button', 'rr-ch-btn rr-ch-resolve');
       done.type = 'button';
       done.append(icon('codicon-check'), document.createTextNode(t.resolvedBtn));

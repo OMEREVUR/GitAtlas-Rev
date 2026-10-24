@@ -1,5 +1,5 @@
 // SÖZLEŞME — webview ↔ eklenti mesajları. Değişiklik yalnızca bilinçli bir kararla yapılır.
-import type { CommitSummary, ContribData, FileStat, GitHubData, GitHubOpKind, GitHubOpRequest, GitOpKind, GitOpRequest, GraphData, OpResult, PrDraft, PrPanelData, RepoInfo, StashEntry, TimeRange, TimelineData, WorkingTreeStatus } from './types';
+import type { ColorMode, CommitSummary, ContribData, FileStat, GitHubData, GitHubOpKind, GitHubOpRequest, GitOpKind, GitOpRequest, GraphData, OpResult, PrDraft, PrPanelData, RepoInfo, StashEntry, TimeRange, TimelineData, WorkingTreeStatus } from './types';
 
 /** Panelde gösterilen hata durumları (tasarım: States.dc.html). */
 export type ErrorCode = 'noWorkspace' | 'noRepo' | 'noCommits' | 'noGit' | 'unknown';
@@ -21,6 +21,8 @@ export type ExtensionToWebview =
       commits: CommitSummary[];
       /** gitatlas-revrev.graph.initialCommits ayarı (graph sayfa boyutu). */
       graphPageSize?: number;
+      /** 0.3.0: haritanın renk ölçeği (yoksa 'churn'). */
+      colorMode?: ColorMode;
     }
   | { type: 'error'; code: ErrorCode; message: string }
   // v2
@@ -90,4 +92,8 @@ export type WebviewToExtension =
   | { type: 'branchCreate' }
   // 0.3.0
   /** Eşitleme çubuğundaki repo adı: repo seçici (QuickPick eklentide). */
-  | { type: 'repoMenu' };
+  | { type: 'repoMenu' }
+  /** Haritanın renk ölçeği; eklenti hatırlar ve bütün webview'lara model ile geri gönderir. */
+  | { type: 'setColorMode'; mode: ColorMode }
+  /** Çakışan dosyayı VS Code'un 3 yönlü merge editöründe aç (yoksa dosyayı aç). */
+  | { type: 'openMergeEditor'; path: string };

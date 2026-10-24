@@ -7,6 +7,8 @@ type DirtyKind = ChangeKind | 'conflicted';
 
 const HEAT_TR = ['Değişmedi', 'Çok az', 'Az', 'Orta', 'Sık', 'Çok sık'];
 const HEAT_EN = ['Unchanged', 'Very rare', 'Rare', 'Moderate', 'Frequent', 'Very frequent'];
+const RECENCY_TR = ['Commit yok', 'Bir aydan eski', 'Son 1 ay', 'Son 1 hafta', 'Son 3 gün', 'Son 24 saat'];
+const RECENCY_EN = ['No commits', 'Older than a month', 'Last month', 'Last week', 'Last 3 days', 'Last 24 hours'];
 
 const DIRTY_TR: Record<DirtyKind, string> = {
   modified: 'Değişti', added: 'Yeni', deleted: 'Silindi', renamed: 'Adı değişti', copied: 'Kopyalandı',
@@ -34,6 +36,7 @@ export const text = defineText({
     staleData: 'eski veri',
     conflictRisk: 'çakışma riski',
     heatLabel: (level: number) => HEAT_TR[level] ?? '',
+    recencyLabel: (level: number) => RECENCY_TR[level] ?? '',
     dirty: (k: DirtyKind) => DIRTY_TR[k],
     rootModule: '(kök)',
 
@@ -68,6 +71,18 @@ export const text = defineText({
     tipFiles: 'Dosya',
     tipHottest: 'En sıcak',
     tipFolderHint: 'Tıkla: klasörün içine in',
+    // 0.3.0: renk modu ve ipucu
+    colorModeAria: 'Harita rengi',
+    colorChurn: 'Sıklık',
+    colorChurnTitle: "Renk: seçili aralıkta kaç commit'te değiştiği",
+    colorRecency: 'Tazelik',
+    colorRecencyTitle: 'Renk: en son ne zaman değiştiği (aralıktan bağımsız)',
+    olderChanged: 'Uzun süredir dokunulmadı',
+    newerChanged: 'Yakın zamanda değişti',
+    tipRecency: 'Tazelik',
+    tipNewest: 'En yeni',
+    mergeConflictLegend: 'Çakışan dosya (çözülmemiş)',
+    clickCommitHint: "İpucu: Son commit'ler listesinde bir commit'e tıkla, dokunduğu dosyalar haritada yansın.",
 
     // dosya kartı
     pickFile: 'Bir dosya seç',
@@ -177,6 +192,7 @@ export const text = defineText({
     staleData: 'stale data',
     conflictRisk: 'conflict risk',
     heatLabel: (level: number) => HEAT_EN[level] ?? '',
+    recencyLabel: (level: number) => RECENCY_EN[level] ?? '',
     dirty: (k: DirtyKind) => DIRTY_EN[k],
     rootModule: '(root)',
 
@@ -211,6 +227,17 @@ export const text = defineText({
     tipFiles: 'Files',
     tipHottest: 'Hottest',
     tipFolderHint: 'Click: open folder',
+    colorModeAria: 'Map color',
+    colorChurn: 'Frequency',
+    colorChurnTitle: 'Color: how many commits changed it in the selected range',
+    colorRecency: 'Recency',
+    colorRecencyTitle: 'Color: when it last changed (independent of the range)',
+    olderChanged: 'Untouched for a long time',
+    newerChanged: 'Changed recently',
+    tipRecency: 'Recency',
+    tipNewest: 'Newest',
+    mergeConflictLegend: 'Conflicted file (unresolved)',
+    clickCommitHint: 'Tip: click a commit under Recent commits to light up the files it touched on the map.',
 
     pickFile: 'Select a file',
     pickFileText: 'Click a box on the map to see its recent commits and diffs here.',

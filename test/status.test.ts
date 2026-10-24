@@ -59,7 +59,7 @@ describe('parsePorcelainV2 / parseNumstatZ (sabit)', () => {
     expect(s.files).toEqual([
       { path: 'src/boşluklu ad.ts', staged: 'modified', unstaged: 'modified', conflicted: false },
       { path: 'yeni.ts', oldPath: 'eski.ts', staged: 'renamed', conflicted: false },
-      { path: 'çakışma.txt', unstaged: 'modified', conflicted: true },
+      { path: 'çakışma.txt', unstaged: 'modified', conflicted: true, conflict: 'bothModified' },
       { path: 'yeni/ç.txt', unstaged: 'untracked', conflicted: false },
     ]);
     expect(parsePorcelainV2('# branch.oid (initial)\0# branch.head (detached)\0')).toEqual({ ahead: 0, behind: 0, stashCount: 0, files: [] });

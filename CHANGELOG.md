@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+Usability round based on the first user feedback.
+- **Multi-root workspaces:** GitAtlas-Rev now finds the git repository in every workspace folder, not only the first one. Switch repositories with the repository button next to the branch name, the status bar item or **GitAtlas-Rev: Select repository**; optionally follow the repository of the active file. The choice is remembered per workspace.
+- **Get started walkthrough** (5 steps with screenshots) and a one-time "Open the map / Take the tour" notification the first time a repository is found.
+- **Color mode:** a Frequency / Recency switch on the map. Recency colors files by when they last changed (last 24 hours, 3 days, week, month, older), independent of the time range.
+- **Fairer heat scale:** files with the same number of commits now get the lowest rank of their group, so files changed only once no longer look hot in a young repository. Applies to the map, the file card, the time machine and the `all` Explorer badge mode.
+- Hint under the map legend: click a commit to light up the files it touched.
+- **Merge conflicts:** conflicted files get a red frame and a "!" badge on the map, and a conflict band appears on the other tabs. In the Changes tab every conflicted file has "Open in merge editor", buttons to keep one side (labelled for merge, rebase and cherry-pick; asks for confirmation; deletes the file if that side removed it) and "Mark resolved". The band shows how many files are resolved.
+- `make vsix` / `make check` for building and checking (development only).
+
 ## 0.2.1
 - Marketplace page: screenshots and a time machine GIF in the README, Marketplace/CI badges and an install link.
 - `package.json`: repository, issue tracker, homepage, keywords and gallery banner.

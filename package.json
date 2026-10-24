@@ -2,7 +2,7 @@
   "name": "gitatlas-rev",
   "displayName": "GitAtlas-Rev",
   "description": "%description%",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "publisher": "Omer-Cayir",
   "icon": "icons/icon.png",
   "license": "SEE LICENSE IN LICENSE",
@@ -339,7 +339,73 @@
           "markdownDescription": "%config.language%"
         }
       }
-    }
+    },
+    "walkthroughs": [
+      {
+        "id": "start",
+        "title": "%walkthrough.title%",
+        "description": "%walkthrough.description%",
+        "steps": [
+          {
+            "id": "openMap",
+            "title": "%walkthrough.openMap.title%",
+            "description": "%walkthrough.openMap.description%",
+            "media": {
+              "image": "media/walkthrough/map.png",
+              "altText": "%walkthrough.openMap.alt%"
+            },
+            "completionEvents": [
+              "onView:gitatlas-revrev.panel"
+            ]
+          },
+          {
+            "id": "highlight",
+            "title": "%walkthrough.highlight.title%",
+            "description": "%walkthrough.highlight.description%",
+            "media": {
+              "image": "media/walkthrough/highlight.png",
+              "altText": "%walkthrough.highlight.alt%"
+            }
+          },
+          {
+            "id": "openEditor",
+            "title": "%walkthrough.openEditor.title%",
+            "description": "%walkthrough.openEditor.description%",
+            "media": {
+              "image": "media/walkthrough/editor.png",
+              "altText": "%walkthrough.openEditor.alt%"
+            },
+            "completionEvents": [
+              "onCommand:gitatlas-revrev.openInEditor"
+            ]
+          },
+          {
+            "id": "repos",
+            "title": "%walkthrough.repos.title%",
+            "description": "%walkthrough.repos.description%",
+            "media": {
+              "image": "media/walkthrough/repos.png",
+              "altText": "%walkthrough.repos.alt%"
+            },
+            "completionEvents": [
+              "onCommand:gitatlas-revrev.selectRepo"
+            ]
+          },
+          {
+            "id": "github",
+            "title": "%walkthrough.github.title%",
+            "description": "%walkthrough.github.description%",
+            "media": {
+              "image": "media/walkthrough/github.png",
+              "altText": "%walkthrough.github.alt%"
+            },
+            "completionEvents": [
+              "onCommand:gitatlas-revrev.github.connect"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "scripts": {
     "build": "node esbuild.mjs",

@@ -1,8 +1,9 @@
 // Repo treemap'i: yol çubuğu + SVG harita + lejant + tooltip. Tasarım: Main.dc.html, Drill.dc.html.
 import './treemap.css';
 import { hierarchy, treemap, treemapSquarify, type HierarchyNode, type HierarchyRectangularNode } from 'd3-hierarchy';
-import type { ChangeKind, FileStat } from '../types';
-import { heatLabel, heatLevels, heatVar, type HeatLevel } from './heat';
+import type { ChangeKind, ColorMode, FileStat } from '../types';
+import { heatVar, levelLabel, levelsFor, type HeatLevel } from './heat';
+import { renderColorMode } from './colorMode';
 import { baseName, formatNumber, formatRelative } from './format';
 import { text } from '../i18n/map';
 
@@ -24,11 +25,17 @@ export interface TreemapOptions {
   missing?: Set<string>;
   /** v5: commit edilmemiş değişiklikler; kutunun sağ üstünde harf rozeti (M/A/D/R/U). */
   dirty?: Map<string, ChangeKind | 'conflicted'>;
+  /** 0.3.0: renk ölçeği (varsayılan 'churn'). */
+  colorMode?: ColorMode;
+  /** 0.3.0: lejantta "bir commit'e tıkla" ipucu (vurgu yokken). */
+  hint?: boolean;
+  /** 0.3.0: verilirse yol çubuğunun sağında Sıklık / Tazelik seçicisi çıkar. */
+  onColorMode?: (mode: ColorMode) => void;
 }
 
 type DirtyKind = ChangeKind | 'conflicted';
 const DIRTY_LETTER: Record<DirtyKind, string> = {
-  modified: 'M', added: 'A', deleted: 'D', renamed: 'R', copied: 'C', typechange: 'T', untracked: 'A', conflicted: 'U',
+  modified: 'M', added: 'A', deleted: 'D', renamed: 'R', copied: 'C', typechange: 'T', untracked: 'A', conflicted: '!',
 };
 
 /** codicon-git-pull-request glifi. */
@@ -172,7 +179,8 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
   const header = compact ? 0 : HEADER;
   const minFolderW = compact ? 8 : MIN_FOLDER_W;
   const minFolderH = compact ? 8 : MIN_FOLDER_H;
-  const levels = heatLevels(files);
+  const mode: ColorMode = opts.colorMode ?? 'churn';
+  const levels = levelsFor(mode, files, Date.now());
   const byPath = new Map(files.map((f) => [f.path, f]));
   const prefix = root === '' ? '' : root + '/';
   const inRoot = files.filter((f) => f.path.startsWith(prefix));
@@ -233,6 +241,11 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
     meta.append(note);
   }
   meta.append(h('span', 'rr-tm-count', t.fileCountMeta(inRoot.length)));
+  if (opts.onColorMode && !compact) {
+    const modeHost = h('span', 'rr-tm-colormode');
+    renderColorMode(modeHost, mode, opts.onColorMode);
+    meta.append(modeHost);
+  }
   bar.append(meta);
   if (!compact) el.append(bar);
 
@@ -241,7 +254,10 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
   el.append(area);
 
   // Lejant
-  if (!compact) el.append(legend(hasHighlight, prCounts !== undefined && prCounts.size > 0, opts.prStale === true, missing !== undefined && missing.size > 0, dirty !== undefined && dirty.size > 0));
+  if (!compact) {
+    const hasConflict = dirty !== undefined && [...dirty.values()].includes('conflicted');
+    el.append(legend(hasHighlight, prCounts !== undefined && prCounts.size > 0, opts.prStale === true, missing !== undefined && missing.size > 0, dirty !== undefined && dirty.size > 0, mode, opts.hint === true && !hasHighlight, hasConflict));
+  }
 
   // Tooltip (fixed; pencereye göre konumlanır)
   const tip = h('div', 'rr-tm-tip');
@@ -382,6 +398,11 @@ export function renderTreemap(el: HTMLElement, files: FileStat[], opts: TreemapO
       }
       drawBoxLabel(g, x, y, w, hgt, baseName(f.path), `${t.lines(f.lines)} · ${t.commits(f.changes)}`, level >= 4, reserve);
       frag.append(g);
+      if (dk === 'conflicted') {
+        // Birleştirme çakışması: düz, hata renginde çerçeve (PR çakışma riskinin kesikli morundan ayrı).
+        const mc = insetRect('rr-tm-mergeconflict', x, y, w, hgt, 1.5);
+        if (mc) overlay.append(mc);
+      }
       if (prs >= 2) {
         const c = insetRect('rr-tm-conflict', x, y, w, hgt, isSel || (hasHighlight && isHl) ? 5 : 4);
         if (c) {
@@ -480,14 +501,23 @@ function prBadge(x: number, y: number, bw: number, label: string, conflict: bool
   return g;
 }
 
-function legend(hasHighlight: boolean, hasPr = false, prStale = false, hasMissing = false, hasDirty = false): HTMLElement {
+function legend(
+  hasHighlight: boolean,
+  hasPr = false,
+  prStale = false,
+  hasMissing = false,
+  hasDirty = false,
+  mode: ColorMode = 'churn',
+  hint = false,
+  hasConflict = false,
+): HTMLElement {
   const t = text();
   const lg = h('div', 'rr-tm-legend');
   lg.setAttribute('aria-label', t.legend);
   lg.setAttribute('role', 'group');
 
   const scale = h('span', 'rr-tm-legend-item');
-  scale.append(document.createTextNode(t.lessChanged));
+  scale.append(document.createTextNode(mode === 'recency' ? t.olderChanged : t.lessChanged));
   const sw = h('span', 'rr-tm-scale');
   sw.setAttribute('aria-hidden', 'true');
   for (let i = 1 as HeatLevel; i <= 5; i = (i + 1) as HeatLevel) {
@@ -495,13 +525,13 @@ function legend(hasHighlight: boolean, hasPr = false, prStale = false, hasMissin
     c.style.setProperty('background', heatVar(i));
     sw.append(c);
   }
-  scale.append(sw, document.createTextNode(t.moreChanged));
+  scale.append(sw, document.createTextNode(mode === 'recency' ? t.newerChanged : t.moreChanged));
   lg.append(scale);
 
   const cold = h('span', 'rr-tm-legend-item');
   const coldSw = h('span', 'rr-tm-swatch rr-tm-swatch-cold');
   coldSw.setAttribute('aria-hidden', 'true');
-  cold.append(coldSw, document.createTextNode(heatLabel(0)));
+  cold.append(coldSw, document.createTextNode(levelLabel(mode, 0)));
   lg.append(cold);
 
   const sel = h('span', 'rr-tm-legend-item');
@@ -540,6 +570,20 @@ function legend(hasHighlight: boolean, hasPr = false, prStale = false, hasMissin
     dtSw.setAttribute('aria-hidden', 'true');
     dt.append(dtSw, document.createTextNode(t.uncommitted));
     lg.append(dt);
+  }
+
+  if (hasConflict) {
+    const mc = h('span', 'rr-tm-legend-item');
+    const mcSw = h('span', 'rr-tm-swatch rr-tm-swatch-mergeconflict');
+    mcSw.setAttribute('aria-hidden', 'true');
+    mc.append(mcSw, document.createTextNode(t.mergeConflictLegend));
+    lg.append(mc);
+  }
+
+  if (hint) {
+    const tip = h('span', 'rr-tm-legend-hint');
+    tip.append(icon('codicon-lightbulb'), document.createTextNode(` ${t.clickCommitHint}`));
+    lg.append(tip);
   }
   return lg;
 }
@@ -599,7 +643,7 @@ function installHandlers(
   const show = (n: SVGGElement, x: number, y: number): void => {
     if (shown !== n) {
       shown = n;
-      fillTip(tip, n, byPath, folderInfo, levels, opts.prCounts, opts.dirty);
+      fillTip(tip, n, byPath, folderInfo, levels, opts.colorMode ?? 'churn', opts.prCounts, opts.dirty);
     }
     tip.hidden = false;
     place(tip, x, y);
@@ -640,6 +684,7 @@ function fillTip(
   byPath: Map<string, FileStat>,
   folderInfo: Map<string, FolderInfo>,
   levels: Map<string, HeatLevel>,
+  mode: ColorMode,
   prCounts?: Map<string, number>,
   dirty?: Map<string, DirtyKind>,
 ): void {
@@ -661,7 +706,7 @@ function fillTip(
     grid.append(
       stat(t.tipLines, formatNumber(f.lines)),
       stat(t.tipCommits, formatNumber(f.changes)),
-      stat(t.tipHeat, heatLabel(levels.get(f.path) ?? 0)),
+      stat(mode === 'recency' ? t.tipRecency : t.tipHeat, levelLabel(mode, levels.get(f.path) ?? 0)),
     );
     const delta = h('div', 'rr-tm-tip-row');
     delta.append(
@@ -699,7 +744,7 @@ function fillTip(
   grid.append(
     stat(t.tipFiles, formatNumber(info?.files ?? 0)),
     stat(t.tipLines, formatNumber(info?.lines ?? 0)),
-    stat(t.tipHottest, heatLabel(info?.level ?? 0)),
+    stat(mode === 'recency' ? t.tipNewest : t.tipHottest, levelLabel(mode, info?.level ?? 0)),
   );
   tip.append(head, grid, h('div', 'rr-tm-tip-hint', t.tipFolderHint));
 }

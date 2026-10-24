@@ -131,7 +131,16 @@ async function main(): Promise<void> {
     { file: `${name}-map-dirty.png`, query: 'theme=light&gh=off', size: '1100,820' },
     { file: `${name}-changes-pr-dark.png`, query: 'theme=dark&view=changes&gh=connected', size: '1200,1100' },
     { file: `${name}-changes-pr-light.png`, query: 'theme=light&view=changes&gh=connected', size: '1200,1100' },
-    // 0.3.0: çoklu repo
+    // 0.3.0: çakışma
+    { file: `${name}-conflict-changes-dark.png`, query: 'theme=dark&view=changes&gh=off&conflict=merge', size: '1200,820' },
+    { file: `${name}-conflict-changes-light.png`, query: 'theme=light&view=changes&gh=off&conflict=rebase', size: '1200,820' },
+    { file: `${name}-conflict-map-dark.png`, query: 'theme=dark&gh=off&conflict=merge', size: '1100,820' },
+    { file: `${name}-conflict-map-light.png`, query: 'theme=light&gh=off&conflict=merge', size: '1100,820' },
+    { file: `${name}-conflict-narrow.png`, query: 'theme=dark&view=changes&gh=off&conflict=merge&width=360', size: '600,1300' },
+    // 0.3.0: renk modu (tazelik) ve çoklu repo
+    { file: `${name}-recency-dark.png`, query: 'theme=dark&color=recency&gh=off', size: '1100,820' },
+    { file: `${name}-recency-light.png`, query: 'theme=light&color=recency&gh=off', size: '1100,820' },
+    { file: `${name}-recency-narrow.png`, query: 'theme=dark&color=recency&gh=off&width=360', size: '600,1300' },
     { file: `${name}-repos-dark.png`, query: 'theme=dark&repos=3&gh=off', size: '1100,820' },
     { file: `${name}-repos-light.png`, query: 'theme=light&repos=3&view=changes&gh=off', size: '1200,820' },
     { file: `${name}-repos-narrow.png`, query: 'theme=dark&repos=3&gh=off&width=360', size: '600,1300' },

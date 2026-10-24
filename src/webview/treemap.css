@@ -64,9 +64,14 @@
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+.rr-tm-colormode .rr-tm-range-btn {
+  height: 22px;
+  font-size: 11px;
+}
 .rr-tm-meta {
   margin-left: auto;
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 2px 12px;
@@ -188,6 +193,12 @@
   gap: 6px 20px;
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
+}
+/* 0.3.0: "bir commit'e tıkla" ipucu; lejantın kendi satırında. */
+.rr-tm-legend-hint {
+  flex-basis: 100%;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
 }
 .rr-tm-legend-item {
   display: flex;
@@ -409,6 +420,17 @@
 }
 .rr-tm-dirty-conflicted {
   --rr-tm-dirty: var(--vscode-gitDecoration-conflictingResourceForeground, var(--vscode-charts-red));
+}
+/* 0.3.0: birleştirme çakışması — düz hata çerçevesi + "!" rozeti. */
+.rr-tm-mergeconflict {
+  fill: none;
+  stroke: var(--vscode-gitDecoration-conflictingResourceForeground, var(--vscode-errorForeground));
+  stroke-width: 2px;
+  pointer-events: none;
+}
+.rr-tm-swatch-mergeconflict {
+  background: transparent;
+  border: 2px solid var(--vscode-gitDecoration-conflictingResourceForeground, var(--vscode-errorForeground));
 }
 .rr-tm-dirty-bg {
   fill: var(--vscode-editor-background);

@@ -1,5 +1,6 @@
 // SAF: node/vscode/DOM import yok; webview de "Çalışacak komut" önizlemesi için kullanır.
 import type { GitOpRequest, WorkingTreeStatus } from '../types';
+import { sideExists } from './conflictSides';
 
 export interface OpContext {
   /** Lokal branch adları (checkout'ta remote → lokal eşleşmesi için). */
@@ -17,6 +18,11 @@ export function opCommands(op: GitOpRequest, status?: WorkingTreeStatus, ctx: Op
       return op.paths.length ? [['add', '--', ...op.paths]] : [];
     case 'stageAll':
       return [['add', '-A']];
+    case 'resolveSide': {
+      const kind = status?.files.find((f) => f.path === op.path)?.conflict;
+      if (!sideExists(kind, op.side)) return [['rm', '--', op.path]];
+      return [['checkout', `--${op.side}`, '--', op.path], ['add', '--', op.path]];
+    }
     case 'unstage':
       if (!op.paths.length) return [];
       return [hasHead ? ['restore', '--staged', '--', ...op.paths] : ['rm', '--cached', '-r', '--', ...op.paths]];

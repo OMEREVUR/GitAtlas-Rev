@@ -12,7 +12,7 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 
 ![The map: box size is line count, color is churn; a dashed purple frame marks a file touched by two open PRs](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/01-map-pr-conflict-dark.png)
 
-**[Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev)**, or press `Ctrl+P` in VS Code and run `ext install Omer-Cayir.gitatlas-rev`. Then open the **GitAtlas-Rev** icon in the Activity Bar.
+**[Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev)**, or press `Ctrl+P` in VS Code and run `ext install Omer-Cayir.gitatlas-rev`. Then open the **GitAtlas-Rev** icon in the Activity Bar, or follow the **Get started with GitAtlas-Rev** walkthrough (Help → Welcome).
 
 ## Features
 
@@ -21,8 +21,10 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 - Time range: 7 days / 30 days / all.
 - File card: recent commits, "Open file", and a "Diff" for every commit.
 - Recent commits feed: click a commit and the files it touched light up on the map.
+- Color mode: **Frequency** (how many commits changed a file in the selected range) or **Recency** (when it last changed: last 24 hours, 3 days, week, month, older).
 - Explorer badges: ●● / ● next to frequently changed files, even while the panel is closed.
 - The map can also be opened as an editor tab: **GitAtlas-Rev: Open map in editor**.
+- Several repositories in one workspace (multi-root): switch with the repository button next to the branch name, the status bar or **GitAtlas-Rev: Select repository**; the map can also follow the repository of the active file.
 
 ![A selected commit lights up the files it touched; the rest of the map is dimmed](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/02-commit-highlight-light.png)
 
@@ -50,7 +52,8 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 - **Changes** tab: stage or unstage changed files one by one or all at once with checkboxes, view the diff, discard a change.
 - Commit box: type picker (feat, fix…), summary counter, "Commit & push", amend last commit, undo last commit; the git command that will run is shown below.
 - Sync bar on every tab: Fetch, Pull, Push ("Publish" on a new branch). Pull tries fast-forward first and asks merge or rebase if that is not possible.
-- Right-click in the Branches view: switch, new branch, merge, rename, delete. Stashes: stash, apply, drop. During a conflict: "Mark resolved / Continue / Abort".
+- Right-click in the Branches view: switch, new branch, merge, rename, delete. Stashes: stash, apply, drop.
+- Merge conflicts: conflicted files get a red frame and a "!" badge on the map. In the Changes tab, open each file in the merge editor, keep one side (labelled for merge, rebase and cherry-pick) or mark it resolved; a counter shows how many files are resolved, then Continue or Abort.
 - When connected to GitHub, **Pull requests**: open a PR from this branch (pushes first if needed), merge a PR (merge/squash/rebase), check out a PR branch; "My pull requests" and "Review requested".
 - Every risky action asks for confirmation first; commands and their output are in the "GitAtlas-Rev Git" output channel.
 
@@ -86,7 +89,7 @@ npm test             # vitest
 npm run typecheck
 ```
 
-To build a VSIX: `npx @vscode/vsce package --no-dependencies --skip-license`.
+To build a VSIX: `make vsix` (or `node scripts/package-vsix.mjs` without make); it typechecks first and writes `Extension-Versions/gitatlas-rev-<version>.vsix`.
 
 Press **F5** in VS Code to open the Extension Development Host. See [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or a pull request.
 

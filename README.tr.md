@@ -12,7 +12,7 @@ Arayüz **Türkçe** ve **İngilizce**. Varsayılan olarak VS Code'un arayüz di
 
 ![Harita: kutu boyutu satır sayısı, renk değişim sıklığı; mor kesikli çerçeve iki açık PR'ın dokunduğu dosyayı gösterir](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/01-map-pr-conflict-dark.png)
 
-**[Visual Studio Marketplace'ten kur](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev)** ya da VS Code'da `Ctrl+P` ile `ext install Omer-Cayir.gitatlas-rev` çalıştır. Sonra Activity Bar'daki **GitAtlas-Rev** simgesini aç.
+**[Visual Studio Marketplace'ten kur](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev)** ya da VS Code'da `Ctrl+P` ile `ext install Omer-Cayir.gitatlas-rev` çalıştır. Sonra Activity Bar'daki **GitAtlas-Rev** simgesini aç ya da **GitAtlas-Rev ile başla** turunu izle (Yardım → Hoş Geldiniz).
 
 ## Özellikler
 
@@ -21,8 +21,10 @@ Arayüz **Türkçe** ve **İngilizce**. Varsayılan olarak VS Code'un arayüz di
 - Zaman filtresi: 7 gün / 30 gün / tümü.
 - Dosya kartı: son commit'ler, "Dosyayı aç", her commit için "Diff".
 - Son commit'ler akışı: bir commit'e tıklayınca dokunduğu dosyalar haritada yanar.
+- Renk modu: **Sıklık** (seçili aralıkta kaç commit'te değiştiği) ya da **Tazelik** (en son ne zaman değiştiği: son 24 saat, 3 gün, 1 hafta, 1 ay, daha eski).
 - Explorer rozeti: sık değişen dosyaların yanında ●● / ●; panel kapalıyken de görünür.
 - Harita düzenleyici alanında sekme olarak da açılabilir: **GitAtlas-Rev: Haritayı düzenleyicide aç**.
+- Bir workspace'te birden fazla repo (multi-root): branch adının yanındaki repo düğmesinden, durum çubuğundan ya da **GitAtlas-Rev: Repo seç** ile değiştir; istersen harita açık dosyanın reposunu takip eder.
 
 ![Seçilen commit'in dokunduğu dosyalar yanar, haritanın geri kalanı soluklaşır](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/02-commit-highlight-light.png)
 
@@ -50,7 +52,8 @@ Arayüz **Türkçe** ve **İngilizce**. Varsayılan olarak VS Code'un arayüz di
 - **Değişiklikler** sekmesi: değişen dosyaları onay kutularıyla tek tek ya da hepsini commit'e ekle/çıkar, diff'e bak, değişikliği geri al.
 - Commit kutusu: tür seçici (feat, fix…), özet sayacı, "Commit ve gönder", son commit'e ekleme (amend), son commit'i geri alma; altında çalışacak git komutu görünür.
 - Her sekmede eşitleme çubuğu: Getir, Çek, Gönder (yeni branch'te "Yayınla"). Pull önce fast-forward dener, olmazsa merge mi rebase mi diye sorar.
-- Branch'ler panelinde sağ tık: geç, yeni branch, birleştir, yeniden adlandır, sil. Saklananlar (stash): sakla, uygula, sil. Çakışmada "Çözüldü / Devam et / İptal et".
+- Branch'ler panelinde sağ tık: geç, yeni branch, birleştir, yeniden adlandır, sil. Saklananlar (stash): sakla, uygula, sil.
+- Birleştirme çakışmaları: çakışan dosyalar haritada kırmızı çerçeve ve "!" rozetiyle görünür. Değişiklikler sekmesinde her dosyayı merge editöründe aç, bir tarafın sürümünü al (merge, rebase ve cherry-pick'e göre etiketli) ya da çözüldü işaretle; sayaç kaç dosyanın çözüldüğünü gösterir, sonra Devam et ya da İptal et.
 - GitHub bağlıysa **Pull request'ler**: bu branch'ten PR aç (gerekirse önce gönderir), PR'ı birleştir (merge/squash/rebase), PR branch'ine geç; "Benim PR'larım" ve "Review bekleyenler".
 - Riskli her işlem önce onay ister; komutlar ve çıktıları "GitAtlas-Rev Git" çıktı kanalında.
 
@@ -86,7 +89,7 @@ npm test             # vitest
 npm run typecheck
 ```
 
-VSIX paketi: `npx @vscode/vsce package --no-dependencies --skip-license`.
+VSIX paketi: `make vsix` (make yoksa `node scripts/package-vsix.mjs`); önce tip kontrolü yapar, `Extension-Versions/gitatlas-rev-<sürüm>.vsix` dosyasını yazar.
 
 VS Code'da **F5** ile Extension Development Host açılır. Issue ya da pull request açmadan önce [CONTRIBUTING.md](CONTRIBUTING.md)'ye bak.
 

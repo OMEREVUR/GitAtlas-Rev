@@ -1,3 +1,4 @@
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { resolveLang, setLang } from './i18n';
 import { mainText } from './i18n/main';
@@ -19,7 +20,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // Repo değişimi sürmekte olan bir git işleminin ortasında olmasın.
   let panelBusy = (): boolean => false;
   const repos = new RepoManager(context.workspaceState, () => !panelBusy());
-  const panel = new GitAtlasRevRevPanelProvider(context.extensionUri, storageDir, decorations, statusBar, github, repos);
+  const panel = new GitAtlasRevRevPanelProvider(context.extensionUri, storageDir, decorations, statusBar, github, repos, context.globalState);
   panelBusy = () => panel.busy;
   const branches = new BranchView();
 
@@ -150,6 +151,28 @@ export function activate(context: vscode.ExtensionContext): void {
       const m = mainText();
       const pick = await vscode.window.showInformationMessage(m.languageChanged, m.reloadWindow);
       if (pick === m.reloadWindow) await vscode.commands.executeCommand('workbench.action.reloadWindow');
+    }),
+  );
+
+  // İlk açılış: panel ilk kez bir repo bulduğunda, kullanıcı paneli henüz açmadıysa bir kez "Haritayı aç / Turu göster".
+  const WELCOMED_KEY = 'gitatlas-revrev.welcomed';
+  let welcomed = context.globalState.get<boolean>(WELCOMED_KEY) === true;
+  const markWelcomed = (): boolean => {
+    if (welcomed) return false;
+    welcomed = true;
+    void context.globalState.update(WELCOMED_KEY, true);
+    return true;
+  };
+  context.subscriptions.push(
+    panel.onDidAttachWebview(() => void markWelcomed()),
+    panel.onDidResolveRoot(async (root) => {
+      if (!markWelcomed()) return;
+      const m = mainText();
+      const pick = await vscode.window.showInformationMessage(m.welcome(path.basename(root)), m.welcomeOpen, m.welcomeTour);
+      if (pick === m.welcomeOpen) await vscode.commands.executeCommand('gitatlas-revrev.panel.focus');
+      else if (pick === m.welcomeTour) {
+        await vscode.commands.executeCommand('workbench.action.openWalkthrough', `${context.extension.id}#start`, false);
+      }
     }),
   );
 

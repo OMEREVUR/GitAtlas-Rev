@@ -1,6 +1,7 @@
 import { stat } from 'node:fs/promises';
 import * as path from 'node:path';
 import type { ChangeKind, LineStat, RepoOperation, StashEntry, WorkingFile, WorkingTreeStatus } from '../types';
+import { conflictKindFromXY } from './conflictSides';
 import { runGit } from './gitRunner';
 import { countLines } from './lineCounter';
 
@@ -73,7 +74,12 @@ export function parsePorcelainV2(raw: string): ParsedStatus {
       const f = splitFields(t, 10);
       if (f) {
         const xy = f[1] ?? '';
-        res.files.push({ path: f[10] ?? '', unstaged: xy.includes('D') ? 'deleted' : 'modified', conflicted: true });
+        res.files.push({
+          path: f[10] ?? '',
+          unstaged: xy.includes('D') ? 'deleted' : 'modified',
+          conflicted: true,
+          conflict: conflictKindFromXY(xy),
+        });
       }
     }
   }

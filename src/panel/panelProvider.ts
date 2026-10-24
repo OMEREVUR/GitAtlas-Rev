@@ -21,6 +21,7 @@ import { computePrDraft } from '../ops/prDraft';
 import { OpQueue } from '../ops/opQueue';
 import type { ErrorCode, ExtensionToWebview, StateAction, WebviewToExtension } from '../protocol';
 import type {
+  ColorMode,
   FileStat,
   GitHubData,
   GitHubOpKind,
@@ -51,6 +52,7 @@ const RANGES: readonly TimeRange[] = ['7d', '30d', 'all'];
 const ACTIONS: readonly StateAction[] = ['openFolder', 'initRepo', 'openScm', 'openGitPathSetting', 'downloadGit'];
 const MAX_COMMITS = 1000;
 const MAX_GRAPH_LIMIT = 20000;
+const COLOR_MODE_KEY = 'gitatlas-revrev.colorMode';
 
 function isRange(v: unknown): v is TimeRange {
   return typeof v === 'string' && (RANGES as readonly string[]).includes(v);
@@ -90,7 +92,7 @@ export function isGitHubUrl(v: unknown): v is string {
 const OP_KINDS: readonly GitOpKind[] = [
   'stage', 'stageAll', 'unstage', 'unstageAll', 'discard', 'commit', 'undoLastCommit', 'fetch', 'pull', 'push',
   'checkout', 'createBranch', 'mergeBranch', 'renameBranch', 'deleteBranch', 'stashSave', 'stashApply', 'stashDrop',
-  'markResolved', 'continueOperation', 'abortOperation',
+  'markResolved', 'continueOperation', 'abortOperation', 'resolveSide',
 ];
 const PULL_STRATEGIES: readonly PullStrategy[] = ['ff', 'merge', 'rebase'];
 const MAX_OP_PATHS = 10000;
@@ -163,6 +165,8 @@ export function parseGitOp(raw: unknown): GitOpRequest | undefined {
       return isStashIndex(o.index) && typeof o.pop === 'boolean' ? { kind: 'stashApply', index: o.index, pop: o.pop } : undefined;
     case 'stashDrop':
       return isStashIndex(o.index) ? { kind: 'stashDrop', index: o.index } : undefined;
+    case 'resolveSide':
+      return isSafeRelPath(o.path) && (o.side === 'ours' || o.side === 'theirs') ? { kind: 'resolveSide', path: o.path, side: o.side } : undefined;
   }
 }
 
@@ -316,6 +320,10 @@ export function parseWebviewMessage(raw: unknown): WebviewToExtension | undefine
       return { type: 'branchCreate' };
     case 'repoMenu':
       return { type: 'repoMenu' };
+    case 'setColorMode':
+      return m.mode === 'churn' || m.mode === 'recency' ? { type: 'setColorMode', mode: m.mode } : undefined;
+    case 'openMergeEditor':
+      return isSafeRelPath(m.path) ? { type: 'openMergeEditor', path: m.path } : undefined;
     case 'githubDismiss':
       return { type: 'githubDismiss' };
     case 'githubRefresh':
@@ -379,6 +387,10 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
   private readonly refsEmitter = new vscode.EventEmitter<GitRef[] | undefined>();
   /** Her reload'da (ve refreshRefs'te) listRefs sonucu; hata/repo yoksa undefined. */
   readonly onDidLoadRefs: vscode.Event<GitRef[] | undefined> = this.refsEmitter.event;
+
+  private readonly attachEmitter = new vscode.EventEmitter<void>();
+  /** Bir webview (yan panel ya da düzenleyici sekmesi) açıldı: kullanıcı paneli buldu. */
+  readonly onDidAttachWebview: vscode.Event<void> = this.attachEmitter.event;
 
   private readonly branchActionEmitter = new vscode.EventEmitter<'menu' | 'create'>();
   /** Webview'daki branch düğmeleri (menü / yeni branch); QuickPick'i extension.ts gösterir. */
@@ -453,12 +465,15 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     private readonly statusBar: GitAtlasRevRevStatusBar,
     private readonly github: GitHubLayer,
     private readonly repos: RepoManager,
+    /** Pencereler arası kalıcı tercihler (renk modu). */
+    private readonly prefs: vscode.Memento,
   ) {
     setGitPath(getGitPath());
     this.statusBar.setGitHub(github.data);
     this.disposables.push(
       this.rootEmitter,
       this.refsEmitter,
+      this.attachEmitter,
       this.branchActionEmitter,
       { dispose: () => this.gitConfigWatcher?.dispose() },
       this.output,
@@ -547,6 +562,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
       ],
     });
     this.updateVisibility();
+    this.attachEmitter.fire();
   }
 
   /** GitHub katmanı yalnızca en az bir webview görünürken yenilenir. */
@@ -783,6 +799,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
         files,
         commits: snapshot.commits.slice(0, MAX_COMMITS),
         graphPageSize: getGraphPageSize(),
+        colorMode: this.prefs.get<ColorMode>(COLOR_MODE_KEY) === 'recency' ? 'recency' : 'churn',
       });
       return files.length;
     } catch (err) {
@@ -1258,6 +1275,14 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
         case 'repoMenu':
           await this.repos.showPicker();
           break;
+        case 'openMergeEditor':
+          await this.openMergeEditor(msg.path);
+          break;
+        case 'setColorMode':
+          await this.prefs.update(COLOR_MODE_KEY, msg.mode);
+          // Diğer webview (yan panel / düzenleyici sekmesi) de aynı modu göstersin.
+          if (!this.running) this.publishModel();
+          break;
         case 'githubDismiss':
           this.github.dismiss();
           break;
@@ -1315,6 +1340,22 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
       // Metin olarak açılamayan (binary) dosyalar için VS Code'un kendi açıcısı.
       await vscode.commands.executeCommand('vscode.open', uri);
     }
+  }
+
+  /** VS Code'un yerleşik git eklentisindeki 3 yönlü merge editörü; komut yoksa ya da açamazsa dosyanın kendisi. */
+  private async openMergeEditor(relPath: string): Promise<void> {
+    if (!this.root) return;
+    const uri = vscode.Uri.joinPath(vscode.Uri.file(this.root), ...relPath.split('/'));
+    const commands = await vscode.commands.getCommands(true);
+    if (commands.includes('git.openMergeEditor')) {
+      try {
+        await vscode.commands.executeCommand('git.openMergeEditor', uri);
+        return;
+      } catch {
+        // aşağıda dosyayı aç
+      }
+    }
+    await this.openFile(relPath);
   }
 
   private async openDiff(relPath: string, hash: string): Promise<void> {

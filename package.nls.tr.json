@@ -41,5 +41,22 @@
   "config.language": "GitAtlas-Rev arayüzünün dili. `auto`: VS Code arayüz dili Türkçeyse Türkçe, değilse İngilizce. Menü ve komut adları her zaman VS Code arayüz diline uyar.",
   "config.language.auto": "Otomatik",
   "config.language.en": "English",
-  "config.language.tr": "Türkçe"
+  "config.language.tr": "Türkçe",
+  "walkthrough.title": "GitAtlas-Rev ile başla",
+  "walkthrough.description": "Repoyu tek bakışta oku: dosyalarının haritası, commit graph ve komut yazmadan git.",
+  "walkthrough.openMap.title": "Haritayı aç",
+  "walkthrough.openMap.description": "GitAtlas-Rev'in etkinlik çubuğunda kendi simgesi var. Haritadaki her kutu bir dosya: boyutu satır sayısı, rengi ne sık değiştiği.\n[Haritayı aç](command:gitatlas-revrev.panel.focus)",
+  "walkthrough.openMap.alt": "GitAtlas-Rev haritası: dosyalar kutu olarak, satır sayısına göre boyutlu ve değişim sıklığına göre renkli.",
+  "walkthrough.highlight.title": "Bir commit'e tıkla",
+  "walkthrough.highlight.description": "Son commit'lerde (ya da Graph sekmesinde) bir commit'e tıkla: dokunduğu dosyalar haritada yanar, diğerleri soluklaşır. Bir kutuya tıklayınca o dosyanın son commit'lerini ve diff'lerini görürsün.\n[Haritayı göster](command:gitatlas-revrev.panel.focus)",
+  "walkthrough.highlight.alt": "Seçili bir commit: dokunduğu iki dosya haritada vurgulu, diğerleri soluk.",
+  "walkthrough.openEditor.title": "Düzenleyicide aç",
+  "walkthrough.openEditor.description": "Daha geniş alan mı lazım? Aynı paneli bir düzenleyici sekmesi olarak aç. Graph, Zaman, Katkı ve Değişiklikler sekmeleri orada da var.\n[Haritayı düzenleyicide aç](command:gitatlas-revrev.openInEditor)",
+  "walkthrough.openEditor.alt": "Branch şeritleri ve seçili bir commit ile commit graph sekmesi.",
+  "walkthrough.repos.title": "Birden fazla repo mu var?",
+  "walkthrough.repos.description": "Birkaç repo klasörü olan bir workspace'te repoyu branch adının yanındaki repo düğmesinden, durum çubuğundan ya da bu komutla değiştir. İstersen harita açık dosyanın reposunu da takip eder.\n[Repo seç](command:gitatlas-revrev.selectRepo)",
+  "walkthrough.repos.alt": "Panelin üstünde, branch adının yanındaki repo düğmesi.",
+  "walkthrough.github.title": "GitHub'a bağlan",
+  "walkthrough.github.description": "İsteğe bağlı. VS Code'daki GitHub oturumunla (token gerekmez) iki ya da daha fazla açık pull request'in dokunduğu dosyalar mor kesikli çerçeveyle işaretlenir; PR ve CI durumu graph'ta ve Branch'ler panelinde görünür.\n[GitHub ile bağlan](command:gitatlas-revrev.github.connect)",
+  "walkthrough.github.alt": "GitHub katmanı açık harita: iki açık pull request'in dokunduğu dosyada mor kesikli çerçeve."
 }

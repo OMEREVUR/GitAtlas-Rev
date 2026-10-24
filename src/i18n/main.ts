@@ -53,6 +53,11 @@ export const mainText = defineText({
     branchPickPlaceholder: 'Geçmek istediğin branch ya da yeni branch',
     languageChanged: 'GitAtlas-Rev: Dil değişikliği pencere yeniden yüklenince tamamen uygulanır.',
     reloadWindow: 'Pencereyi yeniden yükle',
+    welcome: (repo: string) => `GitAtlas-Rev hazır: ${repo} reposu bir harita olarak çizildi.`,
+    welcomeOpen: 'Haritayı aç',
+    welcomeTour: 'Turu göster',
+    conflictBand: (n: number) => `Çakışma: ${n} dosya çözülmeyi bekliyor.`,
+    conflictBandGo: 'Değişikliklere git',
   },
   en: {
     refreshing: 'Refreshing',
@@ -103,5 +108,10 @@ export const mainText = defineText({
     branchPickPlaceholder: 'Branch to switch to, or a new branch',
     languageChanged: 'GitAtlas-Rev: The language change fully applies after reloading the window.',
     reloadWindow: 'Reload window',
+    welcome: (repo: string) => `GitAtlas-Rev is ready: the ${repo} repository is drawn as a map.`,
+    welcomeOpen: 'Open the map',
+    welcomeTour: 'Take the tour',
+    conflictBand: (n: number) => `Conflict: ${plural(n, 'file')} waiting to be resolved.`,
+    conflictBandGo: 'Go to Changes',
   },
 });

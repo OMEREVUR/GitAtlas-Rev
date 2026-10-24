@@ -1,6 +1,7 @@
 // Git işlemleri (gitOpsService, githubOpsService, prDraft) ve git çalıştırıcısının kullanıcıya görünen metinleri.
 // Türkçe metinler eski hâliyle birebir aynıdır (testler bekliyor). Ref adlarına Türkçe ek getirilmez.
 import type { GitOpKind } from '../types';
+import type { SideRole } from '../git/conflictSides';
 import { defineText, plural } from './index';
 
 const OP_FAILED_TR: Record<GitOpKind, string> = {
@@ -23,8 +24,27 @@ const OP_FAILED_TR: Record<GitOpKind, string> = {
   stashApply: 'Stash uygulanamadı',
   stashDrop: 'Stash silinemedi',
   markResolved: 'Dosyalar çözüldü olarak işaretlenemedi',
+  resolveSide: 'Çakışma çözülemedi',
   continueOperation: 'İşleme devam edilemedi',
   abortOperation: 'İşlem iptal edilemedi',
+};
+
+const SIDE_TR: Record<SideRole, string> = {
+  current: "mevcut branch'teki (HEAD)",
+  incoming: "gelen branch'teki",
+  onto: "üzerine rebase edilen branch'teki",
+  yours: "senin commit'indeki",
+  picked: "alınan commit'teki",
+  revert: "geri alma commit'indeki",
+};
+
+const SIDE_EN: Record<SideRole, string> = {
+  current: 'the current branch (HEAD)',
+  incoming: 'the incoming branch',
+  onto: 'the branch you are rebasing onto',
+  yours: 'your commit',
+  picked: 'the picked commit',
+  revert: 'the revert',
 };
 
 const OP_FAILED_EN: Record<GitOpKind, string> = {
@@ -47,6 +67,7 @@ const OP_FAILED_EN: Record<GitOpKind, string> = {
   stashApply: "Couldn't apply the stash",
   stashDrop: "Couldn't delete the stash",
   markResolved: "Couldn't mark files as resolved",
+  resolveSide: "Couldn't resolve the conflict",
   continueOperation: "Couldn't continue the operation",
   abortOperation: "Couldn't abort the operation",
 };
@@ -80,6 +101,16 @@ export const text = defineText({
     staged: (n: number) => `${n} dosya commit'e eklendi.`,
     unstaged: (n: number) => `${n} dosya commit'ten çıkarıldı.`,
     markedResolved: (n: number) => `${n} dosya çözüldü olarak işaretlendi.`,
+    // 0.3.0: çakışmada bir tarafı al
+    sideRole: (role: SideRole) => SIDE_TR[role],
+    notConflicted: (file: string) => `${file} dosyasında çakışma yok.`,
+    resolveSideConfirm: (file: string, side: string) => `${file}: ${side} sürüm alınsın mı?`,
+    resolveSideDeleteConfirm: (file: string) => `${file} silinsin mi? Seçtiğin tarafta bu dosya yok.`,
+    resolveSideDetail: (other: string) => `Diğer taraftaki değişiklikler (${other}) bu dosyadan atılır ve dosya çözüldü olarak işaretlenir.`,
+    resolveSideAction: 'Bu sürümü al',
+    resolveSideDeleteAction: 'Dosyayı sil',
+    resolvedWithSide: (file: string, side: string) => `${file}: ${side} sürüm alındı, çözüldü olarak işaretlendi.`,
+    resolvedByDelete: (file: string) => `${file} silindi, çözüldü olarak işaretlendi.`,
     nothingToStage: "Commit'e eklenecek değişiklik yok.",
     nothingStaged: "Commit'e eklenmiş dosya yok.",
     discardMore: (n: number) => `\n… ve ${n} dosya daha`,
@@ -243,6 +274,15 @@ export const text = defineText({
     staged: (n: number) => `Staged ${plural(n, 'file')}.`,
     unstaged: (n: number) => `Unstaged ${plural(n, 'file')}.`,
     markedResolved: (n: number) => `Marked ${plural(n, 'file')} as resolved.`,
+    sideRole: (role: SideRole) => SIDE_EN[role],
+    notConflicted: (file: string) => `${file} has no conflict.`,
+    resolveSideConfirm: (file: string, side: string) => `${file}: keep the version from ${side}?`,
+    resolveSideDeleteConfirm: (file: string) => `Delete ${file}? It does not exist on the side you chose.`,
+    resolveSideDetail: (other: string) => `Changes from the other side (${other}) are dropped from this file and it is marked as resolved.`,
+    resolveSideAction: 'Keep this version',
+    resolveSideDeleteAction: 'Delete file',
+    resolvedWithSide: (file: string, side: string) => `${file}: kept the version from ${side} and marked it resolved.`,
+    resolvedByDelete: (file: string) => `${file} deleted and marked resolved.`,
     nothingToStage: 'No changes to stage.',
     nothingStaged: 'No staged files.',
     discardMore: (n: number) => `\n… and ${plural(n, 'more file', 'more files')}`,

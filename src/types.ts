@@ -289,12 +289,17 @@ export interface WorkingFile {
   unstaged?: ChangeKind;
   /** Birleştirme çakışması var mı? */
   conflicted: boolean;
+  /** 0.3.0: çakışmanın türü (porcelain v2 XY); yalnızca conflicted iken. */
+  conflict?: ConflictKind;
   /** Satır istatistikleri (binary'de yok). */
   stagedStat?: LineStat;
   unstagedStat?: LineStat;
 }
 
 export type RepoOperation = 'merge' | 'rebase' | 'cherryPick' | 'revert';
+
+/** Çakışma türü: iki taraf da değiştirdi / ekledi / sildi ya da bir taraf sildi / ekledi. */
+export type ConflictKind = 'bothModified' | 'bothAdded' | 'bothDeleted' | 'addedByUs' | 'addedByThem' | 'deletedByUs' | 'deletedByThem';
 
 export interface WorkingTreeStatus {
   /** Checkout edilmiş branch; detached HEAD'de yok. */
@@ -358,6 +363,8 @@ export type GitOpRequest =
   /** Onaylı. */
   | { kind: 'stashDrop'; index: number }
   | { kind: 'markResolved'; paths: string[] }
+  /** 0.3.0: çakışan dosyada bir tarafın sürümünü al ve çözüldü işaretle (onaylı). O tarafta dosya yoksa silinir. */
+  | { kind: 'resolveSide'; path: string; side: 'ours' | 'theirs' }
   | { kind: 'continueOperation' }
   /** Onaylı. */
   | { kind: 'abortOperation' };
@@ -445,6 +452,9 @@ export type GitHubOpRequest =
 export type GitHubOpKind = GitHubOpRequest['kind'];
 
 // ---- 0.3.0: çoklu klasörlü workspace ----
+
+/** Haritanın renk ölçeği: değişim sıklığı (seçili aralıkta commit sayısı) ya da tazelik (son değişiklikten bu yana geçen süre). */
+export type ColorMode = 'churn' | 'recency';
 
 /** Workspace klasörlerinde bulunan bir git reposu. */
 export interface RepoInfo {

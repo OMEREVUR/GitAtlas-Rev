@@ -41,5 +41,22 @@
   "config.language": "Language of the GitAtlas-Rev interface. `auto` follows the VS Code display language (Turkish if it is Turkish, otherwise English). Menu and command names always follow the VS Code display language.",
   "config.language.auto": "Automatic",
   "config.language.en": "English",
-  "config.language.tr": "Türkçe"
+  "config.language.tr": "Türkçe",
+  "walkthrough.title": "Get started with GitAtlas-Rev",
+  "walkthrough.description": "Read a repository at a glance: a map of your files, a commit graph and git without typing commands.",
+  "walkthrough.openMap.title": "Open the map",
+  "walkthrough.openMap.description": "GitAtlas-Rev has its own icon in the activity bar. Every box on the map is a file: its size is the line count, its color is how often it changes.\n[Open the map](command:gitatlas-revrev.panel.focus)",
+  "walkthrough.openMap.alt": "The GitAtlas-Rev map: files as boxes, sized by line count and colored by how often they change.",
+  "walkthrough.highlight.title": "Click a commit",
+  "walkthrough.highlight.description": "Click a commit under Recent commits (or in the Graph tab): the files it touched light up on the map and the rest is dimmed. Click a box to see that file's recent commits and diffs.\n[Show the map](command:gitatlas-revrev.panel.focus)",
+  "walkthrough.highlight.alt": "A selected commit: the two files it touched are highlighted on the map, the rest is dimmed.",
+  "walkthrough.openEditor.title": "Open it in the editor",
+  "walkthrough.openEditor.description": "Need more room? Open the same panel as an editor tab. The Graph, Time, Contributors and Changes tabs are there too.\n[Open map in editor](command:gitatlas-revrev.openInEditor)",
+  "walkthrough.openEditor.alt": "The commit graph tab with branch lanes and a selected commit.",
+  "walkthrough.repos.title": "Several repositories?",
+  "walkthrough.repos.description": "In a workspace with several repository folders, switch repositories with the repository button next to the branch name, from the status bar, or with this command. The map can also follow the repository of the active file.\n[Select repository](command:gitatlas-revrev.selectRepo)",
+  "walkthrough.repos.alt": "The repository button next to the branch name at the top of the panel.",
+  "walkthrough.github.title": "Connect to GitHub",
+  "walkthrough.github.description": "Optional. With your VS Code GitHub session (no token needed), files touched by two or more open pull requests get a purple dashed frame, and PR and CI status show up in the graph and the Branches view.\n[Connect to GitHub](command:gitatlas-revrev.github.connect)",
+  "walkthrough.github.alt": "The map with the GitHub layer on: a file touched by two open pull requests has a purple dashed frame."
 }

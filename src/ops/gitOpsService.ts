@@ -3,6 +3,7 @@
 import { existsSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { createAskpassEnv } from '../git/askpass';
+import { sideExists, sideRole, type ConflictSide } from '../git/conflictSides';
 import { GitError, runGit } from '../git/gitRunner';
 import { formatCommand, isValidBranchName, opCommands } from '../git/opCommands';
 import { getStatus, listStashes } from '../git/status';
@@ -193,6 +194,21 @@ export class GitOpsService {
         if (op.kind === 'stage') return done(t.staged(n));
         if (op.kind === 'unstage') return done(t.unstaged(n));
         return done(t.markedResolved(n));
+      }
+
+      case 'resolveSide': {
+        const file = status.files.find((f) => f.path === op.path && f.conflicted);
+        if (!file) return fail(t.notConflicted(op.path));
+        const other: ConflictSide = op.side === 'ours' ? 'theirs' : 'ours';
+        const role = t.sideRole(sideRole(status.operation, op.side));
+        const otherRole = t.sideRole(sideRole(status.operation, other));
+        const exists = sideExists(file.conflict, op.side);
+        const ok = exists
+          ? await ui.confirm(t.resolveSideConfirm(op.path, role), t.resolveSideDetail(otherRole), t.resolveSideAction)
+          : await ui.confirm(t.resolveSideDeleteConfirm(op.path), t.resolveSideDetail(otherRole), t.resolveSideDeleteAction);
+        if (!ok) return cancelled();
+        await runAll(await plan());
+        return done(exists ? t.resolvedWithSide(op.path, role) : t.resolvedByDelete(op.path));
       }
 
       case 'stageAll': {

@@ -13,6 +13,7 @@ import { mainText } from '../i18n/main';
 import type { ExtensionToWebview, WebviewToExtension } from '../protocol';
 import type {
   ChangeKind,
+  ColorMode,
   CommitSummary,
   ContribData,
   FileStat,
@@ -106,6 +107,8 @@ let model: Model | undefined;
 let panelState: PanelState | undefined = { kind: 'loading', progress: 0 };
 let ui: UiState = restoreUi();
 let byPath = new Map<string, FileStat>();
+/** 0.3.0: haritanın renk ölçeği (eklenti hatırlar, model ile gelir). */
+let colorMode: ColorMode = 'churn';
 let heat = heatLevels([]);
 
 let graph: GraphData | undefined;
@@ -132,6 +135,9 @@ let prError: string | undefined;
 let prRequested = false;
 let prDraft: PrDraft | undefined;
 let prDraftError: string | undefined;
+
+// 0.3.0: çakışma sayacı (işlem boyunca görülen en yüksek çakışma sayısı)
+let conflictPeak = 0;
 
 // 0.3.0: çoklu repo
 let repos: RepoInfo[] = [];
@@ -272,9 +278,11 @@ changesBody.append(changesHost, changesSide);
 
 const bannerHost = el('div', 'rr-banner');
 const noticeHost = el('div', 'rr-notice');
+const conflictHost = el('div', 'rr-conflictband');
+conflictHost.setAttribute('role', 'status');
 const stateHost = el('div', 'rr-state');
 
-app.append(progressEl, toolbar, bannerHost, noticeHost, body, gbody, timeHost, contribHost, changesBody, stateHost);
+app.append(progressEl, toolbar, bannerHost, noticeHost, conflictHost, body, gbody, timeHost, contribHost, changesBody, stateHost);
 
 // ---- Durum güncelleme ----
 function saveUi(): void {
@@ -503,6 +511,13 @@ function renderMap(): void {
     prCounts: prs.length > 0 ? conflictFiles(prs) : undefined,
     prStale: prStale(),
     dirty: dirtyMap(),
+    colorMode,
+    onColorMode: (m) => {
+      colorMode = m;
+      post({ type: 'setColorMode', mode: m });
+      render();
+    },
+    hint: model.commits.length > 0 && !ui.selectedHash && !ui.selectedBranch,
     selected: ui.selectedPath,
     onSelect: (path) => setUi({ selectedPath: path }),
     onOpen: (path) => post({ type: 'openFile', path }),
@@ -625,6 +640,7 @@ function render(): void {
       onRepoMenu: () => post({ type: 'repoMenu' }),
     });
   }
+  renderConflictBand(fullState !== undefined);
   const changeCount = wt?.files.length ?? 0;
   tabButtons.changes.textContent = changeCount > 0 ? mainText().tabChangesCount(changeCount) : mainText().tabChanges;
   if (fullState) bannerHost.hidden = true;
@@ -693,6 +709,8 @@ function renderChangesView(): void {
     onOpenFile: (path) => post({ type: 'openFile', path }),
     onSelectFile: (path) => setUi({ selectedPath: path }),
     onToggleTreeView: () => setUi({ changesTree: !ui.changesTree }),
+    conflictTotal: conflictPeak,
+    onOpenMergeEditor: (path) => post({ type: 'openMergeEditor', path }),
   });
   renderCommitBox(commitHost, { status: wt, busy, onOp: runOp });
   ensurePrPanel();
@@ -713,6 +731,24 @@ function renderChangesView(): void {
     onRefresh: () => post({ type: 'loadPrPanel' }),
   });
   renderStashList(stashHost, stashes, { busy, onOp: runOp, canSave: wt.files.length > 0 });
+}
+
+/** Değişiklikler sekmesi dışında: çakışma varsa panelin üstünde kısa bant + "Değişikliklere git". */
+function renderConflictBand(hidden: boolean): void {
+  const n = wt?.files.filter((f) => f.conflicted).length ?? 0;
+  conflictHost.hidden = hidden || n === 0 || ui.view === 'changes';
+  if (conflictHost.hidden) return;
+  const m = mainText();
+  const ic = el('span', 'codicon codicon-warning');
+  ic.setAttribute('aria-hidden', 'true');
+  const msg = el('span', 'rr-conflictband-text');
+  msg.textContent = m.conflictBand(n);
+  const go = document.createElement('button');
+  go.type = 'button';
+  go.className = 'rr-conflictband-go';
+  go.textContent = m.conflictBandGo;
+  go.addEventListener('click', () => setView('changes'));
+  conflictHost.replaceChildren(ic, msg, go);
 }
 
 function repoForSyncBar(): { name: string; count: number } | undefined {
@@ -738,6 +774,7 @@ function resetForRepo(): void {
   contribRequested = undefined;
   wt = undefined;
   stashes = [];
+  conflictPeak = 0;
   lastResult = undefined;
   prPanel = undefined;
   prError = undefined;
@@ -819,6 +856,7 @@ window.addEventListener('message', (e: MessageEvent<ExtensionToWebview>) => {
       break;
     case 'model':
       model = { range: msg.range, repoName: msg.repoName, files: msg.files, commits: msg.commits };
+      colorMode = msg.colorMode ?? 'churn';
       if (msg.graphPageSize) GRAPH_PAGE = msg.graphPageSize;
       panelState = undefined;
       byPath = new Map(msg.files.map((f) => [f.path, f]));
@@ -845,10 +883,13 @@ window.addEventListener('message', (e: MessageEvent<ExtensionToWebview>) => {
       prDraft = msg.draft;
       prDraftError = msg.error;
       break;
-    case 'status':
+    case 'status': {
       wt = msg.status;
       statusRequested = true;
+      const open = wt.files.filter((f) => f.conflicted).length;
+      conflictPeak = wt.operation || open > 0 ? Math.max(conflictPeak, open) : 0;
       break;
+    }
     case 'stashes':
       stashes = msg.stashes;
       break;
