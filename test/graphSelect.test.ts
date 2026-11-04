@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { branchCommits, filterGraphCommits, graphAuthors, reachable } from '../src/model/graphSelect';
+import { applyRowClick, branchCommits, filterGraphCommits, graphAuthors, pickOrder, reachable } from '../src/model/graphSelect';
 import type { CommitFileChange, CommitSummary, GitRef } from '../src/types';
 
 function c(
@@ -127,5 +127,56 @@ describe('graphAuthors', () => {
     ];
     expect(graphAuthors(list)).toEqual(['Zeynep', 'Mehmet', 'Ayse']);
     expect(graphAuthors([])).toEqual([]);
+  });
+});
+
+describe('çoklu seçim (0.4.0)', () => {
+  const V = ['c5', 'c4', 'c3', 'c2', 'c1']; // graph sırası: yeniden eskiye
+  const plain = { toggle: false, range: false };
+  const toggle = { toggle: true, range: false };
+  const range = { toggle: false, range: true };
+
+  it('pickOrder graph sırasını tersine çevirir', () => {
+    expect(pickOrder(['yeni', 'orta', 'eski'])).toEqual(['eski', 'orta', 'yeni']);
+    expect(pickOrder([])).toEqual([]);
+  });
+
+  it('düz tıklama tek seçim; ikinci tıklama kaldırır; çokluyu sıfırlar', () => {
+    expect(applyRowClick(V, { picked: [] }, 'c3', plain)).toEqual({ anchor: 'c3', picked: [] });
+    expect(applyRowClick(V, { anchor: 'c3', picked: [] }, 'c3', plain)).toEqual({ anchor: undefined, picked: [] });
+    expect(applyRowClick(V, { anchor: 'c3', picked: ['c3', 'c2'] }, 'c1', plain)).toEqual({ anchor: 'c1', picked: [] });
+    // çoklu seçimdeyken aynı satıra düz tıklama: tek seçime iner, kaldırmaz
+    expect(applyRowClick(V, { anchor: 'c3', picked: ['c3', 'c2'] }, 'c3', plain)).toEqual({ anchor: 'c3', picked: [] });
+  });
+
+  it('Ctrl/Cmd: anchor ile tohumlar, ekler, çıkarır, boşalınca tek seçime döner', () => {
+    const a = applyRowClick(V, { anchor: 'c4', picked: [] }, 'c2', toggle);
+    expect(a).toEqual({ anchor: 'c2', picked: ['c4', 'c2'] });
+    const b = applyRowClick(V, a, 'c5', toggle);
+    expect(b.picked).toEqual(['c5', 'c4', 'c2']); // görünür sıraya dizilir
+    const c = applyRowClick(V, b, 'c4', toggle);
+    expect(c.picked).toEqual(['c5', 'c2']);
+    const d = applyRowClick(V, c, 'c2', toggle);
+    expect(d).toEqual({ anchor: 'c5', picked: [] }); // tek kaldı → tek seçim
+    expect(applyRowClick(V, { anchor: 'c5', picked: [] }, 'c5', toggle)).toEqual({ anchor: undefined, picked: [] });
+  });
+
+  it('Shift: anchor ile arası, iki yönde; anchor sabit kalır', () => {
+    const down = applyRowClick(V, { anchor: 'c4', picked: [] }, 'c2', range);
+    expect(down).toEqual({ anchor: 'c4', picked: ['c4', 'c3', 'c2'] });
+    const up = applyRowClick(V, down, 'c5', range);
+    expect(up).toEqual({ anchor: 'c4', picked: ['c5', 'c4'] }); // aynı anchor'dan yeniden süpürür
+    // anchor yoksa düz tıklama gibi davranır
+    expect(applyRowClick(V, { picked: [] }, 'c3', range)).toEqual({ anchor: 'c3', picked: [] });
+  });
+
+  it('süzülmüş listede aralık görünür sıraya göre hesaplanır', () => {
+    const filtered = ['c5', 'c3', 'c1'];
+    expect(applyRowClick(filtered, { anchor: 'c5', picked: [] }, 'c1', range)).toEqual({
+      anchor: 'c5',
+      picked: ['c5', 'c3', 'c1'],
+    });
+    // listede olmayan anchor: aralık kurulamaz, düz tıklama gibi
+    expect(applyRowClick(filtered, { anchor: 'c4', picked: [] }, 'c1', range)).toEqual({ anchor: 'c1', picked: [] });
   });
 });

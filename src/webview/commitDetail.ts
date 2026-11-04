@@ -26,6 +26,11 @@ export interface CommitDetailOptions {
   prsForBranch?: (name: string) => PullRequest[];
   /** 0.4.0: verilirse commit seçiliyken "İyi / Kötü olarak işaretle" düğmeleri (bisect sürmüyorsa forma yazar). */
   bisect?: { active: boolean; onMark: (hash: string, mark: 'good' | 'bad') => void };
+  /**
+   * 0.4.0: cherry-pick. count = alınacak commit sayısı (çoklu seçimde >1).
+   * disabled: süren bir işlem ya da başka bir git işlemi varken kapalı.
+   */
+  cherryPick?: { count: number; disabled: boolean; onPick: () => void };
 }
 
 const STALE_MS = 30 * 24 * 3600_000;
@@ -167,8 +172,23 @@ function commitBody(
 
   const prs = prsForRefs(refs, opts);
   const out = [head, ...prList(prs, post), filesSection(files), h('div', 'rr-p-actions', [show, copy])];
+  if (opts.cherryPick) out.push(cherryPickSection(opts.cherryPick));
   if (opts.bisect) out.push(bisectSection(commit.hash, opts.bisect));
   return out;
+}
+
+function cherryPickSection(cp: NonNullable<CommitDetailOptions['cherryPick']>): HTMLElement {
+  const t = text();
+  const btn = h('button', 'rr-p-btn rr-p-btn-secondary rr-p-btn-small', t.pickButton(cp.count));
+  btn.type = 'button';
+  btn.disabled = cp.disabled;
+  btn.title = t.pickTitle;
+  btn.addEventListener('click', cp.onPick);
+  return h('section', 'rr-p-section rr-p-pick', [
+    h('h3', 'rr-p-heading', t.pickTitleHeading),
+    h('div', 'rr-p-actions', [btn]),
+    h('div', 'rr-p-muted', cp.count > 1 ? t.pickHintMany(cp.count) : t.pickHintOne),
+  ]);
 }
 
 function bisectSection(hash: string, b: NonNullable<CommitDetailOptions['bisect']>): HTMLElement {

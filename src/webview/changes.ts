@@ -203,13 +203,21 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     cont.title = title(conflicts.length > 0 ? t.continueBlocked : t.continueTitle, cmd({ kind: 'continueOperation' }));
     cont.onclick = () => opts.onOp({ kind: 'continueOperation' });
     key(cont, 'band:continue');
+    // Atla: merge'de --skip yok. Devam et'in aksine çakışma varken de açık kalır —
+    // "bu commit'i hiç alma" demek, çakışmayı çözmenin alternatifi.
+    const skip = h('button', 'rr-ch-btn', t.skipBtn);
+    skip.type = 'button';
+    skip.disabled = busy;
+    skip.title = title(t.skipTitle, cmd({ kind: 'skipOperation' }));
+    skip.onclick = () => opts.onOp({ kind: 'skipOperation' });
+    key(skip, 'band:skip');
     const abort = h('button', 'rr-ch-btn', t.abortBtn);
     abort.type = 'button';
     abort.disabled = busy;
     abort.title = title(t.abortTitle, cmd({ kind: 'abortOperation' }));
     abort.onclick = () => opts.onOp({ kind: 'abortOperation' });
     key(abort, 'band:abort');
-    actions.append(cont, abort);
+    actions.append(cont, ...(status.operation === 'merge' ? [] : [skip]), abort);
     band.append(text, actions);
     scroller.append(band);
   }

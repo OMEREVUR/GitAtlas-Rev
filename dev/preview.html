@@ -45,7 +45,8 @@
   var opdemo = params.get('opdemo') === '1';
   // ?repos=2: çoklu klasörlü workspace (repo seçici görünür).
   var repoCount = Number(params.get('repos')) || 1;
-  // ?conflict=merge|rebase: sahte çakışma (3 dosya; ardından 1'i çözülmüş hâli gelir → "1/3 dosya çözüldü").
+  // ?conflict=merge|rebase|cherryPick|revert: sahte çakışma (3 dosya; ardından 1'i çözülmüş hâli gelir → "1/3 dosya çözüldü").
+  // merge dışındakilerde bantta "Atla" düğmesi de çıkar.
   var conflictOp = params.get('conflict');
   function conflictStatus(resolved) {
     var base = JSON.parse(JSON.stringify(model.status));

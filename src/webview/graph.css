@@ -111,6 +111,13 @@
 .rr-g-row.rr-g-inbranch {
   background: var(--vscode-list-hoverBackground);
 }
+/* 0.4.0: cherry-pick çoklu seçimi. Seçili satırdan ayırt edilsin diye soldan şerit;
+   renk tek başına bilgi taşımaz, satır ayrıca aria-pressed="true" olur.
+   .rr-g-selected'tan ÖNCE gelir ki anchor satırı yine onun rengini alsın. */
+.rr-g-row.rr-g-picked {
+  background: var(--vscode-list-inactiveSelectionBackground);
+  box-shadow: inset 3px 0 0 0 var(--vscode-list-focusOutline, var(--vscode-focusBorder));
+}
 .rr-g-row.rr-g-selected {
   background: var(--vscode-list-activeSelectionBackground);
   color: var(--vscode-list-activeSelectionForeground);

@@ -15,6 +15,7 @@
   --vscode-input-background: #313131; --vscode-input-border: #3C3C3C; --vscode-input-placeholderForeground: #989898;
   --vscode-inputOption-activeBackground: #2489DB82; --vscode-inputOption-activeBorder: #2488DB;
   --vscode-list-hoverBackground: #2A2D2E; --vscode-list-activeSelectionBackground: #04395E; --vscode-list-activeSelectionForeground: #FFFFFF;
+  --vscode-list-inactiveSelectionBackground: #37373D; --vscode-list-focusOutline: #0078D4;
   --vscode-charts-orange: #D18616; --vscode-charts-purple: #B180D7; --vscode-charts-red: #F14C4C; --vscode-charts-green: #89D185; --vscode-charts-blue: #3794FF; --vscode-charts-yellow: #CCA700;
   --vscode-textLink-foreground: #4DAAFC; --vscode-editorWidget-background: #202020; --vscode-textCodeBlock-background: #2B2B2B;
   --vscode-editorHoverWidget-background: #202020; --vscode-editorHoverWidget-border: #454545; --vscode-widget-shadow: #0000005C;
@@ -38,6 +39,7 @@
   --vscode-input-background: #FFFFFF; --vscode-input-border: #CECECE; --vscode-input-placeholderForeground: #767676;
   --vscode-inputOption-activeBackground: #BED6ED; --vscode-inputOption-activeBorder: #005FB8;
   --vscode-list-hoverBackground: #F2F2F2; --vscode-list-activeSelectionBackground: #E4E6F1; --vscode-list-activeSelectionForeground: #000000;
+  --vscode-list-inactiveSelectionBackground: #E4E6F1; --vscode-list-focusOutline: #0078D4;
   --vscode-charts-orange: #D18616; --vscode-charts-purple: #652D90; --vscode-charts-red: #E51400; --vscode-charts-green: #388A34; --vscode-charts-blue: #1A85FF; --vscode-charts-yellow: #BF8803;
   --vscode-textLink-foreground: #005FB8; --vscode-editorWidget-background: #F8F8F8; --vscode-textCodeBlock-background: #EFEFEF;
   --vscode-editorHoverWidget-background: #F8F8F8; --vscode-editorHoverWidget-border: #C8C8C8; --vscode-widget-shadow: #00000029;

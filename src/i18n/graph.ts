@@ -99,6 +99,13 @@ export const text = defineText({
     notGitHub: 'origin bir GitHub reposu değil',
     notGitHubText: '. GitHub katmanı kapalı kalır; harita, graph ve branch paneli normal çalışır.',
     errorTitle: 'GitHub verisi alınamadı.',
+
+    // ---- cherry-pick (0.4.0) ----
+    pickTitleHeading: 'CHERRY-PICK',
+    pickButton: (n: number) => (n === 1 ? "Bu commit'i al" : `Bu ${n} commit'i al`),
+    pickTitle: "Seçili commit'leri mevcut branch'e uygular (git cherry-pick -x)",
+    pickHintOne: "Commit mevcut branch'in ucuna yeni bir commit olarak uygulanır.",
+    pickHintMany: (n: number) => `${n} commit eskiden yeniye uygulanır. Ctrl/Cmd+tık ile ekleyip çıkarın, Shift+tık ile aralık seçin.`,
   },
   en: {
     ciSuccess: 'CI passed',
@@ -189,5 +196,11 @@ export const text = defineText({
     notGitHub: 'origin is not a GitHub repo',
     notGitHubText: '. The GitHub layer stays off; the map, graph and branch panel work as usual.',
     errorTitle: "Couldn't fetch GitHub data.",
+
+    pickTitleHeading: 'CHERRY-PICK',
+    pickButton: (n: number) => (n === 1 ? 'Pick this commit' : `Pick these ${n} commits`),
+    pickTitle: 'Applies the selected commits to the current branch (git cherry-pick -x)',
+    pickHintOne: 'The commit is applied as a new commit on the tip of the current branch.',
+    pickHintMany: (n: number) => `${n} commits are applied oldest first. Ctrl/Cmd-click to add or remove, Shift-click for a range.`,
   },
 });

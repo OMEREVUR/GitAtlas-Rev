@@ -76,3 +76,52 @@ export function graphAuthors(commits: CommitSummary[]): string[] {
   for (const c of commits) counts.set(c.author, (counts.get(c.author) ?? 0) + 1);
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([name]) => name);
 }
+
+// ---- 0.4.0: cherry-pick için çoklu seçim (saf) ----
+
+/** Graph sırası (yeniden eskiye) → cherry-pick uygulama sırası (eskiden yeniye). */
+export function pickOrder(graphOrder: readonly string[]): string[] {
+  return [...graphOrder].reverse();
+}
+
+/** Çoklu seçim durumu: anchor hem detay panelini sürer hem Shift aralığının başlangıcıdır. */
+export interface PickState {
+  anchor?: string;
+  /** Graph sırasında, seçili commit'ler. Tek seçimde boş kalır. */
+  picked: string[];
+}
+
+/**
+ * Bir satıra tıklamanın çoklu seçime etkisi.
+ * - düz tıklama: tek seçime döner (aynı satıra ikinci tıklama seçimi kaldırır)
+ * - toggle (Ctrl/Cmd): kümeye ekler/çıkarır; küme boşsa önce anchor'la tohumlanır
+ * - range (Shift): anchor ile tıklanan satır arasını (görünür sırada) seçer, anchor değişmez
+ */
+export function applyRowClick(
+  visible: readonly string[],
+  cur: PickState,
+  hash: string,
+  mods: { toggle: boolean; range: boolean },
+): PickState {
+  if (mods.range && cur.anchor !== undefined) {
+    const a = visible.indexOf(cur.anchor);
+    const b = visible.indexOf(hash);
+    if (a >= 0 && b >= 0) {
+      const [from, to] = a <= b ? [a, b] : [b, a];
+      return { anchor: cur.anchor, picked: visible.slice(from, to + 1) };
+    }
+  }
+  if (mods.toggle) {
+    const seed = cur.picked.length > 0 ? cur.picked : cur.anchor !== undefined ? [cur.anchor] : [];
+    const next = seed.includes(hash) ? seed.filter((h) => h !== hash) : [...seed, hash];
+    // Görünür sıraya göre diz, böylece pickOrder tek başına yeterli olur.
+    const ordered = visible.filter((h) => next.includes(h));
+    for (const h of next) if (!ordered.includes(h)) ordered.push(h);
+    if (ordered.length === 0) return { anchor: undefined, picked: [] };
+    if (ordered.length === 1) return { anchor: ordered[0], picked: [] };
+    return { anchor: ordered.includes(hash) ? hash : ordered[0], picked: ordered };
+  }
+  // Düz tıklama: bugünkü davranış (ikinci tıklama seçimi kaldırır).
+  if (cur.picked.length === 0 && cur.anchor === hash) return { anchor: undefined, picked: [] };
+  return { anchor: hash, picked: [] };
+}

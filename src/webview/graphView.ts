@@ -5,6 +5,7 @@ import { formatRelative } from './format';
 import { ciLabel } from './githubBanner';
 import { text } from '../i18n/graph';
 import { text as bisectText } from '../i18n/bisect';
+import { applyRowClick } from '../model/graphSelect';
 
 /** 0.4.0: graph satırındaki bisect işareti. */
 export type BisectRowMark = 'good' | 'bad' | 'skip' | 'testing' | 'culprit';
@@ -19,6 +20,12 @@ export interface GraphViewOptions {
   now: number;
   loadingMore: boolean;
   onSelectCommit: (hash: string | undefined) => void;   // seçili satıra ikinci tık → undefined
+  /** 0.4.0: cherry-pick için çoklu seçim (graph sırası). Boş = tek seçim. */
+  pickHashes?: readonly string[];
+  /** 0.4.0: Ctrl/Cmd+tık ya da Shift+tık ile değişen çoklu seçim; anchor detay panelini sürer. */
+  onPickChange?: (picked: string[], anchor: string | undefined) => void;
+  /** 0.4.0: satırda sağ tık → eklentide QuickPick. Verilen hash'ler graph sırasındadır. */
+  onRowContextMenu?: (hashes: string[]) => void;
   onLoadMore: () => void;
   /** v3: branch → açık PR'lar. Anahtar: lokal branch adı ya da remote branch'in "origin/" sonrası. */
   prsByBranch?: Map<string, { number: number; ci: CiState; url: string }[]>;
@@ -256,8 +263,35 @@ export function renderGraph(el: HTMLElement, graph: GraphData, opts: GraphViewOp
     if (!(t instanceof Element)) return;
     const btn = t.closest<HTMLButtonElement>('.rr-g-row');
     if (!btn?.dataset.hash) return;
-    state.focusHash = btn.dataset.hash;
-    opts.onSelectCommit(btn.dataset.hash === opts.selectedHash ? undefined : btn.dataset.hash);
+    const hash = btn.dataset.hash;
+    // setUi → render → replaceChildren senkron çalışır; odak hash'i çağrıdan ÖNCE yazılmalı.
+    state.focusHash = hash;
+    const toggle = e.ctrlKey || e.metaKey;
+    const range = e.shiftKey;
+    if ((toggle || range) && opts.onPickChange) {
+      const next = applyRowClick(
+        list.map((c) => c.hash),
+        { anchor: opts.selectedHash, picked: [...(opts.pickHashes ?? [])] },
+        hash,
+        { toggle, range },
+      );
+      opts.onPickChange(next.picked, next.anchor);
+      return;
+    }
+    opts.onSelectCommit(hash === opts.selectedHash ? undefined : hash);
+  };
+
+  // Webview'ın kendi menüsü yok: sağ tık eklentiye gider, QuickPick orada açılır.
+  el.oncontextmenu = (e) => {
+    const t = e.target;
+    if (!(t instanceof Element) || !opts.onRowContextMenu) return;
+    const btn = t.closest<HTMLButtonElement>('.rr-g-row');
+    if (!btn?.dataset.hash) return;
+    e.preventDefault();
+    const hash = btn.dataset.hash;
+    const picked = opts.pickHashes ?? [];
+    // Seçimin dışına sağ tıklanırsa o satır tek başına hedef olur.
+    opts.onRowContextMenu(picked.includes(hash) ? [...picked] : [hash]);
   };
 }
 
@@ -333,8 +367,14 @@ function rowItem(
   btn.dataset.hash = c.hash;
   btn.tabIndex = c.hash === tabHash ? 0 : -1;
   btn.setAttribute('aria-pressed', isSel ? 'true' : 'false');
+  const isPicked = opts.pickHashes?.includes(c.hash) ?? false;
   if (isSel) btn.classList.add('rr-g-selected');
   else if (opts.branchHashes?.has(c.hash)) btn.classList.add('rr-g-inbranch');
+  // Çoklu seçim, seçili satırla birlikte de bulunabilir: bağımsız sınıf.
+  if (isPicked) {
+    btn.classList.add('rr-g-picked');
+    btn.setAttribute('aria-pressed', 'true');
+  }
   const bmark = opts.bisect?.marks.get(c.hash);
   if (opts.bisect && !bmark && !opts.bisect.candidates.has(c.hash)) btn.classList.add('rr-g-outside');
 

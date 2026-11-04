@@ -1,6 +1,7 @@
 // YALNIZCA dev önizlemesi: sahte veriyle commit graph (+ compact mini harita).
 // URL: ?pr=1 (sahte PR + CI)  ?theme=dark|light  ?plain=1  ?select=<satır no>  ?branch=1  ?filter=1  ?width=360  ?compact=1
 //      ?n=2000 (commit sayısı; ≥1000'de süreler sağ üstte)  ?scroll=<satır no> (ekran görüntüsü için)
+//      ?picked=2,3,4 (0.4.0: cherry-pick çoklu seçimi; ilki anchor)
 import '../src/webview/base.css';
 import { renderGraph } from '../src/webview/graphView';
 import { renderTreemap } from '../src/webview/treemap';
@@ -157,9 +158,19 @@ const state = {
   loadingMore: false,
   plain: params.get('plain') === '1',
   selected: undefined as string | undefined,
+  picked: undefined as string[] | undefined,
 };
 const selIdx = params.get('select');
 if (selIdx !== null) state.selected = all.commits[Number(selIdx)]?.hash;
+// ?picked=2,3,4 : coklu secim (satir numaralari); ilki anchor olur.
+const pickedIdx = params.get('picked');
+if (pickedIdx !== null) {
+  const hashes = pickedIdx.split(',').map((i) => all.commits[Number(i)]?.hash).filter((h): h is string => h !== undefined);
+  if (hashes.length > 1) {
+    state.picked = hashes;
+    state.selected = hashes[0];
+  }
+}
 
 function graphData(): GraphData {
   const commits = all.commits.slice(0, state.limit);
@@ -229,6 +240,16 @@ function render(): void {
   renderGraph(graphEl!, data, {
     plain: state.plain || filterOn,
     selectedHash: state.selected,
+    pickHashes: state.picked,
+    onPickChange: (picked, anchor) => {
+      state.picked = picked.length > 1 ? picked : undefined;
+      state.selected = anchor;
+      logEl!.textContent = `onPickChange(${picked.length} secili, anchor=${anchor ? anchor.slice(0, 7) : 'yok'})`;
+      render();
+    },
+    onRowContextMenu: (hashes) => {
+      logEl!.textContent = `commitMenu(${hashes.length}: ${hashes.map((h) => h.slice(0, 7)).join(', ')})`;
+    },
     branchHashes: bh,
     prsByBranch: prs,
     visible,

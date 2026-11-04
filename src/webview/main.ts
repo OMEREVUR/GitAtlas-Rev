@@ -36,7 +36,7 @@ import type {
   TimelineData,
   WorkingTreeStatus,
 } from '../types';
-import { branchCommits, filterGraphCommits, graphAuthors } from '../model/graphSelect';
+import { branchCommits, filterGraphCommits, graphAuthors, pickOrder } from '../model/graphSelect';
 import { timelineFrame, timelineSteps } from '../model/timeline';
 import { renderChanges } from './changes';
 import { renderBisect } from './bisect';
@@ -84,6 +84,11 @@ interface UiState {
   selectedPath?: string;
   /** Seçili commit (akıştan ya da graph'tan). selectedBranch ile birlikte dolu olmaz. */
   selectedHash?: string;
+  /**
+   * 0.4.0: cherry-pick icin coklu secim (graph sirasi, yeniden eskiye).
+   * Bos/undefined = bugunku tek secim. Doluyken selectedHash her zaman icindedir.
+   */
+  pickHashes?: string[];
   /** Seçili branch adı (Branch'ler panelinden). */
   selectedBranch?: string;
   /** Graph'ın kendi tarih filtresi; haritanın aralığından bağımsız. */
@@ -173,6 +178,7 @@ function restoreUi(): UiState {
     selectedPath: str(o.selectedPath),
     selectedHash: str(o.selectedHash),
     selectedBranch: str(o.selectedBranch),
+    pickHashes: Array.isArray(o.pickHashes) ? o.pickHashes.filter((x): x is string => typeof x === 'string') : undefined,
     graphRange: isRange(o.graphRange) ? o.graphRange : 'all',
     filters: { branch: str(f.branch), author: str(f.author), query: str(f.query) ?? '', plain: f.plain === true },
     selectedAuthor: str(o.selectedAuthor),
@@ -535,7 +541,7 @@ function rootExists(root: string): boolean {
 }
 
 function selectCommit(hash: string | undefined): void {
-  setUi({ selectedHash: hash, selectedBranch: undefined });
+  setUi({ selectedHash: hash, selectedBranch: undefined, pickHashes: undefined });
 }
 
 /** Seçimin haritada bulunan dosyaları; hiçbiri yoksa boş küme (harita boşuna soluklaşmasın). */
@@ -562,7 +568,7 @@ function renderSelectionBar(): void {
   clear.type = 'button';
   clear.className = 'rr-selbar-clear';
   clear.textContent = m.clearSelection;
-  clear.addEventListener('click', () => setUi({ selectedHash: undefined, selectedBranch: undefined }));
+  clear.addEventListener('click', () => setUi({ selectedHash: undefined, selectedBranch: undefined, pickHashes: undefined }));
   selBar.replaceChildren(text, clear);
 }
 
@@ -627,6 +633,13 @@ function renderGraphView(now: number): void {
       prsByBranch: prsByBranch.size > 0 ? prsByBranch : undefined,
       plain: ui.filters.plain || visible !== undefined,
       selectedHash: ui.selectedHash,
+      pickHashes: ui.pickHashes,
+      onPickChange: (picked, anchor) =>
+        setUi({ pickHashes: picked.length > 1 ? picked : undefined, selectedHash: anchor, selectedBranch: undefined }),
+      onRowContextMenu: (hashes) => {
+        if (running) return;
+        post({ type: 'commitMenu', hashes: pickOrder(hashes) });
+      },
       branchHashes: selection?.kind === 'branch' ? new Set(selection.commits.map((c) => c.hash)) : undefined,
       visible,
       bisect: bisectGraphMarks(),
@@ -662,6 +675,15 @@ function renderGraphView(now: number): void {
   renderCommitDetail(gdetailHost, selection, post, {
     now,
     prsForBranch,
+    cherryPick:
+      selection?.kind === 'commit'
+        ? {
+            count: ui.pickHashes?.length ?? 1,
+            disabled: running !== undefined,
+            // Graph sirasi yeniden eskiye; git eskiden yeniye uygular.
+            onPick: () => runOp({ kind: 'cherryPick', hashes: pickOrder(ui.pickHashes ?? [selection.commit.hash]) }),
+          }
+        : undefined,
     bisect: {
       active: bisect !== undefined,
       onMark: (hash, mark) => {
@@ -685,7 +707,7 @@ function renderGraphView(now: number): void {
         onNavigate: () => undefined,
       }),
     onShowInMap: () => setUi({ view: 'map', root: '' }),
-    onClear: () => setUi({ selectedHash: undefined, selectedBranch: undefined }),
+    onClear: () => setUi({ selectedHash: undefined, selectedBranch: undefined, pickHashes: undefined }),
   });
 }
 
@@ -866,6 +888,7 @@ function resetForRepo(): void {
     root: '',
     selectedPath: undefined,
     selectedHash: undefined,
+    pickHashes: undefined,
     selectedBranch: undefined,
     selectedAuthor: undefined,
     timeAt: undefined,
@@ -1007,6 +1030,12 @@ window.addEventListener('message', (e: MessageEvent<ExtensionToWebview>) => {
       graphError = undefined;
       graphRequested = true;
       if (ui.selectedHash && !findCommit(ui.selectedHash)) ui.selectedHash = undefined;
+      // Artik yuklu olmayan commit'ler coklu secimde kalmasin; tek kalirsa tek secime iner.
+      if (ui.pickHashes) {
+        const kept = ui.pickHashes.filter((h) => findCommit(h));
+        ui.pickHashes = kept.length > 1 ? kept : undefined;
+        if (ui.pickHashes && ui.selectedHash === undefined) ui.selectedHash = ui.pickHashes[0];
+      }
       if (ui.selectedBranch && !findRef(ui.selectedBranch)) ui.selectedBranch = undefined;
       saveUi();
       break;
@@ -1024,7 +1053,7 @@ window.addEventListener('message', (e: MessageEvent<ExtensionToWebview>) => {
       currentRepo = msg.current;
       break;
     case 'selectBranch':
-      ui = { ...ui, selectedBranch: msg.name, selectedHash: msg.name ? undefined : ui.selectedHash };
+      ui = { ...ui, selectedBranch: msg.name, selectedHash: msg.name ? undefined : ui.selectedHash, pickHashes: undefined };
       saveUi();
       if (msg.name) ensureGraph();
       break;
@@ -1067,6 +1096,7 @@ function autoSelectForPreview(): void {
   if (mode.startsWith('branch:')) {
     ui.selectedBranch = mode.slice('branch:'.length);
     ui.selectedHash = undefined;
+    ui.pickHashes = undefined;
     return;
   }
   const c = model.commits.find((x) => x.files.length > 0);
