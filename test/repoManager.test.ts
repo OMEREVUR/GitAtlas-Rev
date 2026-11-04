@@ -90,7 +90,10 @@ let web: string;
 let plain: string;
 
 beforeAll(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), 'rr-repos-')));
+  // realpathSync Windows'ta 8.3 kısa adlarını açmaz: CI runner'ında tmpdir()
+  // "C:\Users\RUNNER~1\..." gelir, RepoManager ise kökü git'ten uzun biçimde alır
+  // ve karşılaştırma tutmaz. .native kısa adları uzun biçime çevirir.
+  base = realpathSync.native(mkdtempSync(join(tmpdir(), 'rr-repos-')));
   api = join(base, 'api');
   web = join(base, 'web');
   plain = join(base, 'notes');

@@ -10,7 +10,7 @@ Repoyu tek bakışta okutan harita. GitAtlas-Rev, VS Code'un yan panelinde repon
 
 Arayüz **Türkçe** ve **İngilizce**. Varsayılan olarak VS Code'un arayüz diline uyar; `gitatlas-revrev.language` ayarıyla değiştirilebilir.
 
-![Harita: kutu boyutu satır sayısı, renk değişim sıklığı; mor kesikli çerçeve iki açık PR'ın dokunduğu dosyayı gösterir](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/01-map-pr-conflict-dark.png)
+![Harita: kutu boyutu satır sayısı, renk değişim sıklığı; mor kesikli çerçeve iki açık PR'ın dokunduğu dosyayı gösterir](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/01-map-pr-conflict-dark.png)
 
 **[Visual Studio Marketplace'ten kur](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev)** ya da VS Code'da `Ctrl+P` ile `ext install Omer-Cayir.gitatlas-rev` çalıştır. Sonra Activity Bar'daki **GitAtlas-Rev** simgesini aç ya da **GitAtlas-Rev ile başla** turunu izle (Yardım → Hoş Geldiniz).
 
@@ -26,14 +26,16 @@ Arayüz **Türkçe** ve **İngilizce**. Varsayılan olarak VS Code'un arayüz di
 - Harita düzenleyici alanında sekme olarak da açılabilir: **GitAtlas-Rev: Haritayı düzenleyicide aç**.
 - Bir workspace'te birden fazla repo (multi-root): branch adının yanındaki repo düğmesinden, durum çubuğundan ya da **GitAtlas-Rev: Repo seç** ile değiştir; istersen harita açık dosyanın reposunu takip eder.
 
-![Seçilen commit'in dokunduğu dosyalar yanar, haritanın geri kalanı soluklaşır](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/02-commit-highlight-light.png)
+![Seçilen commit'in dokunduğu dosyalar yanar, haritanın geri kalanı soluklaşır](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/02-commit-highlight-light.png)
+
+![Tazelik renk modu: dosya ne kadar yakın zamanda değiştiyse rengi o kadar güçlü](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/09-recency-dark.png)
 
 **Graph ve branch'ler**
 - Commit graph: branch'ler renkli şeritler, merge'ler içi boş noktalar. Branch, yazar, tarih ve metin (mesaj, dosya, hash) filtresi; kaydırdıkça daha eski commit'ler yüklenir.
 - Branch'ler paneli: lokal ve remote branch'ler, ahead/behind, son dokunma; 30 günden uzun süredir dokunulmayanlar "bayat".
 - Graph'ta ya da Branch'ler panelinde seçilen commit/branch'in dosyaları haritada yanar.
 
-![Branch şeritleri, PR ve CI rozetleri ve seçili commit'in mini haritasıyla commit graph](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/03-graph-dark.png)
+![Branch şeritleri, PR ve CI rozetleri ve seçili commit'in mini haritasıyla commit graph](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/03-graph-dark.png)
 
 **GitHub katmanı**
 - **PR çakışma uyarısı:** aynı dosyaya 2+ açık PR dokunuyorsa kutu mor kesikli çerçeveyle işaretlenir; dosya kartında PR'lar listelenir; Explorer'da PR sayısı rozeti görünür.
@@ -44,9 +46,9 @@ Arayüz **Türkçe** ve **İngilizce**. Varsayılan olarak VS Code'un arayüz di
 - Zaman makinesi: kaydırıcıyla ya da oynat düğmesiyle repoyu geçmiş bir tarihte gör; ısı o tarihten önceki 7 günün değişimi, o tarihte henüz olmayan dosyalar kesik çerçeveli.
 - Katkı paneli: modül sahipliği ("tek kişiye bağlı" uyarısıyla), haftalık ritim, "bu dosyayı en iyi kim bilir", yazarlar. Aynı kişinin farklı e-postaları `.mailmap` ile birleşir.
 
-![Zaman makinesi: reponun ilk commit'ten bugüne büyümesi](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/08-time-machine.gif)
+![Zaman makinesi: reponun ilk commit'ten bugüne büyümesi](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/08-time-machine.gif)
 
-![Katkı paneli: modül sahipliği, haftalık ritim ve dosyayı en iyi bilen kişi](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/05-contributors-dark.png)
+![Katkı paneli: modül sahipliği, haftalık ritim ve dosyayı en iyi bilen kişi](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/05-contributors-dark.png)
 
 **Değişiklikler: git komutu yazmadan**
 - **Değişiklikler** sekmesi: değişen dosyaları onay kutularıyla tek tek ya da hepsini commit'e ekle/çıkar, diff'e bak, değişikliği geri al.
@@ -57,7 +59,9 @@ Arayüz **Türkçe** ve **İngilizce**. Varsayılan olarak VS Code'un arayüz di
 - GitHub bağlıysa **Pull request'ler**: bu branch'ten PR aç (gerekirse önce gönderir), PR'ı birleştir (merge/squash/rebase), PR branch'ine geç; "Benim PR'larım" ve "Review bekleyenler".
 - Riskli her işlem önce onay ister; komutlar ve çıktıları "GitAtlas-Rev Git" çıktı kanalında.
 
-![Değişiklikler sekmesi: onay kutularıyla ekleme, commit kutusu ve pull request'ler](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/06-changes-pr-dark.png)
+![Değişiklikler sekmesi: onay kutularıyla ekleme, commit kutusu ve pull request'ler](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/06-changes-pr-dark.png)
+
+![Birleştirme çakışması: çakışan dosyalar ayrı bir grupta, her birinde merge editöründe açma ve bir tarafı alma düğmeleri, üstte çözülenlerin sayacı](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/10-conflict-changes-dark.png)
 
 ## Ayarlar
 

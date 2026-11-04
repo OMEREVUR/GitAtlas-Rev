@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+Maintenance release: nothing changes in how the extension behaves.
+- Fixed the Windows CI run. A test built its expected paths from `os.tmpdir()` and compared them with the paths git reports; on runners whose temp directory uses a Windows 8.3 short name (`RUNNER~1`) the two forms never matched.
+- GitHub Actions updated to `checkout`, `setup-node` and `upload-artifact` v7; the v4 line targets the deprecated Node.js 20.
+- README screenshots retaken on 0.3.0, with the Frequency/Recency color mode and the merge conflict markers added.
+
 ## 0.3.0
 Usability round based on the first user feedback.
 - **Multi-root workspaces:** GitAtlas-Rev now finds the git repository in every workspace folder, not only the first one. Switch repositories with the repository button next to the branch name, the status bar item or **GitAtlas-Rev: Select repository**; optionally follow the repository of the active file. The choice is remembered per workspace.

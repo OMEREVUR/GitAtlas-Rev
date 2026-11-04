@@ -2,7 +2,7 @@
   "name": "gitatlas-rev",
   "displayName": "GitAtlas-Rev",
   "description": "%description%",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "Omer-Cayir",
   "icon": "icons/icon.png",
   "license": "SEE LICENSE IN LICENSE",

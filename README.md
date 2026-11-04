@@ -10,7 +10,7 @@ A map that lets you read a repo at a glance. GitAtlas-Rev draws your repository 
 
 The interface is available in **English** and **Turkish**. It follows the VS Code display language by default; change it with the `gitatlas-revrev.language` setting.
 
-![The map: box size is line count, color is churn; a dashed purple frame marks a file touched by two open PRs](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/01-map-pr-conflict-dark.png)
+![The map: box size is line count, color is churn; a dashed purple frame marks a file touched by two open PRs](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/01-map-pr-conflict-dark.png)
 
 **[Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev)**, or press `Ctrl+P` in VS Code and run `ext install Omer-Cayir.gitatlas-rev`. Then open the **GitAtlas-Rev** icon in the Activity Bar, or follow the **Get started with GitAtlas-Rev** walkthrough (Help → Welcome).
 
@@ -26,14 +26,16 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 - The map can also be opened as an editor tab: **GitAtlas-Rev: Open map in editor**.
 - Several repositories in one workspace (multi-root): switch with the repository button next to the branch name, the status bar or **GitAtlas-Rev: Select repository**; the map can also follow the repository of the active file.
 
-![A selected commit lights up the files it touched; the rest of the map is dimmed](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/02-commit-highlight-light.png)
+![A selected commit lights up the files it touched; the rest of the map is dimmed](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/02-commit-highlight-light.png)
+
+![Recency color mode: the more recently a file changed, the stronger its color](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/09-recency-dark.png)
 
 **Graph and branches**
 - Commit graph: branches as colored lanes, merges as hollow dots. Filter by branch, author, date and text (message, file, hash); older commits load as you scroll.
 - Branches view: local and remote branches, ahead/behind, last touched; branches untouched for more than 30 days are marked "stale".
 - Select a commit or branch in the graph or the Branches view and its files light up on the map.
 
-![Commit graph with branch lanes, PR and CI badges, and a mini map of the selected commit](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/03-graph-dark.png)
+![Commit graph with branch lanes, PR and CI badges, and a mini map of the selected commit](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/03-graph-dark.png)
 
 **GitHub layer**
 - **PR conflict warning:** when 2+ open PRs touch the same file, its box gets a purple dashed frame; the file card lists the PRs; the Explorer shows a PR count badge.
@@ -44,9 +46,9 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 - Time machine: use the slider or the play button to see the repo at a past date; heat is the change in the 7 days before that date, and files that did not exist yet have a dashed outline.
 - Contributors panel: module ownership (with a "single owner" warning), weekly rhythm, "who knows this file best", authors. Multiple emails of the same person are merged via `.mailmap`.
 
-![Time machine: the repo growing from its first commit to today](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/08-time-machine.gif)
+![Time machine: the repo growing from its first commit to today](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/08-time-machine.gif)
 
-![Contributors panel: module ownership, weekly rhythm and who knows each file best](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/05-contributors-dark.png)
+![Contributors panel: module ownership, weekly rhythm and who knows each file best](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/05-contributors-dark.png)
 
 **Changes: git without typing commands**
 - **Changes** tab: stage or unstage changed files one by one or all at once with checkboxes, view the diff, discard a change.
@@ -57,7 +59,9 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 - When connected to GitHub, **Pull requests**: open a PR from this branch (pushes first if needed), merge a PR (merge/squash/rebase), check out a PR branch; "My pull requests" and "Review requested".
 - Every risky action asks for confirmation first; commands and their output are in the "GitAtlas-Rev Git" output channel.
 
-![Changes tab: stage with checkboxes, commit box and pull requests](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.2.1/06-changes-pr-dark.png)
+![Changes tab: stage with checkboxes, commit box and pull requests](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/06-changes-pr-dark.png)
+
+![A merge conflict: conflicted files are grouped on their own, each with "open in merge editor" and keep-one-side buttons, above a resolved counter](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.3.1/10-conflict-changes-dark.png)
 
 ## Settings
 
