@@ -1,5 +1,5 @@
 // SÖZLEŞME — webview ↔ eklenti mesajları. Değişiklik yalnızca bilinçli bir kararla yapılır.
-import type { ColorMode, CommitSummary, ContribData, FileStat, GitHubData, GitHubOpKind, GitHubOpRequest, GitOpKind, GitOpRequest, GraphData, OpResult, PrDraft, PrPanelData, RepoInfo, StashEntry, TimeRange, TimelineData, WorkingTreeStatus } from './types';
+import type { BisectState, ColorMode, CommitSummary, ContribData, FileStat, GitHubData, GitHubOpKind, GitHubOpRequest, GitOpKind, GitOpRequest, GraphData, OpResult, PrDraft, PrPanelData, RepoInfo, StashEntry, TimeRange, TimelineData, WorkingTreeStatus } from './types';
 
 /** Panelde gösterilen hata durumları (tasarım: States.dc.html). */
 export type ErrorCode = 'noWorkspace' | 'noRepo' | 'noCommits' | 'noGit' | 'unknown';
@@ -47,7 +47,10 @@ export type ExtensionToWebview =
   | { type: 'prDraft'; draft: PrDraft | undefined; error?: string }
   // 0.3.0
   /** Workspace'teki repolar ve gösterilen repo (current: kök yolu; repo yoksa undefined). Kök değişince model'den önce gelir. */
-  | { type: 'repos'; repos: RepoInfo[]; current: string | undefined; follow: boolean };
+  | { type: 'repos'; repos: RepoInfo[]; current: string | undefined; follow: boolean }
+  // 0.4.0
+  /** Süren bisect (yoksa undefined); loadBisect'ten sonra her yenilemede ve bisect işlemlerinden sonra gelir. */
+  | { type: 'bisect'; state: BisectState | undefined };
 
 export type WebviewToExtension =
   | { type: 'ready' }
@@ -96,4 +99,7 @@ export type WebviewToExtension =
   /** Haritanın renk ölçeği; eklenti hatırlar ve bütün webview'lara model ile geri gönderir. */
   | { type: 'setColorMode'; mode: ColorMode }
   /** Çakışan dosyayı VS Code'un 3 yönlü merge editöründe aç (yoksa dosyayı aç). */
-  | { type: 'openMergeEditor'; path: string };
+  | { type: 'openMergeEditor'; path: string }
+  // 0.4.0
+  /** Bisect durumunu iste ve güncel tut. */
+  | { type: 'loadBisect' };

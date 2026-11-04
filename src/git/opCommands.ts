@@ -18,6 +18,12 @@ export function opCommands(op: GitOpRequest, status?: WorkingTreeStatus, ctx: Op
       return op.paths.length ? [['add', '--', ...op.paths]] : [];
     case 'stageAll':
       return [['add', '-A']];
+    case 'bisectStart':
+      return [['bisect', 'start', op.bad, op.good]];
+    case 'bisectMark':
+      return [['bisect', op.mark, ...(op.rev ? [op.rev] : [])]];
+    case 'bisectReset':
+      return [['bisect', 'reset']];
     case 'resolveSide': {
       const kind = status?.files.find((f) => f.path === op.path)?.conflict;
       if (!sideExists(kind, op.side)) return [['rm', '--', op.path]];

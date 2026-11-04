@@ -131,6 +131,13 @@ async function main(): Promise<void> {
     { file: `${name}-map-dirty.png`, query: 'theme=light&gh=off', size: '1100,820' },
     { file: `${name}-changes-pr-dark.png`, query: 'theme=dark&view=changes&gh=connected', size: '1200,1100' },
     { file: `${name}-changes-pr-light.png`, query: 'theme=light&view=changes&gh=connected', size: '1200,1100' },
+    // 0.4.0: bisect
+    { file: `${name}-bisect-idle-dark.png`, query: 'theme=dark&view=bisect&gh=off', size: '1100,820' },
+    { file: `${name}-bisect-active-light.png`, query: 'theme=light&view=bisect&gh=off&bisect=active', size: '1100,820' },
+    { file: `${name}-bisect-active-dark.png`, query: 'theme=dark&view=bisect&gh=off&bisect=active', size: '1100,820' },
+    { file: `${name}-bisect-done-dark.png`, query: 'theme=dark&view=bisect&gh=off&bisect=done', size: '1100,900' },
+    { file: `${name}-bisect-graph-dark.png`, query: 'theme=dark&view=graph&gh=off&bisect=active&autoselect=1', size: '1200,820' },
+    { file: `${name}-bisect-narrow.png`, query: 'theme=dark&view=bisect&gh=off&bisect=active&width=360', size: '600,1300' },
     // 0.3.0: çakışma
     { file: `${name}-conflict-changes-dark.png`, query: 'theme=dark&view=changes&gh=off&conflict=merge', size: '1200,820' },
     { file: `${name}-conflict-changes-light.png`, query: 'theme=light&view=changes&gh=off&conflict=rebase', size: '1200,820' },

@@ -7,11 +7,13 @@ import './contributors.css';
 import './changes.css';
 import './ops.css';
 import './prPanel.css';
+import './bisect.css';
 import './layout.css';
 import { parseLang, setLang } from '../i18n';
 import { mainText } from '../i18n/main';
 import type { ExtensionToWebview, WebviewToExtension } from '../protocol';
 import type {
+  BisectState,
   ChangeKind,
   ColorMode,
   CommitSummary,
@@ -37,6 +39,9 @@ import type {
 import { branchCommits, filterGraphCommits, graphAuthors } from '../model/graphSelect';
 import { timelineFrame, timelineSteps } from '../model/timeline';
 import { renderChanges } from './changes';
+import { renderBisect } from './bisect';
+import { text as bisectText } from '../i18n/bisect';
+import type { BisectRowMark } from './graphView';
 import { renderCommitBox, resetCommitBox } from './commitBox';
 import { renderCommitDetail, type GraphSelection } from './commitDetail';
 import { renderOpNotice } from './opNotice';
@@ -70,8 +75,8 @@ interface Model {
   commits: CommitSummary[];
 }
 
-type View = 'map' | 'graph' | 'time' | 'contrib' | 'changes';
-const VIEWS: readonly View[] = ['map', 'graph', 'time', 'contrib', 'changes'];
+type View = 'map' | 'graph' | 'time' | 'contrib' | 'changes' | 'bisect';
+const VIEWS: readonly View[] = ['map', 'graph', 'time', 'contrib', 'changes', 'bisect'];
 
 interface UiState {
   view: View;
@@ -92,6 +97,9 @@ interface UiState {
   githubLayer: boolean;
   /** Değişiklikler listesi klasör ağacı olarak mı? */
   changesTree: boolean;
+  /** 0.4.0: Bisect sekmesindeki form. */
+  bisectBad: string;
+  bisectGood?: string;
 }
 
 let GRAPH_PAGE = 500;
@@ -136,6 +144,10 @@ let prRequested = false;
 let prDraft: PrDraft | undefined;
 let prDraftError: string | undefined;
 
+// 0.4.0: süren bisect (yoksa undefined)
+let bisect: BisectState | undefined;
+let bisectRequested = false;
+
 // 0.3.0: çakışma sayacı (işlem boyunca görülen en yüksek çakışma sayısı)
 let conflictPeak = 0;
 
@@ -167,6 +179,8 @@ function restoreUi(): UiState {
     timeAt: typeof o.timeAt === 'number' ? o.timeAt : undefined,
     githubLayer: o.githubLayer !== false,
     changesTree: o.changesTree === true,
+    bisectBad: str(o.bisectBad) ?? 'HEAD',
+    bisectGood: str(o.bisectGood),
   };
 }
 
@@ -198,8 +212,9 @@ const tabButtons: Record<View, HTMLButtonElement> = {
   time: tabButton(mainText().tabTime, 'time'),
   contrib: tabButton(mainText().tabContrib, 'contrib'),
   changes: tabButton(mainText().tabChanges, 'changes'),
+  bisect: tabButton(bisectText().tab, 'bisect'),
 };
-tabs.append(tabButtons.map, tabButtons.graph, tabButtons.time, tabButtons.contrib, tabButtons.changes);
+tabs.append(tabButtons.map, tabButtons.graph, tabButtons.time, tabButtons.contrib, tabButtons.changes, tabButtons.bisect);
 const rangeHost = el('div', 'rr-range');
 const refreshBtn = document.createElement('button');
 refreshBtn.className = 'rr-iconbtn';
@@ -276,13 +291,17 @@ prHost.setAttribute('aria-label', mainText().pullRequests);
 changesSide.append(commitHost, prHost, stashHost);
 changesBody.append(changesHost, changesSide);
 
+// Bisect görünümü
+const bisectHost = el('section', 'rr-bisect');
+bisectHost.setAttribute('aria-label', bisectText().region);
+
 const bannerHost = el('div', 'rr-banner');
 const noticeHost = el('div', 'rr-notice');
 const conflictHost = el('div', 'rr-conflictband');
 conflictHost.setAttribute('role', 'status');
 const stateHost = el('div', 'rr-state');
 
-app.append(progressEl, toolbar, bannerHost, noticeHost, conflictHost, body, gbody, timeHost, contribHost, changesBody, stateHost);
+app.append(progressEl, toolbar, bannerHost, noticeHost, conflictHost, body, gbody, timeHost, contribHost, changesBody, bisectHost, stateHost);
 
 // ---- Durum güncelleme ----
 function saveUi(): void {
@@ -301,6 +320,52 @@ function setView(view: View): void {
   if (view === 'graph') ensureGraph();
   if (view === 'time') ensureTimeline();
   if (view === 'contrib') ensureContrib();
+  // Etiketler ve bulunan commit'in ayrıntısı graph verisinden gelir.
+  if (view === 'bisect') ensureGraph();
+}
+
+function ensureBisect(): void {
+  if (bisectRequested) return;
+  bisectRequested = true;
+  post({ type: 'loadBisect' });
+}
+
+/** Graph satırları için bisect işaretleri; bisect yoksa undefined. */
+function bisectGraphMarks(): { candidates: Set<string>; marks: Map<string, BisectRowMark> } | undefined {
+  if (!bisect) return undefined;
+  const marks = new Map<string, BisectRowMark>();
+  for (const m of bisect.marks) marks.set(m.hash, m.mark);
+  if (bisect.firstBad) marks.set(bisect.firstBad, 'culprit');
+  else if (bisect.current && !marks.has(bisect.current)) marks.set(bisect.current, 'testing');
+  return { candidates: new Set(bisect.candidates), marks };
+}
+
+function commitByHash(hash: string): CommitSummary | undefined {
+  return model?.commits.find((c) => c.hash === hash) ?? graph?.commits.find((c) => c.hash === hash);
+}
+
+function renderBisectView(now: number): void {
+  if (!model) return;
+  const dirty = wt?.files.some((f) => f.conflicted || f.staged !== undefined || (f.unstaged !== undefined && f.unstaged !== 'untracked')) ?? false;
+  renderBisect(bisectHost, {
+    state: bisect,
+    commitOf: commitByHash,
+    recent: model.commits.slice(0, 200),
+    tags: graph?.refs.filter((r) => r.kind === 'tag') ?? [],
+    headName: wt?.branch ?? graph?.currentBranch ?? 'HEAD',
+    form: { bad: ui.bisectBad, good: ui.bisectGood },
+    dirty,
+    busy: running !== undefined,
+    now,
+    onForm: (f) => setUi({ bisectBad: f.bad, bisectGood: f.good }),
+    onOp: runOp,
+    onShowInMap: (hash) => setUi({ view: 'map', root: '', selectedHash: hash, selectedBranch: undefined }),
+    onShowInGraph: (hash) => {
+      setUi({ view: 'graph', selectedHash: hash, selectedBranch: undefined });
+      ensureGraph();
+    },
+    onOpenDiff: (path, hash) => post({ type: 'openDiff', path, hash }),
+  });
 }
 
 function ensureStatus(): void {
@@ -564,6 +629,7 @@ function renderGraphView(now: number): void {
       selectedHash: ui.selectedHash,
       branchHashes: selection?.kind === 'branch' ? new Set(selection.commits.map((c) => c.hash)) : undefined,
       visible,
+      bisect: bisectGraphMarks(),
       now,
       loadingMore: graphLoading,
       onSelectCommit: (hash) => selectCommit(hash),
@@ -596,6 +662,16 @@ function renderGraphView(now: number): void {
   renderCommitDetail(gdetailHost, selection, post, {
     now,
     prsForBranch,
+    bisect: {
+      active: bisect !== undefined,
+      onMark: (hash, mark) => {
+        if (bisect) runOp({ kind: 'bisectMark', mark, rev: hash });
+        else {
+          setUi(mark === 'good' ? { bisectGood: hash } : { bisectBad: hash });
+          setView('bisect');
+        }
+      },
+    },
     touchedCount: [...highlight].filter((p) => byPath.has(p)).length,
     totalCount: files.length,
     renderMiniMap: (host) =>
@@ -624,6 +700,7 @@ function render(): void {
   timeHost.hidden = fullState !== undefined || ui.view !== 'time';
   contribHost.hidden = fullState !== undefined || ui.view !== 'contrib';
   changesBody.hidden = fullState !== undefined || ui.view !== 'changes';
+  bisectHost.hidden = fullState !== undefined || ui.view !== 'bisect';
   if (fullState) {
     noticeHost.hidden = true;
   } else {
@@ -686,11 +763,13 @@ function render(): void {
     renderTimeView();
   } else if (ui.view === 'changes') {
     renderChangesView();
+  } else if (ui.view === 'bisect') {
+    renderBisectView(now);
   } else {
     renderRangeFilter(rangeHost, model.range, (r) => post({ type: 'setRange', range: r }));
     renderContribView(now);
   }
-  rangeHost.hidden = ui.view === 'time' || ui.view === 'changes';
+  rangeHost.hidden = ui.view === 'time' || ui.view === 'changes' || ui.view === 'bisect';
 }
 
 function renderChangesView(): void {
@@ -772,6 +851,7 @@ function resetForRepo(): void {
   timeline = undefined;
   contrib = undefined;
   contribRequested = undefined;
+  bisect = undefined;
   wt = undefined;
   stashes = [];
   conflictPeak = 0;
@@ -790,6 +870,8 @@ function resetForRepo(): void {
     selectedAuthor: undefined,
     timeAt: undefined,
     filters: { branch: undefined, author: undefined, query: '', plain: ui.filters.plain },
+    bisectBad: 'HEAD',
+    bisectGood: undefined,
   };
   saveUi();
   resetCommitBox(commitHost);
@@ -864,7 +946,8 @@ window.addEventListener('message', (e: MessageEvent<ExtensionToWebview>) => {
       if (!rootExists(ui.root)) ui.root = '';
       saveUi();
       autoSelectForPreview();
-      if (ui.view === 'graph' || ui.selectedBranch) ensureGraph();
+      if (ui.view === 'graph' || ui.view === 'bisect' || ui.selectedBranch) ensureGraph();
+      ensureBisect();
       if (ui.view === 'time') ensureTimeline();
       if (ui.view === 'contrib') ensureContrib();
       ensureStatus();
@@ -930,6 +1013,10 @@ window.addEventListener('message', (e: MessageEvent<ExtensionToWebview>) => {
     case 'graphError':
       graphLoading = false;
       graphError = msg.message;
+      break;
+    case 'bisect':
+      bisect = msg.state;
+      bisectRequested = true;
       break;
     case 'repos':
       if (currentRepo !== undefined && msg.current !== currentRepo) resetForRepo();

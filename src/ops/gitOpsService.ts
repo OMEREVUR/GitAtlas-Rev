@@ -7,6 +7,7 @@ import { sideExists, sideRole, type ConflictSide } from '../git/conflictSides';
 import { GitError, runGit } from '../git/gitRunner';
 import { formatCommand, isValidBranchName, opCommands } from '../git/opCommands';
 import { getStatus, listStashes } from '../git/status';
+import { getBisectState } from '../git/bisect';
 import { text } from '../i18n/ops';
 import type { GitOpRequest, OpResult, RepoOperation, WorkingTreeStatus } from '../types';
 import { OpQueue } from './opQueue';
@@ -211,6 +212,33 @@ export class GitOpsService {
         return done(exists ? t.resolvedWithSide(op.path, role) : t.resolvedByDelete(op.path));
       }
 
+      case 'bisectStart': {
+        if (await getBisectState(this.deps.root)) return fail(t.bisectAlreadyActive);
+        const dirty = status.files.some(
+          (f) => f.conflicted || f.staged !== undefined || (f.unstaged !== undefined && f.unstaged !== 'untracked'),
+        );
+        if (dirty) {
+          const ok = await ui.confirm(t.bisectDirtyConfirm, t.bisectDirtyDetail, t.bisectStashAction);
+          if (!ok) return cancelled();
+          await run.git(['stash', 'push', '-m', 'GitAtlas-Rev: bisect']);
+        }
+        await runAll(await plan());
+        return done(await this.bisectProgress(run));
+      }
+
+      case 'bisectMark': {
+        if (!(await getBisectState(this.deps.root))) return fail(t.bisectNotActive);
+        await runAll(await plan());
+        return done(await this.bisectProgress(run));
+      }
+
+      case 'bisectReset': {
+        const state = await getBisectState(this.deps.root);
+        if (!state) return fail(t.bisectNotActive);
+        await runAll(await plan());
+        return done(t.bisectResetDone(state.startRef));
+      }
+
       case 'stageAll': {
         const n = status.files.filter((f) => f.unstaged !== undefined).length;
         if (n === 0) return done(t.nothingToStage);
@@ -377,6 +405,18 @@ export class GitOpsService {
         return done(t.aborted(label));
       }
     }
+  }
+
+  /** Bisect adımından sonra: bulundu / sıradaki test / iyi-kötü bekleniyor. */
+  private async bisectProgress(run: OpRun): Promise<string> {
+    const t = text();
+    const state = await getBisectState(this.deps.root);
+    const describe = async (hash: string): Promise<string> =>
+      (await run.quiet(['log', '-1', '--format=%h %s', hash]).catch(() => hash.slice(0, 7))).trim();
+    if (!state) return t.bisectWaiting;
+    if (state.firstBad) return t.bisectFound(await describe(state.firstBad));
+    if (!state.bad || state.goods.length === 0 || !state.current) return t.bisectWaiting;
+    return t.bisectTesting(await describe(state.current), state.steps);
   }
 
   private async commit(

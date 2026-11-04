@@ -78,6 +78,36 @@
 .rr-g-row:hover {
   background: var(--vscode-list-hoverBackground);
 }
+/* 0.4.0: bisect — aday aralığın dışı soluk; işaret etiketi metinli (renk tek başına bilgi taşımaz). */
+.rr-g-row.rr-g-outside {
+  opacity: 0.45;
+}
+.rr-g-ref.rr-g-bisect {
+  min-width: 0;
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  background: transparent;
+  font-weight: 700;
+}
+.rr-g-ref.rr-g-bisect-good {
+  color: var(--vscode-testing-iconPassed, var(--vscode-charts-green));
+}
+.rr-g-ref.rr-g-bisect-bad,
+.rr-g-ref.rr-g-bisect-culprit {
+  color: var(--vscode-testing-iconFailed, var(--vscode-errorForeground));
+}
+.rr-g-ref.rr-g-bisect-culprit {
+  border-width: 2px;
+}
+.rr-g-ref.rr-g-bisect-skip {
+  color: var(--vscode-descriptionForeground);
+}
+.rr-g-ref.rr-g-bisect-testing {
+  color: var(--vscode-focusBorder);
+}
+.rr-g-selected .rr-g-ref.rr-g-bisect {
+  color: inherit;
+}
 .rr-g-row.rr-g-inbranch {
   background: var(--vscode-list-hoverBackground);
 }

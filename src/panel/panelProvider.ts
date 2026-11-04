@@ -5,6 +5,7 @@ import { CONFIG_KEYS, getDefaultRange, getGitPath, getGraphPageSize, getIgnoreGl
 import { countPrsByFile, type HeatDecorationProvider } from '../decorations/heatDecorations';
 import { GitError, runGit, setGitPath } from '../git/gitRunner';
 import { listRefs } from '../git/refs';
+import { getBisectState } from '../git/bisect';
 import { getStatus, listStashes } from '../git/status';
 import type { GitHubLayer } from '../github/githubLayer';
 import { computeFileStats } from '../model/aggregate';
@@ -21,6 +22,7 @@ import { computePrDraft } from '../ops/prDraft';
 import { OpQueue } from '../ops/opQueue';
 import type { ErrorCode, ExtensionToWebview, StateAction, WebviewToExtension } from '../protocol';
 import type {
+  BisectState,
   ColorMode,
   FileStat,
   GitHubData,
@@ -92,7 +94,7 @@ export function isGitHubUrl(v: unknown): v is string {
 const OP_KINDS: readonly GitOpKind[] = [
   'stage', 'stageAll', 'unstage', 'unstageAll', 'discard', 'commit', 'undoLastCommit', 'fetch', 'pull', 'push',
   'checkout', 'createBranch', 'mergeBranch', 'renameBranch', 'deleteBranch', 'stashSave', 'stashApply', 'stashDrop',
-  'markResolved', 'continueOperation', 'abortOperation', 'resolveSide',
+  'markResolved', 'continueOperation', 'abortOperation', 'resolveSide', 'bisectStart', 'bisectMark', 'bisectReset',
 ];
 const PULL_STRATEGIES: readonly PullStrategy[] = ['ff', 'merge', 'rebase'];
 const MAX_OP_PATHS = 10000;
@@ -167,6 +169,15 @@ export function parseGitOp(raw: unknown): GitOpRequest | undefined {
       return isStashIndex(o.index) ? { kind: 'stashDrop', index: o.index } : undefined;
     case 'resolveSide':
       return isSafeRelPath(o.path) && (o.side === 'ours' || o.side === 'theirs') ? { kind: 'resolveSide', path: o.path, side: o.side } : undefined;
+    case 'bisectStart':
+      return isSafeRefName(o.bad) && isSafeRefName(o.good) ? { kind: 'bisectStart', bad: o.bad, good: o.good } : undefined;
+    case 'bisectMark': {
+      if (o.mark !== 'good' && o.mark !== 'bad' && o.mark !== 'skip') return undefined;
+      if (o.rev === undefined) return { kind: 'bisectMark', mark: o.mark };
+      return isSafeRefName(o.rev) ? { kind: 'bisectMark', mark: o.mark, rev: o.rev } : undefined;
+    }
+    case 'bisectReset':
+      return { kind: 'bisectReset' };
   }
 }
 
@@ -269,6 +280,9 @@ export function opChangesRefs(kind: GitOpKind): boolean {
     case 'stashApply':
     case 'continueOperation':
     case 'abortOperation':
+    case 'bisectStart':
+    case 'bisectMark':
+    case 'bisectReset':
       return true;
     default:
       return false;
@@ -324,6 +338,8 @@ export function parseWebviewMessage(raw: unknown): WebviewToExtension | undefine
       return m.mode === 'churn' || m.mode === 'recency' ? { type: 'setColorMode', mode: m.mode } : undefined;
     case 'openMergeEditor':
       return isSafeRelPath(m.path) ? { type: 'openMergeEditor', path: m.path } : undefined;
+    case 'loadBisect':
+      return { type: 'loadBisect' };
     case 'githubDismiss':
       return { type: 'githubDismiss' };
     case 'githubRefresh':
@@ -449,6 +465,9 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
   private prPanelRunning: Promise<void> | undefined;
   private prPanelRerun = false;
   private opCounter = 0;
+  /** 0.4.0: bisect durumu (loadBisect geldikten sonra güncel tutulur). */
+  private bisectRequested = false;
+  private lastBisectMsg: ExtensionToWebview | undefined;
   /** Bu oturumda alınan token'lar; çıktı kanalında maskelenir. */
   private readonly secrets = new Set<string>();
   private readonly output = vscode.window.createOutputChannel('GitAtlas-Rev Git');
@@ -636,6 +655,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
       await this.refreshRefs();
       if (this.disposed) return;
       this.publishDerived();
+      if (this.bisectRequested) void this.refreshBisect();
       if (this.graphParams) void this.requestGraph(this.graphParams);
       if (this.statusRequested) void this.refreshStatus();
     } catch (err) {
@@ -692,6 +712,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     this.githubOps = undefined;
     this.lastPrPanel = undefined;
     this.lastPrPanelMsg = undefined;
+    this.lastBisectMsg = undefined;
     // Branch adları repoya özgü: graph tüm branch'lerle yeniden yüklenir, Branch'ler seçimi kalkar.
     if (this.graphParams) this.graphParams = { limit: this.graphParams.limit };
     this.selectedBranch = undefined;
@@ -1005,7 +1026,25 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     if (this.disposed) return result;
     if (result.ok && opChangesRefs(op.kind)) void this.reload();
     if (this.statusRequested) void this.refreshStatus();
+    // Başarısız bir bisect komutu da durumu değiştirmiş olabilir (ör. start yarıda kaldı).
+    if (op.kind === 'bisectStart' || op.kind === 'bisectMark' || op.kind === 'bisectReset') void this.refreshBisect();
     return result;
+  }
+
+  /** Bisect durumunu okuyup webview'lara gönderir; okunamazsa "bisect yok" sayılır. */
+  private async refreshBisect(): Promise<void> {
+    const root = this.root;
+    if (!root || this.disposed) return;
+    let state: BisectState | undefined;
+    try {
+      state = await getBisectState(root);
+    } catch {
+      state = undefined;
+    }
+    if (this.disposed || root !== this.root) return;
+    const msg: ExtensionToWebview = { type: 'bisect', state };
+    this.lastBisectMsg = msg;
+    this.broadcast(msg);
   }
 
   private async executeGitHubOp(id: string, op: GitHubOpRequest): Promise<OpResult> {
@@ -1238,6 +1277,7 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
           if (this.lastStatus) void from.postMessage({ type: 'status', status: this.lastStatus });
           if (this.lastStashes) void from.postMessage({ type: 'stashes', stashes: this.lastStashes });
           if (this.lastPrPanelMsg) void from.postMessage(this.lastPrPanelMsg);
+          if (this.lastBisectMsg) void from.postMessage(this.lastBisectMsg);
           if (!this.started) void this.reload();
           break;
         }
@@ -1277,6 +1317,10 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
           break;
         case 'openMergeEditor':
           await this.openMergeEditor(msg.path);
+          break;
+        case 'loadBisect':
+          this.bisectRequested = true;
+          await this.refreshBisect();
           break;
         case 'setColorMode':
           await this.prefs.update(COLOR_MODE_KEY, msg.mode);

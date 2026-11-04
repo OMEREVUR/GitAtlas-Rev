@@ -4,12 +4,18 @@ import type { CiState, CommitSummary, GitRef, GraphData, GraphRow } from '../typ
 import { formatRelative } from './format';
 import { ciLabel } from './githubBanner';
 import { text } from '../i18n/graph';
+import { text as bisectText } from '../i18n/bisect';
+
+/** 0.4.0: graph satırındaki bisect işareti. */
+export type BisectRowMark = 'good' | 'bad' | 'skip' | 'testing' | 'culprit';
 
 export interface GraphViewOptions {
   plain: boolean;                 // true: şerit sütunu gizli ("Sade liste")
   selectedHash?: string;
   branchHashes?: Set<string>;     // seçili branch'in commit'leri: satırlar hafif vurgulu (list-hoverBackground)
   visible?: Set<string>;          // filtre sonucu; undefined = hepsi. Doluyken yalnızca bu satırlar çizilir
+  /** 0.4.0: süren bisect — aday aralığın dışındaki satırlar soluk, işaretli commit'lerde etiket. */
+  bisect?: { candidates: Set<string>; marks: Map<string, BisectRowMark> };
   now: number;
   loadingMore: boolean;
   onSelectCommit: (hash: string | undefined) => void;   // seçili satıra ikinci tık → undefined
@@ -288,6 +294,22 @@ function installKeys(
   };
 }
 
+function bisectRowLabel(mark: BisectRowMark): string {
+  const t = bisectText();
+  switch (mark) {
+    case 'good':
+      return t.rowGood;
+    case 'bad':
+      return t.rowBad;
+    case 'skip':
+      return t.rowSkip;
+    case 'testing':
+      return t.rowTesting;
+    case 'culprit':
+      return t.rowCulprit;
+  }
+}
+
 function rowItem(
   c: CommitSummary,
   index: number,
@@ -313,6 +335,8 @@ function rowItem(
   btn.setAttribute('aria-pressed', isSel ? 'true' : 'false');
   if (isSel) btn.classList.add('rr-g-selected');
   else if (opts.branchHashes?.has(c.hash)) btn.classList.add('rr-g-inbranch');
+  const bmark = opts.bisect?.marks.get(c.hash);
+  if (opts.bisect && !bmark && !opts.bisect.candidates.has(c.hash)) btn.classList.add('rr-g-outside');
 
   const t = text();
   const refNames = refs.map((r) => r.name);
@@ -325,6 +349,8 @@ function rowItem(
   if (isMerge) ariaParts.push(c.parents.length > 2 ? t.mergeParentsAria(c.parents.length) : t.mergeAria);
   if (isHead) ariaParts.push('HEAD');
   if (refNames.length) ariaParts.push(`ref: ${refNames.join(', ')}`);
+  const bLabel = bmark ? bisectRowLabel(bmark) : undefined;
+  if (bLabel) ariaParts.push(bisectText().rowAria(bLabel));
   // Bu satırdaki ref'lere bağlı PR'lar (lokal + remote aynı PR'ı iki kez göstermesin).
   const prsByRef = new Map<GitRef, { number: number; ci: CiState; url: string }[]>();
   if (opts.prsByBranch) {
@@ -345,6 +371,7 @@ function rowItem(
   btn.title = c.message;
 
   const msg = h('span', 'rr-g-c-msg');
+  if (bmark && bLabel) msg.append(h('span', `rr-g-ref rr-g-bisect rr-g-bisect-${bmark}`, bLabel));
   if (isHead) {
     const headTag = h('span', 'rr-g-ref rr-g-ref-head');
     headTag.append(h('span', 'rr-g-ref-text', 'HEAD'));

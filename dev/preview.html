@@ -18,6 +18,8 @@
   var theme = params.get('theme') === 'light' ? 'light' : 'dark';
   document.body.className = 'vscode-' + theme;
   document.body.dataset.lang = params.get('lang') === 'en' ? 'en' : 'tr';
+  // Eklentideki gibi <html lang> da dile uysun (büyük harfe çevirmede "i" → "I" / "İ").
+  document.documentElement.lang = document.body.dataset.lang;
   // Kullanıcının F5 temasını taklit: çok koyu charts-orange ve panelle aynı ikincil düğme arka planı.
   if (params.get('usertheme') === '1') {
     document.documentElement.style.setProperty('--vscode-charts-orange', '#5C2E10');
@@ -56,6 +58,23 @@
     base.files = list.concat(base.files.filter(function (f) { return files.indexOf(f.path) < 0; }));
     base.operation = conflictOp;
     return base;
+  }
+  // ?bisect=active|done: sahte bisect durumu (yoksa bisect sürmüyor).
+  var bisectMode = params.get('bisect');
+  function bisectState() {
+    if (!bisectMode) return undefined;
+    var cs = model.commits.filter(function (c) { return c.parents.length < 2; });
+    var bad = cs[0], good = cs[12], cur = cs[6];
+    var state = {
+      startRef: (model.status && model.status.branch) || 'main', bad: bad.hash, goods: [good.hash], skips: [],
+      current: cur.hash, candidates: cs.slice(0, 12).map(function (c) { return c.hash; }), candidateCount: 12, steps: 3,
+      marks: [{ hash: bad.hash, mark: 'bad', subject: bad.message }, { hash: good.hash, mark: 'good', subject: good.message }]
+    };
+    if (bisectMode === 'done') {
+      state.marks.push({ hash: cs[6].hash, mark: 'good' }, { hash: cs[3].hash, mark: 'bad' }, { hash: cs[4].hash, mark: 'skip' });
+      state.firstBad = cs[5].hash; state.steps = 0; state.current = cs[5].hash;
+    }
+    return state;
   }
   // ?color=recency: haritanın renk ölçeği.
   var colorMode = params.get('color') === 'recency' ? 'recency' : 'churn';
@@ -137,6 +156,7 @@
         else if (msg.type === 'loadContrib') { setTimeout(function () { send({ type: 'contrib', contrib: model.contribs[msg.range] }); }, 30); }
         else if (msg.type === 'setRange') { range = msg.range; sendModel(); }
         else if (msg.type === 'setColorMode') { colorMode = msg.mode; sendModel(); }
+        else if (msg.type === 'loadBisect') { setTimeout(function () { send({ type: 'bisect', state: bisectState() }); }, 30); }
         else if (msg.type === 'loadGraph') {
           send({ type: 'graphLoading' });
           var g = model.graphs && model.graphs[msg.branch || ''];

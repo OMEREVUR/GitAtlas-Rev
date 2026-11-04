@@ -4,6 +4,7 @@ import type { WebviewToExtension } from '../protocol';
 import { prRow } from './githubBanner';
 import { baseName, formatDate, formatNumber, formatRelative } from './format';
 import { text } from '../i18n/graph';
+import { text as bisectText } from '../i18n/bisect';
 
 export type GraphSelection =
   | { kind: 'commit'; commit: CommitSummary; refs: GitRef[] }
@@ -23,6 +24,8 @@ export interface CommitDetailOptions {
    * gelir ('origin/feature/x' → 'feature/x').
    */
   prsForBranch?: (name: string) => PullRequest[];
+  /** 0.4.0: verilirse commit seçiliyken "İyi / Kötü olarak işaretle" düğmeleri (bisect sürmüyorsa forma yazar). */
+  bisect?: { active: boolean; onMark: (hash: string, mark: 'good' | 'bad') => void };
 }
 
 const STALE_MS = 30 * 24 * 3600_000;
@@ -163,7 +166,24 @@ function commitBody(
   copy.setAttribute('aria-live', 'polite');
 
   const prs = prsForRefs(refs, opts);
-  return [head, ...prList(prs, post), filesSection(files), h('div', 'rr-p-actions', [show, copy])];
+  const out = [head, ...prList(prs, post), filesSection(files), h('div', 'rr-p-actions', [show, copy])];
+  if (opts.bisect) out.push(bisectSection(commit.hash, opts.bisect));
+  return out;
+}
+
+function bisectSection(hash: string, b: NonNullable<CommitDetailOptions['bisect']>): HTMLElement {
+  const t = bisectText();
+  const mk = (label: string, mark: 'good' | 'bad'): HTMLButtonElement => {
+    const btn = h('button', 'rr-p-btn rr-p-btn-secondary rr-p-btn-small', label);
+    btn.type = 'button';
+    btn.addEventListener('click', () => b.onMark(hash, mark));
+    return btn;
+  };
+  return h('section', 'rr-p-section rr-p-bisect', [
+    h('h3', 'rr-p-heading', t.detailTitle),
+    h('div', 'rr-p-actions', [mk(t.detailGood, 'good'), mk(t.detailBad, 'bad')]),
+    h('div', 'rr-p-muted', b.active ? t.detailHintActive : t.detailHintIdle),
+  ]);
 }
 
 function branchBody(

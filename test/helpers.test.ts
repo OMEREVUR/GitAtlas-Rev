@@ -75,6 +75,17 @@ describe('recencyLevels', () => {
     expect(parseWebviewMessage({ type: 'repoMenu' })).toEqual({ type: 'repoMenu' });
   });
 
+  it('bisect mesajları doğrulanır (ref adı, işaret türü)', () => {
+    const op = (o: unknown): unknown => parseWebviewMessage({ type: 'gitOp', id: 'x', op: o });
+    expect(parseWebviewMessage({ type: 'loadBisect' })).toEqual({ type: 'loadBisect' });
+    expect(op({ kind: 'bisectStart', bad: 'HEAD', good: 'v1.0' })).toMatchObject({ op: { kind: 'bisectStart', bad: 'HEAD', good: 'v1.0' } });
+    expect(op({ kind: 'bisectStart', bad: 'HEAD', good: '--force' })).toBeUndefined();
+    expect(op({ kind: 'bisectMark', mark: 'skip' })).toMatchObject({ op: { kind: 'bisectMark', mark: 'skip' } });
+    expect(op({ kind: 'bisectMark', mark: 'good', rev: 'abc1234' })).toMatchObject({ op: { kind: 'bisectMark', mark: 'good', rev: 'abc1234' } });
+    expect(op({ kind: 'bisectMark', mark: 'maybe' })).toBeUndefined();
+    expect(op({ kind: 'bisectReset' })).toMatchObject({ op: { kind: 'bisectReset' } });
+  });
+
   it("openMergeEditor ve resolveSide yalnızca güvenli yol ve geçerli tarafla kabul edilir", () => {
     expect(parseWebviewMessage({ type: 'openMergeEditor', path: 'src/a.ts' })).toEqual({ type: 'openMergeEditor', path: 'src/a.ts' });
     expect(parseWebviewMessage({ type: 'openMergeEditor', path: '../x' })).toBeUndefined();

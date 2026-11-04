@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { setLang, type TextTable } from '../src/i18n';
+import { text as bisect } from '../src/i18n/bisect';
 import { text as changes } from '../src/i18n/changes';
 import { text as github } from '../src/i18n/github';
 import { text as graph } from '../src/i18n/graph';
@@ -8,7 +9,7 @@ import { text as map } from '../src/i18n/map';
 import { text as ops } from '../src/i18n/ops';
 import { panelText } from '../src/i18n/panel';
 
-const DICTS: Record<string, () => TextTable> = { changes, github, graph, main: mainText, map, ops, panel: panelText };
+const DICTS: Record<string, () => TextTable> = { bisect, changes, github, graph, main: mainText, map, ops, panel: panelText };
 const TURKISH = /[çğıöşüÇĞİÖŞÜ]/;
 
 /** Değeri metne çevirir; fonksiyonsa sayı ve kısa metin argümanlarıyla dener (beklenmedik tipte patlarsa atlanır). */

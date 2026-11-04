@@ -365,6 +365,12 @@ export type GitOpRequest =
   | { kind: 'markResolved'; paths: string[] }
   /** 0.3.0: çakışan dosyada bir tarafın sürümünü al ve çözüldü işaretle (onaylı). O tarafta dosya yoksa silinir. */
   | { kind: 'resolveSide'; path: string; side: 'ours' | 'theirs' }
+  /** 0.4.0: bisect'i başlat (kirli ağaçta onaylı stash). */
+  | { kind: 'bisectStart'; bad: string; good: string }
+  /** 0.4.0: test edilen (ya da verilen) commit'i işaretle. */
+  | { kind: 'bisectMark'; mark: BisectMarkKind; rev?: string }
+  /** 0.4.0: bisect'i bitir, başlangıçtaki branch'e dön. */
+  | { kind: 'bisectReset' }
   | { kind: 'continueOperation' }
   /** Onaylı. */
   | { kind: 'abortOperation' };
@@ -462,4 +468,35 @@ export interface RepoInfo {
   root: string;
   /** Kök klasörün adı (gösterim). */
   name: string;
+}
+
+// ---- 0.4.0: git bisect ----
+
+export type BisectMarkKind = 'good' | 'bad' | 'skip';
+
+export interface BisectMark {
+  hash: string;
+  mark: BisectMarkKind;
+  /** BISECT_LOG'daki commit başlığı. */
+  subject?: string;
+}
+
+/** Süren bir bisect (yoksa durum mesajında undefined). */
+export interface BisectState {
+  /** Bitirince dönülecek yer (BISECT_START: branch adı ya da hash). */
+  startRef: string;
+  bad?: string;
+  goods: string[];
+  skips: string[];
+  /** Test edilen commit (HEAD). */
+  current?: string;
+  /** Şüpheli aralık: kötü commit'ten erişilip iyi commit'lerden erişilemeyen commit'ler (en fazla 5000). */
+  candidates: string[];
+  candidateCount: number;
+  /** Tahmini kalan adım (≈ log2 aday). */
+  steps: number;
+  /** Bulunduysa hatayı getiren commit. */
+  firstBad?: string;
+  /** Verilen işaretler, sırayla. */
+  marks: BisectMark[];
 }
