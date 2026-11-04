@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+Two features from the first feedback round: finding the commit that caused a bug, and moving commits between branches.
+- **Bisect tab.** Pick a known-good and a known-bad commit (from the tab or by marking them in the graph), then answer Good / Bad / Skip for each commit that is checked out; a counter shows roughly how many steps are left. The suspect range is dimmed on the graph and marked commits get a label. When the culprit is found, a card lists the files it touched — light them up on the map, show the commit in the graph, or open a diff. **Finish** runs `git bisect reset` and returns you to where you started. A bisect started in a terminal is picked up as well. `git bisect run` is deliberately not supported: GitAtlas-Rev never runs a command you typed.
+- **Cherry-pick.** Select one commit, or several with Ctrl/Cmd-click and Shift-click, then "Pick these N commits" in the commit panel — or right-click the selection in the graph. Commits are applied oldest first with `git cherry-pick -x`, so each new commit records where it came from. Two or more commits ask for confirmation.
+- The conflict band now also has **Skip** (cherry-pick, rebase and revert; a merge has no `--skip`). Continue, Abort, the resolved counter and the per-file "keep one side" buttons already understood cherry-pick.
+- A cherry-pick whose changes are already on the branch is reported as such, with a pointer to Skip, instead of raw git output. A cherry-pick cannot start while a bisect is running, and a bisect cannot start during a merge, rebase, cherry-pick or revert.
+
 ## 0.3.1
 Maintenance release: nothing changes in how the extension behaves.
 - Fixed the Windows CI run. A test built its expected paths from `os.tmpdir()` and compared them with the paths git reports; on runners whose temp directory uses a Windows 8.3 short name (`RUNNER~1`) the two forms never matched.
