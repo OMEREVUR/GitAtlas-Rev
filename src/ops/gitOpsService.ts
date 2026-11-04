@@ -387,12 +387,46 @@ export class GitOpsService {
         return done(t.stashDropped(ref));
       }
 
+      case 'cherryPick': {
+        if (op.hashes.length === 0) return fail(t.noCommitsSelected);
+        if (status.operation) return fail(t.cherryPickBusy(OPERATION_LABEL[status.operation]));
+        // git kirli ağaçta zaten reddeder; mesajı anlaşılır yapalım (untracked dosya engel değil).
+        const dirty = status.files.some(
+          (f) => f.staged !== undefined || (f.unstaged !== undefined && f.unstaged !== 'untracked'),
+        );
+        if (dirty) return fail(t.cherryPickDirty);
+        const branch = status.branch ?? 'HEAD';
+        if (op.hashes.length > 1) {
+          const ok = await ui.confirm(t.cherryPickConfirm(op.hashes.length), t.cherryPickDetail(branch), t.cherryPickAction);
+          if (!ok) return cancelled();
+        }
+        try {
+          await runAll(await plan());
+        } catch (err) {
+          // Çakışmada git durur; bant devreye girer, kullanıcı çözüp Devam et der.
+          if (err instanceof GitError && err.kind === 'conflict') return fail(t.cherryPickStopped);
+          throw err;
+        }
+        return done(t.cherryPicked(op.hashes.length, branch));
+      }
+
       case 'continueOperation': {
         if (!status.operation) return fail(t.noOperationToContinue);
         const label = OPERATION_LABEL[status.operation];
         await runAll(await plan());
         const after = await getStatus(this.deps.root);
         if (after.operation === status.operation) return done(t.operationContinues(label));
+        return done(t.operationDone(label));
+      }
+
+      case 'skipOperation': {
+        if (!status.operation) return fail(t.noOperationToSkip);
+        const label = OPERATION_LABEL[status.operation];
+        // merge'de --skip yok; diğerlerinde (rebase, cherry-pick, revert) var.
+        if (status.operation === 'merge') return fail(t.cannotSkip(label));
+        await runAll(await plan());
+        const after = await getStatus(this.deps.root);
+        if (after.operation === status.operation) return done(t.skipped(label));
         return done(t.operationDone(label));
       }
 

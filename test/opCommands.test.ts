@@ -85,6 +85,15 @@ describe('opCommands', () => {
     ['abort rebase', { kind: 'abortOperation' }, { ...base, operation: 'rebase' }, [['rebase', '--abort']]],
     ['abort cherryPick', { kind: 'abortOperation' }, { ...base, operation: 'cherryPick' }, [['cherry-pick', '--abort']]],
     ['abort revert', { kind: 'abortOperation' }, { ...base, operation: 'revert' }, [['revert', '--abort']]],
+    // 0.4.0: cherry-pick ve atla. -x mesaja kaynağı yazar; sıra argüman sırasıdır (git bunu korur).
+    ['cherry-pick tek', { kind: 'cherryPick', hashes: ['a'.repeat(40)] }, base, [['cherry-pick', '-x', 'a'.repeat(40)]]],
+    ['cherry-pick çoklu (sıra korunur)', { kind: 'cherryPick', hashes: ['aaa1111', 'bbb2222', 'ccc3333'] }, base, [['cherry-pick', '-x', 'aaa1111', 'bbb2222', 'ccc3333']]],
+    ['cherry-pick boş', { kind: 'cherryPick', hashes: [] }, base, []],
+    ['skip (işlem yok)', { kind: 'skipOperation' }, base, []],
+    ['skip merge (karşılığı yok)', { kind: 'skipOperation' }, { ...base, operation: 'merge' }, []],
+    ['skip rebase', { kind: 'skipOperation' }, { ...base, operation: 'rebase' }, [['rebase', '--skip']]],
+    ['skip cherryPick', { kind: 'skipOperation' }, { ...base, operation: 'cherryPick' }, [['cherry-pick', '--skip']]],
+    ['skip revert', { kind: 'skipOperation' }, { ...base, operation: 'revert' }, [['revert', '--skip']]],
   ];
   it.each(cases)('%s', (_name, op, status, expected) => {
     expect(opCommands(op, status)).toEqual(expected);

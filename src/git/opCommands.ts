@@ -90,6 +90,21 @@ export function opCommands(op: GitOpRequest, status?: WorkingTreeStatus, ctx: Op
       return [['stash', op.pop ? 'pop' : 'apply', `stash@{${op.index}}`]];
     case 'stashDrop':
       return [['stash', 'drop', `stash@{${op.index}}`]];
+    // -x: mesaja "(cherry picked from commit …)" satırı düşer, commit'in nereden geldiği kaybolmaz.
+    case 'cherryPick':
+      return op.hashes.length ? [['cherry-pick', '-x', ...op.hashes]] : [];
+    // --skip rebase, cherry-pick ve revert'te var; merge'de karşılığı yok.
+    case 'skipOperation':
+      switch (status?.operation) {
+        case 'rebase':
+          return [['rebase', '--skip']];
+        case 'cherryPick':
+          return [['cherry-pick', '--skip']];
+        case 'revert':
+          return [['revert', '--skip']];
+        default:
+          return [];
+      }
     case 'continueOperation':
       switch (status?.operation) {
         // merge --continue eski git'te yok ve editör ister; commit --no-edit aynı işi yapar.

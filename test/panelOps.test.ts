@@ -69,6 +69,30 @@ describe('gitOp mesaj doğrulama', () => {
     expect(msg(null)).toBeUndefined();
   });
 
+  it('cherryPick ve skipOperation: yalnızca hash kabul edilir, tekrarlar elenir', () => {
+    const a = 'a'.repeat(40);
+    const b = 'b'.repeat(40);
+    expect(parseGitOp({ kind: 'cherryPick', hashes: [a, b] })).toEqual({ kind: 'cherryPick', hashes: [a, b] });
+    expect(parseGitOp({ kind: 'cherryPick', hashes: ['abc1234'] })).toEqual({ kind: 'cherryPick', hashes: ['abc1234'] });
+    // sıra korunarak tekilleştirilir
+    expect(parseGitOp({ kind: 'cherryPick', hashes: [a, a, b] })).toEqual({ kind: 'cherryPick', hashes: [a, b] });
+    expect(parseGitOp({ kind: 'skipOperation' })).toEqual({ kind: 'skipOperation' });
+
+    // ref adı gibi görünen ama hash olmayan her şey reddedilir
+    for (const bad of [[], ['HEAD'], ['main'], ['refs/heads/main'], ['HEAD~1'], ['-x'], ['ABC1234'], ['abc'], [a, 'main'], 'abc1234', [1], null]) {
+      expect(parseGitOp({ kind: 'cherryPick', hashes: bad })).toBeUndefined();
+    }
+    expect(parseGitOp({ kind: 'cherryPick', hashes: Array.from({ length: 101 }, () => a) })).toBeUndefined();
+
+    // commitMenu aynı doğrulamayı kullanır
+    expect(parseWebviewMessage({ type: 'commitMenu', hashes: [a] })).toEqual({ type: 'commitMenu', hashes: [a] });
+    expect(parseWebviewMessage({ type: 'commitMenu', hashes: ['main'] })).toBeUndefined();
+    expect(parseWebviewMessage({ type: 'commitMenu' })).toBeUndefined();
+
+    expect(opChangesRefs('cherryPick')).toBe(true);
+    expect(opChangesRefs('skipOperation')).toBe(true);
+  });
+
   it('openChange ve showOutput', () => {
     expect(parseWebviewMessage({ type: 'openChange', path: 'src/a.ts', staged: true })).toEqual({
       type: 'openChange', path: 'src/a.ts', staged: true,

@@ -95,6 +95,7 @@ const OP_KINDS: readonly GitOpKind[] = [
   'stage', 'stageAll', 'unstage', 'unstageAll', 'discard', 'commit', 'undoLastCommit', 'fetch', 'pull', 'push',
   'checkout', 'createBranch', 'mergeBranch', 'renameBranch', 'deleteBranch', 'stashSave', 'stashApply', 'stashDrop',
   'markResolved', 'continueOperation', 'abortOperation', 'resolveSide', 'bisectStart', 'bisectMark', 'bisectReset',
+  'cherryPick', 'skipOperation',
 ];
 const PULL_STRATEGIES: readonly PullStrategy[] = ['ff', 'merge', 'rebase'];
 const MAX_OP_PATHS = 10000;
@@ -103,6 +104,24 @@ const MAX_STASH_INDEX = 100000;
 
 function isPathList(v: unknown): v is string[] {
   return Array.isArray(v) && v.length > 0 && v.length <= MAX_OP_PATHS && (v as unknown[]).every(isSafeRelPath);
+}
+
+/** Tek seferde alınabilecek en fazla commit (QuickPick ve komut satırı için makul bir sınır). */
+const MAX_PICK_COMMITS = 100;
+
+/**
+ * Yalnızca commit hash'i. isSafeRefName burada fazla geniş kalır ('main', 'refs/heads/x' geçerdi);
+ * graph her zaman tam hash gönderdiği için hex'e kilitliyoruz — argüman enjeksiyonu yüzeyi de kapanır.
+ */
+export function isCommitHash(v: unknown): v is string {
+  return typeof v === 'string' && /^[0-9a-f]{7,40}$/.test(v);
+}
+
+/** Sıra korunarak tekilleştirilmiş hash listesi; geçersizse undefined. */
+function pickHashes(v: unknown): string[] | undefined {
+  if (!Array.isArray(v) || v.length === 0 || v.length > MAX_PICK_COMMITS) return undefined;
+  if (!(v as unknown[]).every(isCommitHash)) return undefined;
+  return [...new Set(v as string[])];
 }
 
 function isStashIndex(v: unknown): v is number {
@@ -130,7 +149,12 @@ export function parseGitOp(raw: unknown): GitOpRequest | undefined {
     case 'fetch':
     case 'continueOperation':
     case 'abortOperation':
+    case 'skipOperation':
       return { kind: o.kind as 'fetch' };
+    case 'cherryPick': {
+      const hashes = pickHashes(o.hashes);
+      return hashes ? { kind: 'cherryPick', hashes } : undefined;
+    }
     case 'commit':
       return typeof o.message === 'string' && o.message.length <= MAX_MESSAGE && typeof o.amend === 'boolean' && typeof o.push === 'boolean'
         ? { kind: 'commit', message: o.message, amend: o.amend, push: o.push }
@@ -280,6 +304,8 @@ export function opChangesRefs(kind: GitOpKind): boolean {
     case 'stashApply':
     case 'continueOperation':
     case 'abortOperation':
+    case 'skipOperation':
+    case 'cherryPick':
     case 'bisectStart':
     case 'bisectMark':
     case 'bisectReset':
@@ -340,6 +366,10 @@ export function parseWebviewMessage(raw: unknown): WebviewToExtension | undefine
       return isSafeRelPath(m.path) ? { type: 'openMergeEditor', path: m.path } : undefined;
     case 'loadBisect':
       return { type: 'loadBisect' };
+    case 'commitMenu': {
+      const hashes = pickHashes(m.hashes);
+      return hashes ? { type: 'commitMenu', hashes } : undefined;
+    }
     case 'githubDismiss':
       return { type: 'githubDismiss' };
     case 'githubRefresh':
@@ -1031,6 +1061,20 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
     return result;
   }
 
+  /**
+   * Graph'ta sağ tık: seçili commit'ler için QuickPick (webview'ın kendi menüsü yok;
+   * branchMenu/repoMenu ile aynı desen).
+   */
+  private async showCommitMenu(hashes: string[]): Promise<void> {
+    const t = panelText();
+    const pick = await vscode.window.showQuickPick(
+      [{ label: t.commitMenuPick(hashes.length), detail: t.commitMenuPickDetail(this.lastStatus?.branch ?? 'HEAD'), id: 'cherryPick' as const }],
+      { title: t.commitMenuTitle(hashes.length), matchOnDetail: true },
+    );
+    if (!pick) return;
+    await this.runOp({ kind: 'cherryPick', hashes });
+  }
+
   /** Bisect durumunu okuyup webview'lara gönderir; okunamazsa "bisect yok" sayılır. */
   private async refreshBisect(): Promise<void> {
     const root = this.root;
@@ -1321,6 +1365,9 @@ export class GitAtlasRevRevPanelProvider implements vscode.WebviewViewProvider, 
         case 'loadBisect':
           this.bisectRequested = true;
           await this.refreshBisect();
+          break;
+        case 'commitMenu':
+          await this.showCommitMenu(msg.hashes);
           break;
         case 'setColorMode':
           await this.prefs.update(COLOR_MODE_KEY, msg.mode);

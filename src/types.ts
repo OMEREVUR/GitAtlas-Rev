@@ -371,7 +371,15 @@ export type GitOpRequest =
   | { kind: 'bisectMark'; mark: BisectMarkKind; rev?: string }
   /** 0.4.0: bisect'i bitir, başlangıçtaki branch'e dön. */
   | { kind: 'bisectReset' }
+  /**
+   * 0.4.0: seçilen commit'leri mevcut branch'e al (`git cherry-pick -x`).
+   * hashes git'in uygulayacağı sırada, yani ESKİDEN YENİYE verilir (graph listesi tersidir).
+   * Birden fazla commit'te onaylı.
+   */
+  | { kind: 'cherryPick'; hashes: string[] }
   | { kind: 'continueOperation' }
+  /** 0.4.0: süren işlemde bu commit'i atla. Yalnızca cherry-pick ve rebase'de vardır. */
+  | { kind: 'skipOperation' }
   /** Onaylı. */
   | { kind: 'abortOperation' };
 

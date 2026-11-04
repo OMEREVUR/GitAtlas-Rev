@@ -114,6 +114,11 @@ export const panelText = defineText({
     repoStatus: (name: string) => `$(repo) ${name}`,
     repoStatusTooltip: (name: string, count: number) => `GitAtlas-Rev: ${name} gösteriliyor · workspace'te ${count} repo · değiştirmek için tıkla`,
 
+    // ---- Graph'ta sağ tık menüsü (0.4.0) ----
+    commitMenuTitle: (n: number) => (n === 1 ? 'Seçili commit' : `Seçili ${n} commit`),
+    commitMenuPick: (n: number) => (n === 1 ? "Bu commit'i mevcut branch'e al" : `Bu ${n} commit'i mevcut branch'e al`),
+    commitMenuPickDetail: (branch: string) => `git cherry-pick -x · ${branch} üzerine yeni commit oluşturur`,
+
     // ---- Explorer rozetleri ----
     badgeHot: (changes: number) => `${APP}: çok sık değişiyor · ${changes} commit`,
     badgeWarm: (changes: number) => `${APP}: sık değişiyor · ${changes} commit`,
@@ -225,6 +230,10 @@ export const panelText = defineText({
     repoNone: 'GitAtlas-Rev: No Git repository was found in the workspace folders.',
     repoStatus: (name: string) => `$(repo) ${name}`,
     repoStatusTooltip: (name: string, count: number) => `GitAtlas-Rev: showing ${name} · ${plural(count, 'repository', 'repositories')} in the workspace · click to switch`,
+
+    commitMenuTitle: (n: number) => (n === 1 ? 'Selected commit' : `${n} selected commits`),
+    commitMenuPick: (n: number) => (n === 1 ? 'Pick this commit onto the current branch' : `Pick these ${n} commits onto the current branch`),
+    commitMenuPickDetail: (branch: string) => `git cherry-pick -x · creates new commits on ${branch}`,
 
     badgeHot: (changes: number) => `${APP}: changes very often · ${plural(changes, 'commit')}`,
     badgeWarm: (changes: number) => `${APP}: changes often · ${plural(changes, 'commit')}`,

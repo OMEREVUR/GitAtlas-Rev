@@ -102,4 +102,6 @@ export type WebviewToExtension =
   | { type: 'openMergeEditor'; path: string }
   // 0.4.0
   /** Bisect durumunu iste ve güncel tut. */
-  | { type: 'loadBisect' };
+  | { type: 'loadBisect' }
+  /** Graph'ta sağ tık: seçili commit'ler için işlem menüsü (QuickPick eklentide). Eskiden yeniye sıralı. */
+  | { type: 'commitMenu'; hashes: string[] };

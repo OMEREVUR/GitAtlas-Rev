@@ -28,7 +28,9 @@ const OP_FAILED_TR: Record<GitOpKind, string> = {
   bisectStart: 'Bisect başlatılamadı',
   bisectMark: 'Commit işaretlenemedi',
   bisectReset: 'Bisect bitirilemedi',
+  cherryPick: 'Commit alınamadı',
   continueOperation: 'İşleme devam edilemedi',
+  skipOperation: 'Bu commit atlanamadı',
   abortOperation: 'İşlem iptal edilemedi',
 };
 
@@ -74,7 +76,9 @@ const OP_FAILED_EN: Record<GitOpKind, string> = {
   bisectStart: "Couldn't start bisect",
   bisectMark: "Couldn't mark the commit",
   bisectReset: "Couldn't finish bisect",
+  cherryPick: "Couldn't pick the commits",
   continueOperation: "Couldn't continue the operation",
+  skipOperation: "Couldn't skip this commit",
   abortOperation: "Couldn't abort the operation",
 };
 
@@ -215,6 +219,19 @@ export const text = defineText({
     abortDetail: 'Bu işlemdeki tüm değişiklikler (çakışma çözümleri dahil) geri alınır ve işlemden önceki duruma dönülür.',
     abortAction: 'İşlemi iptal et',
     aborted: (label: string) => `${label} iptal edildi; önceki duruma dönüldü.`,
+    noOperationToSkip: 'Atlanacak bir işlem yok.',
+    cannotSkip: (label: string) => `${label} sırasında commit atlanamaz.`,
+    skipped: (label: string) => `Commit atlandı; ${label.toLowerCase()} devam ediyor.`,
+
+    // ---- cherry-pick ----
+    noCommitsSelected: 'Hiç commit seçilmedi.',
+    cherryPickBusy: (label: string) => `Önce devam eden ${label.toLowerCase()} bitirilmeli.`,
+    cherryPickDirty: "Commit edilmemiş değişiklikler var; cherry-pick'ten önce bunları commit'leyin ya da saklayın (stash).",
+    cherryPickConfirm: (n: number) => `${n} commit mevcut branch'e alınacak.`,
+    cherryPickDetail: (branch: string) => `Commit'ler ${branch} üzerine eskiden yeniye uygulanır ve yeni commit'ler oluşturulur. Çakışma çıkarsa işlem durur ve çözmeniz istenir.`,
+    cherryPickAction: "Commit'leri al",
+    cherryPicked: (n: number, branch: string) => `${n} commit ${branch} üzerine alındı.`,
+    cherryPickStopped: 'Cherry-pick çakışmada durdu: dosyaları çözün, sonra Devam et.',
 
     // ---- GitHub işlemleri (githubOpsService) ----
     ghNotConnected: "GitHub'a bağlı değil — önce bağlanın.",
@@ -395,6 +412,19 @@ export const text = defineText({
     abortDetail: 'All changes from this operation (including conflict resolutions) are discarded and the repository returns to its previous state.',
     abortAction: 'Abort',
     aborted: (label: string) => `${label} aborted; returned to the previous state.`,
+    noOperationToSkip: 'No operation to skip.',
+    cannotSkip: (label: string) => `A ${label.toLowerCase()} cannot skip a commit.`,
+    skipped: (label: string) => `Commit skipped; the ${label.toLowerCase()} continues.`,
+
+    // ---- cherry-pick ----
+    noCommitsSelected: 'No commits selected.',
+    cherryPickBusy: (label: string) => `Finish the ongoing ${label.toLowerCase()} first.`,
+    cherryPickDirty: 'You have uncommitted changes; commit or stash them before a cherry-pick.',
+    cherryPickConfirm: (n: number) => `${n} ${plural(n, 'commit')} will be applied to the current branch.`,
+    cherryPickDetail: (branch: string) => `The commits are applied to ${branch} oldest first, creating new commits. If a conflict comes up the operation stops and asks you to resolve it.`,
+    cherryPickAction: 'Pick commits',
+    cherryPicked: (n: number, branch: string) => `Picked ${n} ${plural(n, 'commit')} onto ${branch}.`,
+    cherryPickStopped: 'Cherry-pick stopped at a conflict: resolve the files, then Continue.',
 
     // ---- GitHub işlemleri (githubOpsService) ----
     ghNotConnected: 'Not connected to GitHub. Connect first.',
