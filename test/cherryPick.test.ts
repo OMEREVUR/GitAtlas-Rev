@@ -289,3 +289,62 @@ describe('cherry-pick çakışması', () => {
     T,
   );
 });
+
+describe('F5 geri bildirimi: boş commit ve bisect çakışması', () => {
+  it(
+    'değişiklikleri zaten branch\'te olan commit: ham git çıktısı değil, "Atla" yönlendirmesi',
+    async () => {
+      const { repo, f3 } = await setup();
+      const { svc } = service(repo);
+
+      // f3'ün değişikliğini main'de birebir uygula → cherry-pick boş kalır
+      await write(repo, 'a.txt', 'FEATURE\niki\nüç\n');
+      git(repo, 'add', '-A');
+      git(repo, 'commit', '-q', '-m', 'main de ayni degisikligi yapti');
+
+      const r = await run(svc, { kind: 'cherryPick', hashes: [f3] });
+      expect(r.ok).toBe(false);
+      expect(r.message).toContain('Atla');
+      expect(r.message).not.toContain('allow-empty'); // ham git çıktısı sızmasın
+      // git bu durumda işlemi açık bırakır; bant görünür ve Atla gerçekten çalışır
+      expect((await getStatus(repo)).operation).toBe('cherryPick');
+      const skip = await run(svc, { kind: 'skipOperation' });
+      expect(skip.ok).toBe(true);
+      expect((await getStatus(repo)).operation).toBeUndefined();
+    },
+    T,
+  );
+
+  it(
+    'bisect sürerken commit alınamaz',
+    async () => {
+      const { repo, f1 } = await setup();
+      const { svc } = service(repo);
+      git(repo, 'bisect', 'start');
+      git(repo, 'bisect', 'bad');
+
+      const r = await run(svc, { kind: 'cherryPick', hashes: [f1] });
+      expect(r.ok).toBe(false);
+      expect(r.message).toContain('Bisect');
+      expect(r.commands).toEqual([]); // komut hiç çalışmadı
+      git(repo, 'bisect', 'reset');
+      expect((await run(svc, { kind: 'cherryPick', hashes: [f1] })).ok).toBe(true);
+    },
+    T,
+  );
+
+  it(
+    'süren bir cherry-pick varken bisect başlatılamaz',
+    async () => {
+      const { repo, f3 } = await setup();
+      const { svc } = service(repo);
+      await run(svc, { kind: 'cherryPick', hashes: [f3] });
+      expect((await getStatus(repo)).operation).toBe('cherryPick');
+
+      const r = await run(svc, { kind: 'bisectStart', bad: 'HEAD', good: 'HEAD~1' });
+      expect(r.ok).toBe(false);
+      expect(r.commands).toEqual([]);
+    },
+    T,
+  );
+});

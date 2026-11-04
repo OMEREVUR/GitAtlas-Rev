@@ -38,6 +38,15 @@ const OPERATION_LABEL: Record<RepoOperation, string> = {
   revert: 'Revert',
 };
 
+/**
+ * Alınan commit'in değişiklikleri zaten branch'te olduğunda git çıkış kodu 1 ile durur ve
+ * "The previous cherry-pick is now empty" yazar. Bu bir çakışma değildir: çözülecek dosya yok,
+ * doğru eylem "Atla". Mesaj stderr'e gider ama ikisine de bakıyoruz (git sürümüne göre değişebilir).
+ */
+function isEmptyPick(err: GitError): boolean {
+  return /is now empty/i.test(`${err.stderr}\n${err.stdout}`);
+}
+
 // Mesajlarda ref adlarına Türkçe ek getirilmez ("master'e" gibi yanlış ekler çıkar); ad ayrı yazılır.
 // Kullanıcıya görünen tüm metinler src/i18n/ops.ts sözlüğünden gelir; text() her çağrıda etkin dili okur.
 
@@ -214,6 +223,7 @@ export class GitOpsService {
 
       case 'bisectStart': {
         if (await getBisectState(this.deps.root)) return fail(t.bisectAlreadyActive);
+        if (status.operation) return fail(t.bisectDuringOperation(OPERATION_LABEL[status.operation]));
         const dirty = status.files.some(
           (f) => f.conflicted || f.staged !== undefined || (f.unstaged !== undefined && f.unstaged !== 'untracked'),
         );
@@ -390,6 +400,8 @@ export class GitOpsService {
       case 'cherryPick': {
         if (op.hashes.length === 0) return fail(t.noCommitsSelected);
         if (status.operation) return fail(t.cherryPickBusy(OPERATION_LABEL[status.operation]));
+        // Bisect sirasinda HEAD baska bir commit'te olabilir; alinan commit 'bisect reset' ile oksuz kalir.
+        if (await getBisectState(this.deps.root)) return fail(t.cherryPickDuringBisect);
         // git kirli ağaçta zaten reddeder; mesajı anlaşılır yapalım (untracked dosya engel değil).
         const dirty = status.files.some(
           (f) => f.staged !== undefined || (f.unstaged !== undefined && f.unstaged !== 'untracked'),
@@ -404,6 +416,7 @@ export class GitOpsService {
           await runAll(await plan());
         } catch (err) {
           // Çakışmada git durur; bant devreye girer, kullanıcı çözüp Devam et der.
+          if (err instanceof GitError && isEmptyPick(err)) return fail(t.cherryPickEmpty);
           if (err instanceof GitError && err.kind === 'conflict') return fail(t.cherryPickStopped);
           throw err;
         }
@@ -413,7 +426,12 @@ export class GitOpsService {
       case 'continueOperation': {
         if (!status.operation) return fail(t.noOperationToContinue);
         const label = OPERATION_LABEL[status.operation];
-        await runAll(await plan());
+        try {
+          await runAll(await plan());
+        } catch (err) {
+          if (err instanceof GitError && isEmptyPick(err)) return fail(t.cherryPickEmpty);
+          throw err;
+        }
         const after = await getStatus(this.deps.root);
         if (after.operation === status.operation) return done(t.operationContinues(label));
         return done(t.operationDone(label));

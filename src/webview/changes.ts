@@ -194,7 +194,9 @@ export function renderChanges(el: HTMLElement, opts: ChangesOptions): void {
     msg.append(h('strong', undefined, opText(status.operation)));
     const total = Math.max(opts.conflictTotal ?? 0, conflicts.length);
     if (total > 0) msg.append(h('strong', 'rr-ch-band-progress', t.bandProgress(total - conflicts.length, total)));
-    msg.append(document.createTextNode(conflicts.length > 0 ? t.bandConflicts(conflicts.length) : t.bandNoConflicts));
+    // merge disinda commit bos kalabilir; o durumda dogru eylem Atla, Devam et degil.
+    const noConflictText = status.operation === 'merge' ? t.bandNoConflicts : t.bandNoConflictsSkippable;
+    msg.append(document.createTextNode(conflicts.length > 0 ? t.bandConflicts(conflicts.length) : noConflictText));
     text.append(msg);
     const actions = h('div', 'rr-ch-band-actions');
     const cont = h('button', 'rr-ch-btn rr-ch-btn-primary', t.continueBtn);

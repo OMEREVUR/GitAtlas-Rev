@@ -232,6 +232,10 @@ export const text = defineText({
     cherryPickAction: "Commit'leri al",
     cherryPicked: (n: number, branch: string) => `${n} commit ${branch} üzerine alındı.`,
     cherryPickStopped: 'Cherry-pick çakışmada durdu: dosyaları çözün, sonra Devam et.',
+    cherryPickEmpty:
+      "Bu commit'in değişiklikleri zaten bu branch'te, commit boş kalıyor. Çakışma bandındaki \"Atla\" ile bu commit'i geçin.",
+    cherryPickDuringBisect: 'Bisect sürerken commit alınamaz: önce Bisect sekmesinden "Bitir" deyin.',
+    bisectDuringOperation: (label: string) => `${label} sürerken bisect başlatılamaz: önce o işlemi bitirin ya da iptal edin.`,
 
     // ---- GitHub işlemleri (githubOpsService) ----
     ghNotConnected: "GitHub'a bağlı değil — önce bağlanın.",
@@ -425,6 +429,10 @@ export const text = defineText({
     cherryPickAction: 'Pick commits',
     cherryPicked: (n: number, branch: string) => `Picked ${n} ${plural(n, 'commit')} onto ${branch}.`,
     cherryPickStopped: 'Cherry-pick stopped at a conflict: resolve the files, then Continue.',
+    cherryPickEmpty:
+      'This commit\'s changes are already on this branch, so the commit would be empty. Use "Skip" in the conflict band to pass it.',
+    cherryPickDuringBisect: 'Commits cannot be picked while a bisect is running: finish it from the Bisect tab first.',
+    bisectDuringOperation: (label: string) => `A bisect cannot start while a ${label.toLowerCase()} is in progress: finish or abort it first.`,
 
     // ---- GitHub işlemleri (githubOpsService) ----
     ghNotConnected: 'Not connected to GitHub. Connect first.',
