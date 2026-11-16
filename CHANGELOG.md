@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+Bug fix for anyone on a recent git: the Bisect tab could not report its result.
+- **Bisect result on git 2.55 and newer.** Since git 2.55 the line git writes into `BISECT_LOG` quotes the term — `# first 'bad' commit: [hash] subject` — while GitAtlas-Rev still looked for the older, unquoted wording. The culprit card never appeared and the remaining-steps counter never reached zero, even though the bisect itself had finished. Both spellings are now accepted, as are custom terms (`--term-old` / `--term-new`), and the inconclusive `# possible first 'bad' commit:` line is correctly ignored.
+- This also turned CI red from 0.4.0 on: the runners ship git 2.56 while the tests pass on older git locally.
+
 ## 0.4.0
 Two features from the first feedback round: finding the commit that caused a bug, and moving commits between branches.
 - **Bisect tab.** Pick a known-good and a known-bad commit (from the tab or by marking them in the graph), then answer Good / Bad / Skip for each commit that is checked out; a counter shows roughly how many steps are left. The suspect range is dimmed on the graph and marked commits get a label. When the culprit is found, a card lists the files it touched — light them up on the map, show the commit in the graph, or open a diff. **Finish** runs `git bisect reset` and returns you to where you started. A bisect started in a terminal is picked up as well. `git bisect run` is deliberately not supported: GitAtlas-Rev never runs a command you typed.
