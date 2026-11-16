@@ -1,6 +1,7 @@
 # GitAtlas-Rev
 
 [![Marketplace](https://img.shields.io/visual-studio-marketplace/v/Omer-Cayir.gitatlas-rev?label=Marketplace)](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev)
+[![Open VSX](https://img.shields.io/open-vsx/v/Omer-Cayir/gitatlas-rev?label=Open%20VSX&color=a60ee5)](https://open-vsx.org/extension/Omer-Cayir/gitatlas-rev)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/Omer-Cayir.gitatlas-rev)](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev)
 [![CI](https://github.com/OMEREVUR/GitAtlas-Rev/actions/workflows/ci.yml/badge.svg)](https://github.com/OMEREVUR/GitAtlas-Rev/actions/workflows/ci.yml)
 
@@ -12,7 +13,17 @@ The interface is available in **English** and **Turkish**. It follows the VS Cod
 
 ![The map: box size is line count, color is churn; a dashed purple frame marks a file touched by two open PRs](https://github.com/OMEREVUR/GitAtlas-Rev/releases/download/v0.4.0/01-map-pr-conflict-dark.png)
 
-**[Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev)**, or press `Ctrl+P` in VS Code and run `ext install Omer-Cayir.gitatlas-rev`. Then open the **GitAtlas-Rev** icon in the Activity Bar, or follow the **Get started with GitAtlas-Rev** walkthrough (Help → Welcome).
+## Install
+
+| Editor | How to install |
+| --- | --- |
+| **VS Code** | [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev) — or press `Ctrl+P` and run `ext install Omer-Cayir.gitatlas-rev` |
+| **VSCodium, Cursor, Windsurf, Gitpod, Theia** | [Open VSX Registry](https://open-vsx.org/extension/Omer-Cayir/gitatlas-rev) — or search *GitAtlas-Rev* in the Extensions view |
+| **Any of them, offline** | Download the `.vsix` from [Releases](https://github.com/OMEREVUR/GitAtlas-Rev/releases/latest), then Extensions → ··· → *Install from VSIX…* |
+
+**Requirements:** VS Code 1.90 or newer (or a compatible editor) and `git` on your PATH.
+
+Once installed, open the **GitAtlas-Rev** icon in the Activity Bar, or follow the **Get started with GitAtlas-Rev** walkthrough (Help → Welcome).
 
 ## Features
 
@@ -108,7 +119,14 @@ npm run typecheck
 
 To build a VSIX: `make vsix` (or `node scripts/package-vsix.mjs` without make); it typechecks first and writes `Extension-Versions/gitatlas-rev-<version>.vsix`.
 
+For the Open VSX Registry: `make ovsx` (or `node scripts/package-ovsx.mjs`) writes `Extension-Versions/open-vsx/gitatlas-rev-<version>.vsix`, checks what the package will contain and prints the `ovsx` publish commands.
+
 Press **F5** in VS Code to open the Extension Development Host. See [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or a pull request.
+
+## Links
+
+- [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Issues](https://github.com/OMEREVUR/GitAtlas-Rev/issues)
+- [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=Omer-Cayir.gitatlas-rev) · [Open VSX Registry](https://open-vsx.org/extension/Omer-Cayir/gitatlas-rev) · [Releases](https://github.com/OMEREVUR/GitAtlas-Rev/releases/latest)
 
 ## License
 
