@@ -13,12 +13,15 @@ export interface ParsedBisectLog {
 
 /**
  * BISECT_LOG: her işaret "# good: [hash] başlık" biçiminde yorum satırı olarak yazılır;
- * bulununca "# first bad commit: [hash] başlık" eklenir.
+ * bulununca "# first bad commit: [hash] başlık" eklenir. git 2.55'ten beri terim tırnak içinde
+ * yazılıyor ("# first 'bad' commit: ...") ve terim özelleştirilebiliyor (--term-old/--term-new),
+ * bu yüzden iki biçim de ve her terim kabul edilir. "# possible first 'bad' commit:" bir sonuç
+ * değildir, eşleşmemelidir.
  */
 export function parseBisectLog(text: string): ParsedBisectLog {
   const out: ParsedBisectLog = { marks: [] };
   for (const line of text.split(/\r?\n/)) {
-    const first = /^# first bad commit: \[([0-9a-f]{4,64})\]/i.exec(line);
+    const first = /^# first '?[\w.+-]+'? commit: \[([0-9a-f]{4,64})\]/i.exec(line);
     if (first) {
       out.firstBad = first[1];
       continue;

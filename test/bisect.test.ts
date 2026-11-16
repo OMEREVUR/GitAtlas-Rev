@@ -76,6 +76,21 @@ describe('bisect (saf)', () => {
     expect(p.firstBad).toBe('4'.repeat(40));
   });
 
+  // git 2.55 ve sonrası terimi tırnak içinde yazıyor; terim de özelleştirilebiliyor.
+  it('BISECT_LOG: git 2.55+ tırnaklı terim ve özel terimler', () => {
+    const quoted = [
+      '# bad: [1111111111111111111111111111111111111111] commit 16',
+      "# possible first 'bad' commit: [5555555555555555555555555555555555555555] commit 9",
+      "# first 'bad' commit: [4444444444444444444444444444444444444444] commit 11",
+    ].join('\n');
+    const p = parseBisectLog(quoted);
+    expect(p.firstBad).toBe('4'.repeat(40));
+    expect(p.marks.map((m) => m.mark)).toEqual(['bad']);
+
+    expect(parseBisectLog("# first 'new' commit: [6666666666666666666666666666666666666666] commit 3").firstBad).toBe('6'.repeat(40));
+    expect(parseBisectLog("# possible first 'bad' commit: [7777777777777777777777777777777777777777] commit 4").firstBad).toBeUndefined();
+  });
+
   it('refs/bisect ayrıştırma ve kalan adım', () => {
     const r = parseBisectRefs('refs/bisect/bad aaa\nrefs/bisect/good-bbb bbb\nrefs/bisect/skip-ccc ccc\n');
     expect(r).toEqual({ bad: 'aaa', goods: ['bbb'], skips: ['ccc'] });
